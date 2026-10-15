@@ -1,0 +1,15 @@
+geant4_version      = "11.4.1"
+geant4_commit       = "geant4-11-04-patch-01"
+g4emlow_version     = "8.8"
+g4emlow_md5         = "328330009df633f7e9b3a9f445745298"
+physics_constructor = "G4EmDNAPhysics_option2"
+generator           = "validation/geant4/g4rs_ref (copy in GEANT4/SIM/G4RS with two fixes: BeamOn(0) before G4EmCalculator, SetAtomDeexcitation(nullptr) after Initialize; see BUILD_NOTES.md), geant4-rs git commit <fill in>"
+date                = "2026-10-15"
+command_lines       = [
+  "g4rs_ref xslow xs_lowenergy.csv",
+  "g4rs_ref slow slow 20271 8:100000,30:100000,100:100000,1000:20000,10000:2000,100000:200,900000:20",
+  "g4rs_ref slow slow2 20272 8:100000,30:100000,100:100000,1000:20000,10000:2000,100000:200,900000:20",
+]
+fluo_auger          = "off"
+compiler            = "MSVC 19.50.35729.0 (RelWithDebInfo, Ninja)"
+platform            = "Windows 11 Pro 10.0.26100, x64, serial run manager"
