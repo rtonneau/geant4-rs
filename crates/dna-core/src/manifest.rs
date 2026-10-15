@@ -94,6 +94,17 @@ impl Manifest {
             .try_for_each(|f| self.verify_file(data_root, f))
     }
 
+    /// Check one listed file (`rel_path` as written in the manifest, e.g. `dna/sigma_x.dat`).
+    /// A path the manifest does not list is an error: an unlisted file cannot be vouched for.
+    pub fn verify_path(&self, data_root: &Path, rel_path: &str) -> Result<(), DnaError> {
+        let entry = self
+            .files
+            .iter()
+            .find(|f| f.path == rel_path)
+            .ok_or_else(|| DnaError::InvalidManifest(format!("{rel_path} is not listed")))?;
+        self.verify_file(data_root, entry)
+    }
+
     fn verify_file(&self, data_root: &Path, f: &ManifestFile) -> Result<(), DnaError> {
         let full = data_root.join(&f.path);
         let mut file = std::fs::File::open(&full).map_err(|e| match e.kind() {

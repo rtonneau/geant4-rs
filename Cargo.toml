@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/dna-core"]
+members = ["crates/dna-core", "crates/dna-data"]
 
 [workspace.package]
 version = "0.1.0"
@@ -22,4 +22,6 @@ sha2 = "0.10"
 
 # Table parsing and SHA-256 in tests run on 7 MB of data: keep debug builds usable.
 [profile.dev.package.dna-core]
+opt-level = 1
+[profile.dev.package.dna-data]
 opt-level = 1
