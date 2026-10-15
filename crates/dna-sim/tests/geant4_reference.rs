@@ -1,6 +1,6 @@
 //! L2/L3 comparison with Geant4 11.4.1 (docs/07 V2, V3, V5).
 //!
-//! The three `#[ignore]` tests need CSV files produced by `validation/geant4/g4rs_ref` on a machine
+//! The four `#[ignore]` tests need CSV files produced by `validation/geant4/g4rs_ref` on a machine
 //! with Geant4 and committed to `validation/reference/` together with `provenance.toml`
 //! (instructions: `validation/geant4/README.md`). No Geant4 number is invented or embedded here:
 //! until the files exist the tests stay ignored (`cargo test -- --ignored` fails with a message
@@ -131,12 +131,45 @@ impl Sample {
     }
 }
 
+thread_local! {
+    /// Margins of every comparison made on this thread: `(label, used)` with `used` the fraction
+    /// of the tolerance consumed (1.0 = at the limit; for V5 the larger of `z / 3` and
+    /// `rel / 2 %`). Printed by `print_margins` (visible with `--nocapture`).
+    static MARGINS: std::cell::RefCell<Vec<(String, f64)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn record_margin(label: &str, used: f64) {
+    MARGINS.with(|m| m.borrow_mut().push((label.to_owned(), used)));
+}
+
+/// Print and clear the recorded margins: count, how many are within 50 % of the limit, and the
+/// five tightest comparisons.
+fn print_margins(title: &str) {
+    let mut v = MARGINS.with(|m| std::mem::take(&mut *m.borrow_mut()));
+    v.retain(|(_, u)| u.is_finite());
+    v.sort_by(|a, b| b.1.total_cmp(&a.1));
+    let over_half = v.iter().filter(|(_, u)| *u > 0.5).count();
+    eprintln!(
+        "[margins] {title}: {} comparisons, {over_half} above 50 % of tolerance; tightest:",
+        v.len()
+    );
+    for (label, used) in v.iter().take(5) {
+        eprintln!("[margins]   {:5.1} %  {label}", used * 100.0);
+    }
+}
+
 /// V5: `|a-b| < 3 combined se` and (when `with_relative`) `|a-b|/|b| < 2 %`.
 fn v5(label: &str, a: Sample, b: Sample, with_relative: bool) -> Result<(), String> {
     let diff = (a.mean - b.mean).abs();
     let se = (a.se * a.se + b.se * b.se).sqrt();
     let z = if se > 0.0 { diff / se } else { 0.0 };
     let rel = diff / b.mean.abs();
+    let used_rel = if with_relative && rel.is_finite() {
+        rel / 0.02
+    } else {
+        0.0
+    };
+    record_margin(label, (z / 3.0).max(used_rel));
     if z >= 3.0 {
         return Err(format!(
             "{label}: rust {:.6e} +- {:.2e} vs geant4 {:.6e} +- {:.2e}: z = {z:.2} >= 3",
@@ -235,6 +268,7 @@ fn compare_cross_sections(table: &ProcessTable, rows: &[(f64, String, f64)]) -> 
                 continue;
             }
             let rel = (r - g).abs() / g;
+            record_margin(&format!("V2 {p:?} at {e} eV"), rel / tol);
             if rel >= tol {
                 failures.push(format!(
                     "V2 {p:?} at {e} eV: rust {r:e} vs geant4 {g:e}, rel {rel:e} >= {tol:e}"
@@ -247,6 +281,7 @@ fn compare_cross_sections(table: &ProcessTable, rows: &[(f64, String, f64)]) -> 
                 let pg = g4[p.index()].unwrap() / g_tot;
                 let pr = rust.get(p) / rust.total();
                 let rel = (pr - pg).abs() / pg;
+                record_margin(&format!("V3 {p:?} at {e} eV"), rel / tol);
                 if rel >= tol {
                     failures.push(format!(
                         "V3 {p:?} at {e} eV: rust {pr:e} vs geant4 {pg:e}, rel {rel:e} >= {tol:e}"
@@ -390,6 +425,7 @@ fn v2_v3_cross_sections_per_volume_match_geant4() {
         .collect();
     let (table, _) = table();
     let failures = compare_cross_sections(&table, &parsed);
+    print_margins("V2/V3 cross sections");
     assert!(
         failures.is_empty(),
         "{} failures:\n{}",
@@ -410,6 +446,7 @@ fn v5_first_interaction_mean_free_path_matches_geant4() {
     );
     let (table, _) = table();
     let failures = compare_mfp(&table, &rows, 200_000, 20_261);
+    print_margins("V5 mfp, seed 1");
     assert!(
         failures.is_empty(),
         "{} failures:\n{}",
@@ -430,11 +467,77 @@ fn v5_primary_track_with_100_ev_cut_matches_geant4() {
     );
     let (table, _) = table();
     let failures = compare_track(&table, &rows, 20_262);
+    print_margins("V5 track, seed 1");
     assert!(
         failures.is_empty(),
         "{} failures:\n{}",
         failures.len(),
         failures.join("\n")
+    );
+}
+
+/// Seed-2 consistency: the second, independently seeded Geant4 runs must (a) agree with the
+/// first Geant4 runs under the V5 criteria (the reference is reproducible and its statistical
+/// errors are honest) and (b) agree with Rust run with a different seed than the seed-1 tests.
+/// A criterion that passes for seed 1 but not for seed 2 would indicate a lucky draw, not
+/// agreement.
+#[test]
+#[ignore = "needs validation/reference/*_seed2.csv from Geant4 (validation/geant4/README.md)"]
+fn seed2_geant4_runs_are_consistent_with_seed1_and_with_rust() {
+    let (table, _) = table();
+    let mut failures = Vec::new();
+
+    let load = |name: &str| {
+        let (h, r) = read_reference(name);
+        event_rows(&h, &r)
+    };
+    let mfp1 = load("mfp_first_interaction.csv");
+    let mfp2 = load("mfp_first_interaction_seed2.csv");
+    let trk1 = load("track_cut100eV.csv");
+    let trk2 = load("track_cut100eV_seed2.csv");
+
+    // (a) Geant4 seed 1 versus Geant4 seed 2, same criteria
+    for (kind, r1, r2) in [("mfp", &mfp1, &mfp2), ("track", &trk1, &trk2)] {
+        assert_eq!(r1.len(), r2.len(), "{kind}: different energy lists");
+        for (a, b) in r1.iter().zip(r2) {
+            assert_eq!(a.energy, b.energy, "{kind}: energy lists differ");
+            let e = a.energy;
+            let pairs = [
+                ("length (nm)", a.l, b.l),
+                ("deposited energy (eV)", a.edep, b.edep),
+                ("remaining energy (eV)", a.rem, b.rem),
+                ("secondaries per event", a.nsec, b.nsec),
+                ("secondary energy (eV)", a.esec, b.esec),
+            ];
+            for (label, x, y) in pairs {
+                if let Err(m) = v5(
+                    &format!("G4 seed1 vs seed2, {kind} {label} at {e} eV"),
+                    x,
+                    y,
+                    true,
+                ) {
+                    failures.push(m);
+                }
+            }
+        }
+    }
+    print_margins("Geant4 seed 1 vs Geant4 seed 2");
+
+    // (b) Rust (seeds distinct from the seed-1 tests) versus the seed-2 Geant4 runs
+    failures.extend(compare_mfp(&table, &mfp2, 200_000, 20_263));
+    print_margins("V5 mfp, Rust vs Geant4 seed 2");
+    failures.extend(compare_track(&table, &trk2, 20_264));
+    print_margins("V5 track, Rust vs Geant4 seed 2");
+
+    assert!(
+        failures.is_empty(),
+        "{} failures:
+{}",
+        failures.len(),
+        failures.join(
+            "
+"
+        )
     );
 }
 
