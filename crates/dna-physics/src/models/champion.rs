@@ -137,6 +137,7 @@ impl ChampionElastic {
             secondary: None,
             channel: 0,
             quirks: Quirks::default(),
+            killed: false,
         })
     }
 }

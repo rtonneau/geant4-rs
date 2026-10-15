@@ -46,6 +46,21 @@ pub enum PhysicsError {
         min_ev: f64,
         max_ev: f64,
     },
+    /// A table is shorter than its model window and its last node is not zero, so Geant4's
+    /// constant clamp beyond the table would be a non-zero extrapolation.
+    #[error(
+        "{table}: table ends at {last_energy_ev} eV with value {last_value_nm2} nm^2 (not zero) \
+         but the model window extends further"
+    )]
+    TableTailNotZero {
+        table: &'static str,
+        last_energy_ev: f64,
+        last_value_nm2: f64,
+    },
+    /// The cross sections of all processes vanish at this energy and no solvation applies: the
+    /// track would never interact. Reported instead of ending the history silently.
+    #[error("no process can act on an electron of {energy_ev} eV")]
+    NoProcessAvailable { energy_ev: f64 },
     /// A sampled final state is not physical (non-finite direction/energy).
     #[error("{model}: non-physical final state ({what})")]
     NonPhysicalFinalState {

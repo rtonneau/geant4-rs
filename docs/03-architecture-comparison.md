@@ -22,7 +22,7 @@ Current repo state: one placeholder crate (`geant4-rs`, edition 2024, `src/lib.r
 | Complexity | lowest | moderate | highest |
 | Scientific traceability | ok | ok; each model file carries its C++ source tag | diluted |
 
-**Implemented so far:** `dna-core` (M0), `dna-data` (M1), `dna-physics` and `dna-sim` (M2). `dna-physics` holds models, `ProcessTable` and the transport loop (no rayon, no JSON); `dna-sim` holds `RunConfig`, the per-history driver, the scorers (`Scorer` consumes `HistoryResult`s only) and the JSON output. `dna-chemistry` and `dna-cli` do not exist yet.
+**Implemented so far:** `dna-core` (M0), `dna-data` (M1), `dna-physics` and `dna-sim` (M2, extended in M3). `dna-physics` holds models (M3: Sanche, Melton, solvation), `ProcessTable`, the cascade transport loop with its LIFO secondary stack, and the physicochemical record `PhysChemEvent` (`physchem.rs`; M3 defines it in `dna-physics`, not in `dna-core`, because only transport produces it, and `dna-sim` hands it to the future chemistry crate, so the DAG rule below still holds: chemistry will depend on `dna-physics` for this one plain-data type only, or the type moves to `dna-core` when M6 starts; decision for M6); no rayon, no JSON. `dna-sim` holds `RunConfig`, the per-history driver and its observers, the scorers (`Scorer` consumes `HistoryResult`s only), the physchem sink/CSV writer and the JSON output. `dna-chemistry` and `dna-cli` do not exist yet.
 
 ## Recommendation: **B**, with these rules
 1. Dependency DAG: `core <- physics`, `core <- chemistry`, `{physics, chemistry} <- sim <- cli`. `physics` and `chemistry` never depend on each other; they exchange only `dna-core` types (`PhysChemEvent`, `SpeciesInstance`) via `sim`.

@@ -86,3 +86,10 @@ Fast vs slow tables: option2 sets `SetDNAFast(true)` (`G4EmDNAPhysics_option2.cc
 ## Observed file formats (checked on the committed files, 20/20 SHA-256 verified)
 - Whitespace-separated plain text, no comments or headers in the committed copies. One file is CRLF (`sigma_ionisation_p_rudd.dat`, 645 lines); two use tabs; spaces otherwise. Parsers split on any whitespace and ignore `\r`.
 - Differential files are long blocks: Champion elastic 18281 rows, Born electron cumulated 9546 rows, proton RPWBA 11200 rows.
+
+## M3 notes on data semantics
+- **Melton tail (12.3 - 13 eV).** The model window ends at 13 eV, the table at 12.3 eV with value 0. `dna-data` still raises `UnsupportedEnergy` outside the table, as designed in M1; the *model* (`MeltonAttachment`) returns 0 between the last node and 13 eV, reproducing Geant4's constant clamp to the last node, and refuses to be built if the last node were non-zero (`PhysicsError::TableTailNotZero`). Near 4 eV the log-log rule between the zero nodes (0 and 4.2 eV) gives about 1e-304 nm^2 per molecule (the `1e-300` floor times the scale): numerically zero, reproduced.
+- **Sanche zero floor.** `1e-30` is replaced in **Geant4 internal units (mm^2)**: 1e-18 nm^2. Applied to every interpolated partial and total value that is exactly 0 (`SancheVibrational::partial_cross_sections`, `total_cross_section`).
+- **Sanche sum.** `TotalCrossSection` interpolates the *sum of the nine columns at the nodes*; the table layer's `total()` does the same. The model multiplies by the liquid-phase factor 2 (`SANCHE_LIQUID_PHASE_FACTOR`); Melton and the other models do not.
+- Output files of M3: `PhysChemEvent` CSV (`parent_history,kind,level_or_shell,x_nm,y_nm,z_nm,deposited_energy_eV`, header from `dna_physics::physchem::PHYSCHEM_CSV_HEADER`), run JSON schema `geant4-rs/dna-sim/run/v2` (adds the five-process counts, solvation, W, spectra by generation, radial profile, tracks, vibrational levels).
+

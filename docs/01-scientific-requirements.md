@@ -39,7 +39,7 @@ The interface between 1 and 2 is a serialisable list of `PhysChemEvent`; between
 | Vibrational excitation (Sanche) | the vibrational energy lost; absorbed electrons deposit their whole kinetic energy (`...Sanche...:255-261`) |
 | Attachment (Melton) | the electron's whole kinetic energy (`...Attachment...:246`) |
 | Elastic | nothing (energy unchanged, `...Champion...:310`) |
-| Solvation (< 7.4 eV) | [U G1/G6: expected: the remaining kinetic energy] |
+| Solvation (< 7.4 eV) | the electron's whole kinetic energy (`G4DNAOneStepThermalizationModel.hpp:182-185`, M3) |
 So a thermalised sub-excitation electron's energy **is** counted, and energy leaving the box (killed tracks) is **not**.
 
 **Rust convention (proposed final, adopted unless you object):**
@@ -56,6 +56,8 @@ So a thermalised sub-excitation electron's energy **is** counted, and energy lea
 Convention status: A.4 items 1-5 are final.
 
 **M2 ledger (primaries only, `dna-physics::transport::Ledger`):** `E_in = deposited_excitation + deposited_binding + secondaries + remaining_untracked`, per history, accumulated with compensated sums and checked at the end of every history (hard limit 1e-9 relative, V7; observed <= 2.8e-13 up to 1 MeV). `deposited_*` follow the table above for the **primary track only**; `secondaries` is the kinetic energy of the recorded, not transported, delta electrons (in the full chain it becomes deposit later, so `E_dep` of A.4 item 1 equals `deposited_excitation + deposited_binding` plus what the secondaries will deposit); `remaining_untracked` is the primary's kinetic energy at termination (M3: solvation deposit). `E_escaped` is zero (infinite medium). Not reproduced: Auger/fluorescence energy carried away from a K-shell hole (docs/09 Q12).
+
+**M3 ledger (whole cascade, `dna-physics::transport::Ledger`):** `E_in = E_excitation + E_vibrational + E_binding + E_attachment + E_solvation + E_escaped + E_untracked_secondaries + E_remaining_untracked`, per history, compensated sums, hard limit 1e-9 relative at the end of every history (observed <= 2.5e-13 at 1 MeV, <= 1e-15 below 1 keV). `E_dep` of item 1 is the sum of the first five terms; `E_escaped = 0` (infinite medium); the last two terms are zero when every secondary is transported and no cut is set, so `E_dep = E_in` exactly for a full slowing-down history and the *distribution* of `E_dep` is trivial. The informative deposit distributions are the split by category and the radial profile around the primary's start (scorers `EnergySummary`, `RadialSummary`). Solvation deposits the **whole kinetic energy** of the electron (confirmed in the C++, docs/02 B.7.5): the `[U]` of the table above is closed. Per-100-eV quantities use `E_dep` of the history in the denominator: ratio of totals (primary) and mean of per-history ratios (Geant4 `chem6` convention) are both reported (`SolvationSummary`, `WSummary`).
 
 ## A.5 Units
 Internal: **energy eV, length nm, time ps**, `f64` newtypes (`Energy`, `Length`, `Time`, `Diffusivity`,

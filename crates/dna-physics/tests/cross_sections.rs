@@ -18,26 +18,29 @@ use dna_physics::models::{
 use dna_physics::table::ProcessTable;
 use dna_physics::water::WATER_MOLECULES_PER_NM3;
 
-/// `(E eV, Sigma_elastic, Sigma_excitation, Sigma_ionisation)` in 1/nm, pasted from
-/// `python3 scripts/hand_cross_sections.py`.
-const HAND: [(f64, f64, f64, f64); 3] = [
+/// `(E eV, Sigma_elastic, Sigma_excitation, Sigma_ionisation, Sigma_vibrational)` in 1/nm, pasted
+/// from `python3 scripts/hand_cross_sections.py`. (Sanche is open up to and including 100 eV.)
+const HAND: [(f64, f64, f64, f64, f64); 3] = [
     (
         100.0,
         0.8141190997411056,
         0.0223282710194591,
         0.8023861553842268,
+        0.2861434739649086,
     ),
     (
         4321.0,
         0.04782758037698331,
         0.0011415633581586882,
         0.07620042629855338,
+        0.0,
     ),
     (
         250000.0,
         0.0008298780439745434,
         5.037236935827414e-05,
         0.0037333363471253682,
+        0.0,
     ),
 ];
 
@@ -84,12 +87,22 @@ fn macroscopic_cross_sections_equal_the_hand_computation() {
         33.427975930472165,
         max_relative = 1e-14
     );
-    for (e, el, ex, io) in HAND {
+    for (e, el, ex, io, vib) in HAND {
         let xs = table.macroscopic(ev(e)).unwrap();
+        if vib == 0.0 {
+            assert_eq!(xs.get(ProcessKind::VibrationalExcitation), 0.0);
+        } else {
+            assert_relative_eq!(
+                xs.get(ProcessKind::VibrationalExcitation),
+                vib,
+                max_relative = 1e-9
+            );
+        }
+        assert_eq!(xs.get(ProcessKind::Attachment), 0.0);
         assert_relative_eq!(xs.get(ProcessKind::Elastic), el, max_relative = 1e-9);
         assert_relative_eq!(xs.get(ProcessKind::Excitation), ex, max_relative = 1e-9);
         assert_relative_eq!(xs.get(ProcessKind::Ionisation), io, max_relative = 1e-9);
-        assert_relative_eq!(xs.total(), el + ex + io, max_relative = 1e-9);
+        assert_relative_eq!(xs.total(), el + ex + io + vib, max_relative = 1e-9);
     }
 }
 

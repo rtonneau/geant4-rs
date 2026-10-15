@@ -16,7 +16,10 @@ mod born_angle;
 mod born_excitation;
 mod born_ionisation;
 mod champion;
+mod melton;
+mod sanche;
 mod select;
+mod solvation;
 
 pub use born_angle::{born_electron_cos_theta, sample_born_electron_direction};
 pub use born_excitation::{BORN_EXCITATION_WINDOW_EV, BornExcitation};
@@ -24,7 +27,16 @@ pub use born_ionisation::{
     BORN_IONISATION_WINDOW_EV, BornIonisation, K_SHELL_INDEX, SHELL2_REJECTION_BELOW_EV,
 };
 pub use champion::{CHAMPION_WINDOW_EV, ChampionElastic, ElasticRotation, scatter};
+pub use melton::{MELTON_WINDOW_EV, MeltonAttachment};
+pub use sanche::{
+    SANCHE_LEVELS, SANCHE_LIQUID_PHASE_FACTOR, SANCHE_WINDOW_EV, SancheVibrational,
+    vibration_energy,
+};
 pub use select::random_select;
+pub use solvation::{
+    MEESUNGNOEN_COEFFICIENTS, SOLVATION_HIGH_EV, SOLVATION_ZERO_RMEAN_DISPLACEMENT_NM, Solvation,
+    SolvationOutcome, meesungnoen_r_mean_nm,
+};
 
 use crate::error::PhysicsError;
 use dna_core::units::{Area, Energy, EnergyRange};
@@ -32,22 +44,34 @@ use dna_core::vec3::Vec3;
 use rand::Rng;
 use serde::Serialize;
 
-/// The three discrete processes of the M2 electron physics.
+/// The discrete processes of the option2 electron physics that are driven by a cross section
+/// (M3: five). Solvation (cross section `DBL_MAX` below 7.4 eV, i.e. an immediate interaction) is
+/// not a member: it is handled by [`Solvation`] ahead of the free-path draw.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProcessKind {
     Elastic,
+    /// Electronic excitation (Born).
     Excitation,
     Ionisation,
+    /// Sanche vibrational excitation (2-100 eV).
+    VibrationalExcitation,
+    /// Melton dissociative attachment (4-13 eV).
+    Attachment,
 }
 
 impl ProcessKind {
     /// All processes, in the fixed order used for selection and reporting.
-    pub const ALL: [ProcessKind; 3] = [
+    pub const ALL: [ProcessKind; 5] = [
         ProcessKind::Elastic,
         ProcessKind::Excitation,
         ProcessKind::Ionisation,
+        ProcessKind::VibrationalExcitation,
+        ProcessKind::Attachment,
     ];
+
+    /// Number of processes (length of [`ProcessKind::ALL`]).
+    pub const COUNT: usize = 5;
 
     /// Position in [`ProcessKind::ALL`].
     pub const fn index(self) -> usize {
@@ -55,6 +79,8 @@ impl ProcessKind {
             ProcessKind::Elastic => 0,
             ProcessKind::Excitation => 1,
             ProcessKind::Ionisation => 2,
+            ProcessKind::VibrationalExcitation => 3,
+            ProcessKind::Attachment => 4,
         }
     }
 
@@ -64,6 +90,8 @@ impl ProcessKind {
             ProcessKind::Elastic => "e-_G4DNAElastic",
             ProcessKind::Excitation => "e-_G4DNAExcitation",
             ProcessKind::Ionisation => "e-_G4DNAIonisation",
+            ProcessKind::VibrationalExcitation => "e-_G4DNAVibExcitation",
+            ProcessKind::Attachment => "e-_G4DNAAttachment",
         }
     }
 }
@@ -94,6 +122,11 @@ pub struct Quirks {
     /// (`:528-535`), which is **not** simulated here (docs/09 Q12). The full binding energy is
     /// booked as local deposit.
     pub k_shell_deexcitation_skipped: bool,
+    /// Sanche: `E - E_vib <= 0`, the final state is left untouched although the process was
+    /// selected (`G4DNASancheExcitationModel.cc:253`, the kill-and-deposit branch above it is
+    /// commented out in the 11.4.1 source). Unreachable inside the 2-100 eV window
+    /// (largest level 0.835 eV).
+    pub vibrational_noop: bool,
 }
 
 /// Result of sampling one interaction.
@@ -111,6 +144,9 @@ pub struct FinalState {
     /// Excitation level / ionisation shell (0 for elastic).
     pub channel: usize,
     pub quirks: Quirks,
+    /// The track is killed by the interaction (Melton attachment: the whole kinetic energy is
+    /// the local deposit and `energy_after` is zero).
+    pub killed: bool,
 }
 
 /// Common, non-generic interface of a cross-section model.
@@ -131,6 +167,8 @@ pub enum ElectronModel {
     Elastic(ChampionElastic),
     Excitation(BornExcitation),
     Ionisation(BornIonisation),
+    Vibrational(SancheVibrational),
+    Attachment(MeltonAttachment),
 }
 
 impl ElectronModel {
@@ -146,6 +184,8 @@ impl ElectronModel {
             ElectronModel::Elastic(m) => m.sample(energy, direction, rng),
             ElectronModel::Excitation(m) => m.sample(energy, direction, rng),
             ElectronModel::Ionisation(m) => m.sample(energy, direction, rng),
+            ElectronModel::Vibrational(m) => m.sample(energy, direction, rng),
+            ElectronModel::Attachment(m) => m.sample(energy, direction, rng),
         }
     }
 
@@ -154,6 +194,8 @@ impl ElectronModel {
             ElectronModel::Elastic(m) => m,
             ElectronModel::Excitation(m) => m,
             ElectronModel::Ionisation(m) => m,
+            ElectronModel::Vibrational(m) => m,
+            ElectronModel::Attachment(m) => m,
         }
     }
 }

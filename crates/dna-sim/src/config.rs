@@ -24,6 +24,14 @@ pub struct RunConfig {
     /// Stop each history after this many interactions (`Some(1)` reproduces the Geant4 `mfp`
     /// example, which kills the event after the first interaction).
     pub max_interactions: Option<u64>,
+    /// Follow the ionisation secondaries (default `true`, M3). `false` records them without
+    /// transporting them (M2 behaviour; what the Geant4 `track` reference does).
+    pub transport_secondaries: bool,
+    /// Keep the physicochemical events of every history in memory ([`HistoryResult::physchem`]);
+    /// off by default (a 1 MeV history produces about 1e5 events).
+    ///
+    /// [`HistoryResult::physchem`]: crate::history::HistoryResult
+    pub record_physchem: bool,
     /// Histories reduced together (memory bound; does not affect results, docs/05 E.3).
     pub batch_size: usize,
     /// Worker threads; `None` uses the global rayon pool. Does not affect results.
@@ -41,6 +49,8 @@ impl RunConfig {
             direction: [0.0, 0.0, 1.0],
             tracking_cut_ev: None,
             max_interactions: None,
+            transport_secondaries: true,
+            record_physchem: false,
             batch_size: 1024,
             threads: None,
         }
@@ -71,8 +81,9 @@ impl RunConfig {
         Ok(())
     }
 
-    pub(crate) fn primary(&self) -> Primary {
+    pub(crate) fn primary(&self, history_id: u64) -> Primary {
         Primary {
+            history_id,
             energy: Energy::from_ev(self.primary_energy_ev),
             position: Vec3::ZERO,
             direction: Vec3::new(self.direction[0], self.direction[1], self.direction[2]),
@@ -83,6 +94,7 @@ impl RunConfig {
         TransportConfig {
             tracking_cut: self.tracking_cut_ev.map(Energy::from_ev),
             max_interactions: self.max_interactions,
+            transport_secondaries: self.transport_secondaries,
             ..TransportConfig::default()
         }
     }

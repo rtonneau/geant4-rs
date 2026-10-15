@@ -87,6 +87,7 @@ impl BornExcitation {
                 secondary: None,
                 channel: level,
                 quirks: Quirks::default(),
+                killed: false,
             })
         } else {
             Ok(FinalState {
@@ -99,6 +100,7 @@ impl BornExcitation {
                     excitation_noop: true,
                     ..Quirks::default()
                 },
+                killed: false,
             })
         }
     }
