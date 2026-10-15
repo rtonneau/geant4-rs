@@ -14,6 +14,7 @@
 pub mod direction;
 pub mod error;
 pub mod models;
+pub mod physchem;
 pub mod sampling;
 pub mod table;
 pub mod testing;

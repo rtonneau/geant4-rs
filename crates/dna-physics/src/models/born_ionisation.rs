@@ -141,6 +141,7 @@ impl BornIonisation {
                 secondary: None,
                 channel: shell,
                 quirks,
+                killed: false,
             });
         }
 
@@ -177,6 +178,7 @@ impl BornIonisation {
             secondary,
             channel: shell,
             quirks,
+            killed: false,
         })
     }
 }

@@ -19,6 +19,15 @@
 //!   length, deposited energy, remaining energy, secondary multiplicity and secondary energy of
 //!   the primary track with a 100 eV tracking cut (`track`).
 //!
+//! **M3 note.** These tests are the M2 gate and must keep comparing like with like: the Geant4
+//! reference was generated with secondaries killed and with a tracking cut at 100 eV (track) or
+//! one interaction (mfp), and its CSV lists only the elastic, excitation and ionisation
+//! processes. The Rust side therefore runs with `transport_secondaries = false` and compares the
+//! three processes of `M2_PROCESSES`; Sanche, Melton and solvation do not act in these set-ups
+//! (primaries >= 150 eV, stopped below 100 eV) except for the Rust-only cross-section sum, which
+//! is deliberately restricted to the same three processes. The full-cascade comparison is in
+//! `slowing_down_reference.rs` (M3).
+//!
 //! The non-ignored tests exercise the comparison machinery itself on synthetic numbers and on a
 //! Rust-versus-Rust run with different seeds (a false-positive check, **not** a validation).
 
@@ -28,6 +37,20 @@ use dna_physics::table::ProcessTable;
 use dna_sim::config::RunConfig;
 use dna_sim::run::run_detailed;
 use std::path::PathBuf;
+
+/// The processes listed in the M2 reference CSVs.
+const M2_PROCESSES: [ProcessKind; 3] = [
+    ProcessKind::Elastic,
+    ProcessKind::Excitation,
+    ProcessKind::Ionisation,
+];
+
+/// Run configuration of the M2 reference set-up: secondaries recorded, not transported.
+fn m2_config(energy: f64, n: u64) -> RunConfig {
+    let mut cfg = RunConfig::new(energy, n);
+    cfg.transport_secondaries = false;
+    cfg
+}
 
 /// Energies (eV) of the `mfp` reference: identical to the list hard-wired in `g4rs_ref.cc`.
 const MFP_ENERGIES: [f64; 9] = [150.0, 300.0, 1e3, 3e3, 1e4, 3e4, 1e5, 3e5, 9e5];
@@ -237,7 +260,8 @@ fn event_rows(header: &[String], rows: &[Vec<String>]) -> Vec<EventRow> {
 /// V2 and V3 on rows `(energy, process, sigma per volume per nm)`.
 fn compare_cross_sections(table: &ProcessTable, rows: &[(f64, String, f64)]) -> Vec<String> {
     let mut failures = Vec::new();
-    let mut by_energy: std::collections::BTreeMap<u64, [Option<f64>; 3]> = Default::default();
+    let mut by_energy: std::collections::BTreeMap<u64, [Option<f64>; ProcessKind::COUNT]> =
+        Default::default();
     for (e, process, sigma) in rows {
         let p = match process.as_str() {
             "elastic" => ProcessKind::Elastic,
@@ -255,7 +279,8 @@ fn compare_cross_sections(table: &ProcessTable, rows: &[(f64, String, f64)]) -> 
             .macroscopic(dna_core::units::Energy::from_ev(e))
             .unwrap();
         let mut all_open = true;
-        for p in ProcessKind::ALL {
+        let rust_total: f64 = M2_PROCESSES.iter().map(|&p| rust.get(p)).sum();
+        for p in M2_PROCESSES {
             let g = g4[p.index()].expect("all three processes listed for every energy");
             let r = rust.get(p);
             if g == 0.0 || r == 0.0 {
@@ -276,10 +301,10 @@ fn compare_cross_sections(table: &ProcessTable, rows: &[(f64, String, f64)]) -> 
             }
         }
         if all_open {
-            let g_tot: f64 = g4.iter().map(|x| x.unwrap()).sum();
-            for p in ProcessKind::ALL {
+            let g_tot: f64 = M2_PROCESSES.iter().map(|&p| g4[p.index()].unwrap()).sum();
+            for p in M2_PROCESSES {
                 let pg = g4[p.index()].unwrap() / g_tot;
-                let pr = rust.get(p) / rust.total();
+                let pr = rust.get(p) / rust_total;
                 let rel = (pr - pg).abs() / pg;
                 record_margin(&format!("V3 {p:?} at {e} eV"), rel / tol);
                 if rel >= tol {
@@ -297,7 +322,7 @@ fn compare_cross_sections(table: &ProcessTable, rows: &[(f64, String, f64)]) -> 
 fn compare_mfp(table: &ProcessTable, rows: &[EventRow], n_rust: u64, seed: u64) -> Vec<String> {
     let mut failures = Vec::new();
     for r in rows {
-        let mut cfg = RunConfig::new(r.energy, n_rust);
+        let mut cfg = m2_config(r.energy, n_rust);
         cfg.master_seed = seed;
         cfg.max_interactions = Some(1);
         let rust = run_detailed(table, &cfg).unwrap();
@@ -311,7 +336,12 @@ fn compare_mfp(table: &ProcessTable, rows: &[EventRow], n_rust: u64, seed: u64) 
         }
         // fractions: binomial standard errors on both sides
         let total_g4: f64 = r.counts.iter().sum();
-        for p in ProcessKind::ALL {
+        assert!(
+            rust.iter()
+                .all(|h| M2_PROCESSES.contains(&h.outcome.first_step.unwrap().process)),
+            "Sanche/Melton cannot act at the energies of the mfp reference"
+        );
+        for p in M2_PROCESSES {
             let fr = rust
                 .iter()
                 .filter(|h| h.outcome.first_step.unwrap().process == p)
@@ -345,7 +375,7 @@ fn compare_mfp(table: &ProcessTable, rows: &[EventRow], n_rust: u64, seed: u64) 
 fn compare_track(table: &ProcessTable, rows: &[EventRow], seed: u64) -> Vec<String> {
     let mut failures = Vec::new();
     for r in rows {
-        let mut cfg = RunConfig::new(r.energy, r.n as u64);
+        let mut cfg = m2_config(r.energy, r.n as u64);
         cfg.master_seed = seed;
         cfg.tracking_cut_ev = Some(TRACK_CUT_EV);
         let rust = run_detailed(table, &cfg).unwrap();
@@ -372,7 +402,7 @@ fn compare_track(table: &ProcessTable, rows: &[EventRow], seed: u64) -> Vec<Stri
             ),
             (
                 "secondary energy (eV)",
-                s(&|h| h.outcome.ledger.secondaries),
+                s(&|h| h.outcome.ledger.untracked_secondaries),
                 r.esec,
             ),
         ];
@@ -383,7 +413,7 @@ fn compare_track(table: &ProcessTable, rows: &[EventRow], seed: u64) -> Vec<Stri
         }
         // interaction counts per event: the Geant4 CSV holds totals only, so the standard error
         // of both means is taken from the Rust sample (equal-variance assumption, stated)
-        for p in ProcessKind::ALL {
+        for p in M2_PROCESSES {
             let a = s(&|h| h.outcome.counts.get(p) as f64);
             let b = Sample {
                 mean: r.counts[p.index()] / r.n,
@@ -585,7 +615,7 @@ fn csv_from_rust_run(
     cut: Option<f64>,
     one_step: bool,
 ) -> String {
-    let mut cfg = RunConfig::new(energy, n);
+    let mut cfg = m2_config(energy, n);
     cfg.master_seed = seed;
     cfg.tracking_cut_ev = cut;
     cfg.max_interactions = one_step.then_some(1);
@@ -604,7 +634,7 @@ fn csv_from_rust_run(
     let edep = |h: &dna_sim::history::HistoryResult| h.outcome.ledger.deposited();
     let rem = |h: &dna_sim::history::HistoryResult| h.outcome.ledger.remaining_untracked;
     let nsec = |h: &dna_sim::history::HistoryResult| h.outcome.n_secondaries as f64;
-    let esec = |h: &dna_sim::history::HistoryResult| h.outcome.ledger.secondaries;
+    let esec = |h: &dna_sim::history::HistoryResult| h.outcome.ledger.untracked_secondaries;
     let count = |p: ProcessKind| -> u64 { rs.iter().map(|h| h.outcome.counts.get(p)).sum() };
     format!(
         "# synthetic self-test\nenergy_eV,n_events,sum_L_nm,sum_L2_nm2,sum_edep_eV,sum_edep2_eV2,sum_remaining_eV,sum_remaining2_eV2,sum_nsec,sum_nsec2,sum_esec_eV,sum_esec2_eV2,sum_range_nm,n_elastic,n_excitation,n_ionisation,n_other\n{energy},{n},{},{},{},{},{},{},{},{},{},{},0,{},{},{},0\n",
