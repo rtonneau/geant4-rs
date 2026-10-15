@@ -63,6 +63,10 @@ quantity!(
     Time
 );
 quantity!(
+    /// Cross section or area, stored in nm^2 (1 cm^2 = 1e14 nm^2, 1 m^2 = 1e18 nm^2).
+    Area
+);
+quantity!(
     /// Diffusion coefficient, stored in nm^2/ps.
     Diffusivity
 );
@@ -137,6 +141,27 @@ impl Time {
     }
     pub fn s(self) -> f64 {
         self.0 / 1.0e12
+    }
+}
+
+impl Area {
+    pub const fn from_nm2(v: f64) -> Self {
+        Self(v)
+    }
+    pub fn from_cm2(v: f64) -> Self {
+        Self(v * 1.0e14)
+    }
+    pub fn from_m2(v: f64) -> Self {
+        Self(v * 1.0e18)
+    }
+    pub const fn nm2(self) -> f64 {
+        self.0
+    }
+    pub fn cm2(self) -> f64 {
+        self.0 / 1.0e14
+    }
+    pub fn m2(self) -> f64 {
+        self.0 / 1.0e18
     }
 }
 
@@ -231,6 +256,16 @@ mod tests {
         assert_eq!(Time::from_us(1.0).ps(), 1.0e6);
         assert_eq!(Time::from_s(1.0).ps(), 1.0e12);
         assert_relative_eq!(Time::from_ps(1.0e6).us(), 1.0);
+    }
+
+    /// 1 cm = 1e7 nm so 1 cm^2 = 1e14 nm^2; 1 m = 1e9 nm so 1 m^2 = 1e18 nm^2.
+    #[test]
+    fn area_prefixes() {
+        assert_eq!(Area::from_cm2(1.0).nm2(), 1.0e14);
+        assert_eq!(Area::from_m2(1.0).nm2(), 1.0e18);
+        assert_relative_eq!(Area::from_cm2(1.0e-16).nm2(), 1.0e-2, max_relative = 1e-15);
+        assert_relative_eq!(Area::from_m2(1.0).cm2(), 1.0e4);
+        assert_relative_eq!(Area::from_nm2(2.5e14).cm2(), 2.5);
     }
 
     #[test]
