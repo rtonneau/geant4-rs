@@ -54,6 +54,7 @@ fn main() {
             x.outcome.track_length_nm == y.outcome.track_length_nm
                 && x.outcome.ledger == y.outcome.ledger
                 && x.outcome.counts == y.outcome.counts
+                && x.spectra == y.spectra
         }));
         let ra: Vec<f64> = a.iter().map(|h| h.outcome.range_nm()).collect();
         let rb: Vec<f64> = b.iter().map(|h| h.outcome.range_nm()).collect();
