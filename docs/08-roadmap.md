@@ -33,6 +33,14 @@ Perf: no optimisation; record baseline. Risk: sampling code semantics hidden in 
 Scope: secondary stack, Sanche vib., Melton attachment, solvation/thermalisation cut (7.4 eV), full energy accounting incl. binding energy policy (Q5). 
 Tests: V5-V7 (range 1 keV-1 MeV, deposit spread, secondary spectra). Acceptance: full-track deposited-energy and secondary-spectra V4/V5 vs Geant4 `dnaphysics`/`slowing`. Risk: low-energy secondaries dominate runtime and physics.
 
+### M3 a-priori expectations (written and committed **before** any full-cascade W, solvation-count or range number was looked at)
+These are the statements the physical-sanity tests are pre-registered against; they are reasoning, not Geant4 numbers.
+- **Identities (exact, not statistical).** Every track ends by solvation or attachment, so `N_solv + N_att = 1 + N_secondaries` per history, and `E_in = E_dep` (infinite medium, everything transported).
+- **W-like quantity `E_in / N_ion`** (ratio of totals). Reasoning: the energy per ionisation is the mean ionisation energy booked locally (about 17 eV with this shell mix, 14 % of it from the oxygen K shell, docs/09 Q12) plus the energy that goes into electronic excitations (about 0.4-0.5 excitations per ionisation at 8-14 eV, i.e. 4-6 eV), plus the kinetic energy of sub-ionisation electrons that is lost to vibrations and solvation (a few eV). That gives about 25-30 eV; gas-phase water has 30 eV, track-structure studies of the liquid report somewhat lower values, so I expect **20 eV < W < 32 eV, central ~25 eV, nearly energy independent above 1 keV**. Pre-registered test window: **18 eV <= W <= 36 eV for E in {1, 10, 100 keV, 1 MeV}**; 100 eV is only required to be finite and larger than the lowest ionisation energy (10.79 eV) because 100 eV cascades have 2-4 ionisations.
+- **Solvations per 100 eV** `~ 100 (1 + 1/N_ion) / W - attachments`, i.e. about **4-5 per 100 eV** with attachments a few-percent correction (Melton cross section is ~1 % of Sanche at 8-12 eV, but ~1 in 10 of the 8-12 eV electrons are absorbed over the several tens of elastic/vibrational steps they make; I do not trust this estimate to better than a factor of 3).
+- **Range.** The primary's full track length and straight-line range increase strictly with energy; the primary track length is shorter than the CSDA range (energy given to secondaries is not spent along the primary path) but of the same order: sub-micrometre at 1 keV, micrometres at 10 keV, 10^2 micrometres at 100 keV, millimetres at 1 MeV. No ESTAR comparison is made (L4 is a report-only item, docs/07 V6).
+- **Secondary spectra.** The first-generation (delta electron) spectrum falls steeply with energy (roughly 1/W^2 above the binding energy); mean energy of first-generation secondaries of the order of 10-30 eV for keV primaries.
+
 ## M4 (optional) Electron options 4 and 6
 Emfietzoglou, Uehara, CPA100; model transition tests at 10 keV / 250 keV. Only if Q2 says so.
 
