@@ -10,6 +10,7 @@
 - **Q7 RESOLVED (user):** the 20-file, 7.0 MB subset is committed under `data/dna/` with a checksum manifest; full dataset stays outside; see `docs/10-data-requirements.md` and `data/README.md`.
 - **Q8** Temperature/density dependence: fixed 298 K water for now; confirm in C++ (G7).
 - **Q9 RESOLVED (user):** `serde_json` approved for machine-readable output.
+- **Q11** Reproduce or correct Geant4's non-conserving charge-exchange energy bookkeeping (docs/02 B.7.3 item 6). Default: reproduce for L3 comparison and report the violation in the output.
 - **Q10** Whether to keep package name `geant4-rs` for a facade crate or rename (cosmetic).
 
 ## Risks (ranked)
