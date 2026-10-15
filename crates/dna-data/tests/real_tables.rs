@@ -15,6 +15,23 @@ use dna_data::xs::{CrossSectionTable, Interpolation};
 use std::collections::HashSet;
 use std::sync::Arc;
 
+/// Skip (with a visible message) when the committed data subset is not present, e.g. in a
+/// source-only checkout. Tests that do run still `unwrap` every load, so a present but corrupt
+/// data set fails loudly.
+macro_rules! require_data {
+    () => {
+        let root = repo_data_dir();
+        if !root.join("dna").is_dir() || !root.join("MANIFEST.toml").is_file() {
+            eprintln!(
+                "SKIPPED: Geant4 data not found at {} (expected dna/ and MANIFEST.toml); \
+                 run scripts/import_data.py or use the full repository checkout",
+                root.display()
+            );
+            return;
+        }
+    };
+}
+
 fn data() -> DataDir {
     DataDir::new(repo_data_dir()).unwrap()
 }
@@ -36,6 +53,7 @@ fn ev(e: f64) -> Energy {
 
 #[test]
 fn catalog_lists_exactly_the_manifest_files() {
+    require_data!();
     let catalog: HashSet<&str> = DnaFile::ALL.iter().map(|f| f.relative_path()).collect();
     let manifest = manifest();
     let listed: HashSet<&str> = manifest.files().iter().map(|f| f.path.as_str()).collect();
@@ -46,6 +64,7 @@ fn catalog_lists_exactly_the_manifest_files() {
 
 #[test]
 fn all_20_files_load_after_checksum_verification() {
+    require_data!();
     let (dir, manifest) = (data(), manifest());
     dir.verify(&manifest).unwrap();
     for &file in DnaFile::ALL {
@@ -69,6 +88,7 @@ fn all_20_files_load_after_checksum_verification() {
 
 #[test]
 fn row_counts_match_the_files() {
+    require_data!();
     // Counts observed with `wc -l` (docs/10); the last Sanche line has no trailing newline.
     let rows = |f| xs(f).n_nodes();
     assert_eq!(rows(DnaFile::MeltonAttachmentE), 14);
@@ -97,6 +117,7 @@ fn row_counts_match_the_files() {
 /// only exception is Melton (docs/02 B.7.1).
 #[test]
 fn tables_cover_their_consumers_windows_except_melton() {
+    require_data!();
     for &file in DnaFile::ALL {
         let range = data().load(file).unwrap().energy_range();
         for c in file.consumers() {
@@ -125,6 +146,7 @@ fn tables_cover_their_consumers_windows_except_melton() {
 
 #[test]
 fn champion_elastic_nodes_scale_and_hand_checked_interpolation() {
+    require_data!();
     let t = xs(DnaFile::ChampionElasticE);
     let cm2 = |e: f64| t.total(ev(e)).unwrap().cm2();
     // Literal rows 1, 2, 51 and 101 of sigma_elastic_e_champion.dat, scale 1e-16 cm^2.
@@ -167,6 +189,7 @@ fn champion_elastic_nodes_scale_and_hand_checked_interpolation() {
 
 #[test]
 fn units_of_the_other_scales_are_applied() {
+    require_data!();
     // sigma_excitation_e_born: row "9 1.645515e+00 ..." x (1e-22/3.343) m^2.
     let born = xs(DnaFile::BornExcitationE);
     assert_relative_eq!(
@@ -211,6 +234,7 @@ fn units_of_the_other_scales_are_applied() {
 
 #[test]
 fn threshold_zeros_follow_the_geant4_floor() {
+    require_data!();
     // sigma_ionisation_e_born: shell 0 is 0 at 8, 9, 10 eV and 3.108911 (x scale) at 11 eV.
     let t = xs(DnaFile::BornIonisationE);
     let scale = Area::from_m2(1.0e-22 / 3.343).nm2();
@@ -236,6 +260,7 @@ fn threshold_zeros_follow_the_geant4_floor() {
 
 #[test]
 fn sanche_is_linear_in_energy() {
+    require_data!();
     // Rows: E=1.7 -> 0 .203 .12 .485 .017 .068 .002 .005 0 (sum 0.9);
     //       E=3.2 -> 0 .146 .08 .295 .017 .048 .004 .011 .006 (sum 0.607); unit 1e-16 cm^2.
     let t = xs(DnaFile::SancheVibrationalE);
@@ -266,6 +291,7 @@ fn sanche_is_linear_in_energy() {
 
 #[test]
 fn out_of_range_energies_are_typed_errors_on_real_tables() {
+    require_data!();
     let melton = xs(DnaFile::MeltonAttachmentE);
     // 12.3 eV is the last node (value 0); 12.5 eV is inside the model window but off the table.
     assert_eq!(melton.total(ev(12.3)).unwrap().nm2(), 0.0);
@@ -286,6 +312,7 @@ fn out_of_range_energies_are_typed_errors_on_real_tables() {
 
 #[test]
 fn champion_angle_hand_checked() {
+    require_data!();
     let t = match data().load(DnaFile::ChampionElasticCdfE).unwrap() {
         Table::AngularCdf(t) => t,
         _ => unreachable!(),
@@ -329,6 +356,7 @@ fn champion_angle_hand_checked() {
 
 #[test]
 fn htran_first_node_is_not_zero_degrees() {
+    require_data!();
     // First row of sigmadiff_cumulated_elastic_proton_HTran.dat: "1.0E+02 0.0 5.8455811895E-01".
     let t = match data().load(DnaFile::HtranElasticCdfProton).unwrap() {
         Table::AngularCdf(t) => t,
@@ -346,6 +374,7 @@ fn born_cdf(file: DnaFile) -> IonisationCdfTable {
 
 #[test]
 fn born_transferred_energy_hand_checked() {
+    require_data!();
     let t = born_cdf(DnaFile::BornIonisationCdfE);
     // Shell 0, p = 0.5. Rows (W, P): E = 900: (22.60, 0.4868954260), (23.12, 0.5078790618);
     //                                E = 1000: (22.60, 0.4875120886), (23.12, 0.5085658883).
@@ -375,6 +404,7 @@ fn born_transferred_energy_hand_checked() {
 
 #[test]
 fn born_k_shell_closed_below_threshold_scales_from_zero() {
+    require_data!();
     // Shell 4: all P = 0 at 539.7 eV (closed), open at 545 eV with rows (W, P):
     // (540.9963, 0.4722683139), (541.0960, 0.5207149604). p = 0.5, E = 542.35 (about half-way).
     let t = born_cdf(DnaFile::BornIonisationCdfE);
@@ -396,6 +426,7 @@ fn born_k_shell_closed_below_threshold_scales_from_zero() {
 
 #[test]
 fn every_cumulative_table_is_monotone() {
+    require_data!();
     for &file in DnaFile::ALL {
         match data().load(file).unwrap() {
             Table::AngularCdf(_) | Table::IonisationCdf(_) => {}
@@ -424,6 +455,7 @@ fn every_cumulative_table_is_monotone() {
 
 #[test]
 fn real_angular_cdfs_give_monotone_angles() {
+    require_data!();
     for (file, e0, e1) in [
         // (table, lowest, highest incident energy in eV)
         (DnaFile::ChampionElasticCdfE, 7.4f64, 1.0e6f64),
@@ -451,6 +483,7 @@ fn real_angular_cdfs_give_monotone_angles() {
 
 #[test]
 fn crlf_and_lf_versions_of_real_files_give_identical_tables() {
+    require_data!();
     let (dir, _) = (data(), ());
     for file in [
         DnaFile::RuddIonisationP,
@@ -491,6 +524,7 @@ fn crlf_and_lf_versions_of_real_files_give_identical_tables() {
 
 #[test]
 fn missing_and_tampered_files_are_detected() {
+    require_data!();
     let scratch = std::env::temp_dir().join(format!("dna-data-tamper-{}", std::process::id()));
     std::fs::create_dir_all(scratch.join("dna")).unwrap();
     let dir = DataDir::new(&scratch).unwrap();
@@ -519,6 +553,7 @@ fn assert_send_sync<T: Send + Sync>() {}
 
 #[test]
 fn tables_are_shareable_read_only_across_threads() {
+    require_data!();
     assert_send_sync::<CrossSectionTable>();
     assert_send_sync::<AngularCdfTable>();
     assert_send_sync::<IonisationCdfTable>();
