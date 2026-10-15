@@ -8,6 +8,7 @@ uses MeV, mm, ns; nothing from the C++ side is copied numerically without conver
 | Energy | `Energy` | eV | `from_ev/kev/mev` | |
 | Length | `Length` | nm | `from_nm/um/mm` | |
 | Time | `Time` | ps | `from_ps/ns/us/s` | |
+| Area, cross section | `Area` | nm^2 | `from_nm2/cm2/m2` | 1 cm^2 = 1e14 nm^2; Geant4 cross sections are per molecule |
 | Diffusion coefficient | `Diffusivity` | nm^2/ps | `from_m2_per_s` | 1 m^2/s = 1e6 nm^2/ps |
 | Bimolecular rate constant | `RateConstant` | nm^3/ps | `from_per_molar_per_s` | 1 M^-1 s^-1 = 1.66054e-12 nm^3/ps, from exact N_A = 6.02214076e23 |
 
