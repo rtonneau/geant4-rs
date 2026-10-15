@@ -92,11 +92,20 @@ fn energy_ledger_is_conserved_over_1e4_histories_at_five_energies() {
             let l = &out.ledger;
             assert_eq!(l.e_in, e);
             // the recorded secondaries are exactly the secondary part of the ledger
-            assert_relative_eq!(*recorded, l.secondaries, max_relative = 1e-12, epsilon = 1e-9);
+            assert_relative_eq!(
+                *recorded,
+                l.secondaries,
+                max_relative = 1e-12,
+                epsilon = 1e-9
+            );
             // parts are non-negative and the remainder is below the lowest inelastic threshold
             assert!(l.deposited_excitation >= 0.0 && l.deposited_binding >= 0.0);
             assert!(l.secondaries >= 0.0);
-            assert!((0.0..9.0).contains(&l.remaining_untracked), "{}", l.remaining_untracked);
+            assert!(
+                (0.0..9.0).contains(&l.remaining_untracked),
+                "{}",
+                l.remaining_untracked
+            );
             assert!(matches!(
                 out.termination,
                 Termination::BelowLowestWindow | Termination::NoInelasticChannel
@@ -122,9 +131,18 @@ fn quirk_counters_are_consistent_with_the_events() {
         without_secondary += out.quirks.ionisation_without_secondary;
         secondaries += out.n_secondaries;
         k_shell += out.quirks.k_shell_deexcitation_skipped;
-        assert_eq!(out.ionisation_shells.iter().sum::<u64>(), out.counts.ionisation);
-        assert_eq!(out.excitation_levels.iter().sum::<u64>(), out.counts.excitation);
-        assert_eq!(out.quirks.k_shell_deexcitation_skipped, out.ionisation_shells[4]);
+        assert_eq!(
+            out.ionisation_shells.iter().sum::<u64>(),
+            out.counts.ionisation
+        );
+        assert_eq!(
+            out.excitation_levels.iter().sum::<u64>(),
+            out.counts.excitation
+        );
+        assert_eq!(
+            out.quirks.k_shell_deexcitation_skipped,
+            out.ionisation_shells[4]
+        );
     }
     // every ionisation either produced a secondary or is accounted for as "without secondary"
     // (or a no-op below the binding energy, which is unreachable in the real tables)
@@ -154,7 +172,10 @@ fn a_9_ev_electron_excites_once_or_elastically_scatters_first_then_stops_below_7
     let streams = RngStreams::new(3);
     for id in 0..200 {
         let out = run_one(&table, &TransportConfig::default(), &streams, id, 9.0);
-        assert!(out.counts.excitation <= 1, "9 eV allows at most one excitation");
+        assert!(
+            out.counts.excitation <= 1,
+            "9 eV allows at most one excitation"
+        );
         assert_eq!(out.counts.ionisation, 0);
         if out.counts.excitation == 1 {
             assert_eq!(out.termination, Termination::BelowLowestWindow);
@@ -185,7 +206,13 @@ fn tracking_cut_stops_below_the_cut_and_is_strict() {
     // `E < cut` is strict: a primary exactly at the cut still interacts
     let at = run_one(&table, &cut(1000.0), &streams, 0, 1.0e3);
     assert!(at.steps >= 1);
-    let above = run_one(&table, &cut(f64::from_bits(1000f64.to_bits() + 1)), &streams, 0, 1.0e3);
+    let above = run_one(
+        &table,
+        &cut(f64::from_bits(1000f64.to_bits() + 1)),
+        &streams,
+        0,
+        1.0e3,
+    );
     assert_eq!(above.steps, 0);
     assert_eq!(above.termination, Termination::TrackingCut);
 }
@@ -219,12 +246,20 @@ const HAND: [(f64, f64, [f64; 3]); 3] = [
     (
         4321.0,
         0.12516957003369536,
-        [0.04782758037698331, 0.0011415633581586882, 0.07620042629855338],
+        [
+            0.04782758037698331,
+            0.0011415633581586882,
+            0.07620042629855338,
+        ],
     ),
     (
         250000.0,
         0.004613586760458186,
-        [0.0008298780439745434, 5.037236935827414e-05, 0.0037333363471253682],
+        [
+            0.0008298780439745434,
+            5.037236935827414e-05,
+            0.0037333363471253682,
+        ],
     ),
 ];
 
@@ -242,13 +277,18 @@ fn mean_first_free_path_equals_one_over_the_hand_computed_sigma() {
             .into_par_iter()
             .map(|id| run_one(&table, &cfg, &streams, (case * N + id) as u64, e))
             .collect();
-        let lengths: Vec<f64> = outs.iter().map(|o| o.first_step.unwrap().length_nm).collect();
+        let lengths: Vec<f64> = outs
+            .iter()
+            .map(|o| o.first_step.unwrap().length_nm)
+            .collect();
         let mean = lengths.iter().sum::<f64>() / N as f64;
         let var = lengths.iter().map(|l| (l - mean) * (l - mean)).sum::<f64>() / (N as f64 - 1.0);
         let se = (var / N as f64).sqrt();
         let want = 1.0 / sigma;
         let z = (mean - want) / se;
-        eprintln!("E = {e} eV: mean free path {mean:.6} +- {se:.6} nm, hand {want:.6} nm, z = {z:+.2}");
+        eprintln!(
+            "E = {e} eV: mean free path {mean:.6} +- {se:.6} nm, hand {want:.6} nm, z = {z:+.2}"
+        );
         assert!(z.abs() < 3.0, "E = {e}: z = {z}");
         // the standard error of an exponential sample is mean/sqrt(n): consistency of the estimator
         assert_relative_eq!(se, want / (N as f64).sqrt(), max_relative = 0.02);
