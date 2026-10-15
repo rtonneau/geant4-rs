@@ -24,3 +24,5 @@ Everything in these documents tagged **[V]** was read directly in the C++ source
 session (path given). Items tagged **[U]** are *unverified* and are explicit audit tasks in
 milestone M0/M1. No Geant4 build was run, the `G4EMLOW` dataset is **not** present in the
 reference repository, and no numerical cross-section value has been inspected.
+
+See [next.md](next.md) for the current to-do list (what the human must do) and the draft of the next agent prompt.
