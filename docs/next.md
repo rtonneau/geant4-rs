@@ -61,10 +61,18 @@ extends the generator and gives exact commands).
 
 ---
 
-## (ii) Draft of the next prompt
+## (ii) Draft of the next prompts
+
+M6 is split in two cloud sessions (budget about 11 USD in total, rough estimates). Run A first, review its branch,
+then run B on the same branch.
+- **Session A** (data + C++ reading, event -> species engine): about 5-7 USD. Pure Rust, no Geant4 needed.
+- **Session B** (scoring, statistical tests, Geant4 `physchem` generator, docs, final gate): about 4-6 USD. The
+  generator can be written but not built or run in the cloud (no Geant4); you run it locally.
+
+### Session A: species data and event -> species engine
 
 ```text
-Start milestone M6 (physicochemical stage) of the geant4-rs project.
+Start milestone M6 (physicochemical stage) of the geant4-rs project, part A of 2 (data and engine only).
 The M3 validation gate is closed (step 0 is a check only).
 
 Setup
@@ -91,7 +99,9 @@ Step 0: sanity check only
   amendments already made (V2 zero floor 1e-290, radial n_eff >= 10 skip) are documented and must not be extended
   without evidence.
 
-M6 scope
+M6 scope for this session (A): items 1, 2 and 4 only. Do not do scoring/G-values or the Geant4 generator (session B).
+Read only what items 1-2 need (AGENTS.md, docs/08 M6, docs/01 A.4, docs/02 B.5/B.7, docs/03, docs/04 D.2,
+docs/reproducibility.md, docs/09) to save budget.
 1. Species and chemistry data as TOML/data (docs/04 D.2): the dissociation channels of G4ChemDissociationChannels_option1
    (probabilities sum to 1 within 1e-12, validated at load), the species table (D, charge, radius) for the species reachable from
    option2 events (H2O+, H3O+, OH, H, H2, e_aq, O, OH-, ... as the C++ lists them), with source line numbers.
@@ -99,6 +109,25 @@ M6 scope
    the channel (one stream stage: Stage::PhysChem, docs/reproducibility.md), apply the displacer of the C++
    (RMS offsets per product, mother-molecule recoil) and return SpeciesInstance { kind, position, time = 0 }.
    Solvation events become e_aq at the displaced position already stored in the event; attachment events follow the C++.
+Tests for A (thresholds fixed before running)
+- Channel probabilities: chi-square of the sampled channel per level/shell against the table; displacement RMS
+  within 3 sigma of nominal; atom/charge/momentum balance of every channel; energy ledger untouched.
+- Hand-computed (independent Python) channel tables and RMS values; thread-count independence of the species list.
+
+Definition of done for A
+- fmt, clippy -D warnings, cargo test --workspace pass (report output). Commit in small steps, push the branch.
+- Short docs update (docs/03, docs/04 D.2, docs/reproducibility.md draw order, docs/08 M6 status "A done") and a
+  "session B" note at the top of docs/next.md listing anything B must know. Summarise limitations.
+```
+
+### Session B: scoring, tests, Geant4 reference generator, docs
+
+```text
+Continue milestone M6 of the geant4-rs project, part B of 2. Session A (species data + event -> species engine) is
+done on the current branch; read docs/08 M6 status and the A note in docs/next.md first. Same setup, status and
+decisions as session A; do not push to `main`, open a PR only when I ask; Geant4 C++ repo is read-only.
+
+M6 scope for this session (B): items 3 and 4.
 3. Scoring: species counts per 100 eV at t = 0 (just after the physico-chemical stage) per event type and in total,
    G-values with both estimators (docs/01 A.4: mean of per-event ratios and ratio of totals), displacement
    distributions (RMS per product), spatial correlation (pair distances of OH-e_aq, OH-H3O+ ...).
