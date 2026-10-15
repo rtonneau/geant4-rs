@@ -29,3 +29,10 @@ File names below are from the C++ loaders (`source/processes/electromagnetic/dna
 Other `G4EMLOW8.8` subfolders, `G4PARTICLEXS`, `G4NDL`, etc. Ion tables beyond p/H Rudd (He, Li ... Fe) are out of scope.
 ## Format knowledge
 Loaders are `G4DNACrossSectionDataSet`/`G4DNAEmfietzoglou...::LoadData` (total cross section: energy/value columns with unit and scale factor) and per-model readers for differential tables. Format will be read from the C++ loaders in M1; a few `head -20` samples pasted by you into an issue/chat are enough to confirm, no data upload needed.
+
+## Observed file formats (checked on the committed files, 20/20 SHA-256 verified)
+- Whitespace-separated plain text; **mixed line endings** (some files LF, some CRLF, e.g. `sigma_ionisation_p_rudd.dat`) and mixed separators (spaces, tabs). Parsers must split on any whitespace and tolerate `\r`.
+- Total cross sections, one row per energy (eV): `sigma_elastic_e_champion` = energy + 1 column (101 rows, from 7.4 eV); `sigma_excitation_e_born` / `sigma_ionisation_e_born` = energy + 1 column per level/shell (5 shown; 83 rows, from 8 eV, zeros below each threshold); Rudd p/H tables = energy + 5 shell columns (645 rows, from 100 eV, CRLF).
+- Sanche vibrational (`sigma_excitationvib_e_sanche`, tab-separated, 37 rows) = energy + 9+ columns; Melton attachment = 14 rows, energy + cross section.
+- `sigmadiff_cumulated_*_hp.dat` = 3 columns (incident energy, cumulative probability / angle value, index) in long blocks (18281 rows for Champion elastic); the exact meaning of columns is read from each model's loader in M1 (audit G2).
+- **Units/scale factors are not in the files**: they are set in the C++ loaders (`G4DNACrossSectionDataSet(..., scaleFactor)`), e.g. `1e-20 m^2` or `cm^2`-based factors. Must be transcribed per file in M1 and covered by a V2 test; never guess.
