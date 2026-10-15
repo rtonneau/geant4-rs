@@ -11,7 +11,7 @@ to do so).
 M3 is implemented and fully tested **without any Geant4 comparison of the new processes**. Ask the agent to open a
 PR when you want one; CI (`fmt`, `clippy -D warnings`, `cargo test --workspace`) has still never been observed on
 GitHub, all results come from local runs in the agent's container (the whole `cargo test --workspace` takes about
-75 s on 4 cores). If CI is red after the merge, paste the log into the next session first.
+100 s on 4 cores). If CI is red after the merge, paste the log into the next session first.
 
 ### 2. Generate the Geant4 M3 reference (the main blocker; about 1-3 hours of compute, 30 min of work)
 Full instructions: `validation/geant4/README.md`, section "M3: full slowing-down reference". Short version, from
@@ -20,7 +20,7 @@ syntax-checked only; if they do not compile, fix only the API mismatch):
 
 ```bash
 ./build/g4rs_ref xslow ../../reference/xs_lowenergy.csv                 # seconds
-./build/g4rs_ref slow  ../../reference/slow 20271 5000:...              # see below
+./build/g4rs_ref slow  ../../reference/slow 20271                      # default energy list, see below
 ```
 Time it first: `./build/g4rs_ref slow /tmp/slow_timing 1 8:1000,100:1000,1000:100,10000:10,100000:1`, then run
 the default list (omit the last argument) or a reduced one (default: `8:100000,30:100000,100:100000,1000:20000,
