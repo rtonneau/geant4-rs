@@ -3,7 +3,7 @@ geant4_commit       = "geant4-11-04-patch-01"
 g4emlow_version     = "8.8"
 g4emlow_md5         = "328330009df633f7e9b3a9f445745298"
 physics_constructor = "G4EmDNAPhysics_option2"
-generator           = "validation/geant4/g4rs_ref (copy in GEANT4/SIM/G4RS with two fixes: BeamOn(0) before G4EmCalculator, SetAtomDeexcitation(nullptr) after Initialize; see BUILD_NOTES.md), geant4-rs git commit <fill in>"
+generator           = "validation/geant4/g4rs_ref (copy in GEANT4/SIM/G4RS with two fixes: BeamOn(0) before G4EmCalculator, SetAtomDeexcitation(nullptr) after Initialize; see BUILD_NOTES.md), geant4-rs git commit 48a41900a2388c0c2e37bb746b6e776bafd80553 (last change of validation/geant4/g4rs_ref)"
 date                = "2026-10-15"
 command_lines       = [
   "g4rs_ref xslow xs_lowenergy.csv",
