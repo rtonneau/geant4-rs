@@ -108,6 +108,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "dna-chemistry"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "dna-core",
+ "rand 0.10.3",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "dna-core"
 version = "0.1.0"
 dependencies = [
@@ -152,6 +166,7 @@ name = "dna-sim"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "dna-chemistry",
  "dna-core",
  "dna-data",
  "dna-physics",

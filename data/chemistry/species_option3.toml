@@ -1,0 +1,112 @@
+# Species of the Geant4-DNA water radiolysis, option3 chemistry.
+# Source: G4ChemDissociationChannels_option1.cc ("CH"), ConstructMolecule, lines 54-190, plus the molecule definitions in
+# processes/electromagnetic/dna/molecules/types/src/G4*.cc ("TY"). Diffusion coefficient D in m^2/s (Geant4 unit
+# m*m/s), van der Waals radius in nm, charge in units of e. The chemistry temperature of Geant4 is 298 K
+# (molecules/management/src/G4MolecularConfiguration.cc:53); no temperature scaling of D is applied at that value.
+# `reachable_from_physchem`: product of a channel of dissociation_option3.toml (the others are produced by the
+# chemical stage, M7).
+
+[[species]]
+tag = "H3Op"
+diffusion_m2_per_s = 9.46e-9      # CH:90-91 (overrides TY G4H3O.cc:73 = 9e-9)
+charge = 1                        # TY G4H3O.cc:73
+van_der_waals_radius_nm = 0.25    # CH:92
+reachable_from_physchem = true
+
+[[species]]
+tag = "OH"                        # G4MoleculeTable key "°OH"
+diffusion_m2_per_s = 2.2e-9       # CH:95 (overrides TY G4OH.cc:69 = 2.8e-9)
+charge = 0                        # TY G4OH.cc:69
+van_der_waals_radius_nm = 0.22    # CH:96
+reachable_from_physchem = true
+
+[[species]]
+tag = "OHm"
+diffusion_m2_per_s = 5.3e-9       # CH:99-103 (CreateConfiguration argument)
+charge = -1                       # CH:99-103 (CreateConfiguration arguments)
+van_der_waals_radius_nm = 0.33    # CH:105
+reachable_from_physchem = true
+
+[[species]]
+tag = "e_aq"
+diffusion_m2_per_s = 4.9e-9       # TY G4Electron_aq.cc:71
+charge = -1                       # TY G4Electron_aq.cc:71
+van_der_waals_radius_nm = 0.50    # CH:108
+reachable_from_physchem = true
+
+[[species]]
+tag = "H"
+diffusion_m2_per_s = 7.0e-9       # TY G4Hydrogen.cc:69
+charge = 0                        # TY G4Hydrogen.cc:69
+van_der_waals_radius_nm = 0.19    # CH:111
+reachable_from_physchem = true
+
+[[species]]
+tag = "H2"
+diffusion_m2_per_s = 4.8e-9       # CH:114-115 (overrides TY G4H2.cc:71 = 5e-9)
+charge = 0                        # TY G4H2.cc:71
+van_der_waals_radius_nm = 0.14    # CH:115
+reachable_from_physchem = true
+
+[[species]]
+tag = "H2O2"
+diffusion_m2_per_s = 2.3e-9       # CH:118-119 (overrides TY G4H2O2.cc:73 = 1.4e-9)
+charge = 0                        # TY G4H2O2.cc:73
+van_der_waals_radius_nm = 0.21    # CH:119
+reachable_from_physchem = false
+
+[[species]]
+tag = "HO2"                       # G4MoleculeTable key "HO2°"
+diffusion_m2_per_s = 2.3e-9       # TY G4HO2.cc:71
+charge = 0                        # TY G4HO2.cc:71
+van_der_waals_radius_nm = 0.21    # CH:124
+reachable_from_physchem = false
+
+[[species]]
+tag = "HO2m"
+diffusion_m2_per_s = 1.4e-9       # CH:127-131
+charge = -1                       # CH:127-131 (CreateConfiguration arguments)
+van_der_waals_radius_nm = 0.25    # CH:133
+reachable_from_physchem = false
+
+[[species]]
+tag = "Oxy"
+diffusion_m2_per_s = 2.0e-9       # TY G4Oxygen.cc:71
+charge = 0                        # TY G4Oxygen.cc:71
+van_der_waals_radius_nm = 0.20    # CH:136
+reachable_from_physchem = true
+
+[[species]]
+tag = "Om"
+diffusion_m2_per_s = 2.0e-9       # CH:139-143
+charge = -1                       # CH:139-143 (CreateConfiguration arguments)
+van_der_waals_radius_nm = 0.25    # CH:145
+reachable_from_physchem = false
+
+[[species]]
+tag = "O2"
+diffusion_m2_per_s = 2.4e-9       # TY G4O2.cc:71
+charge = 0                        # TY G4O2.cc:71
+van_der_waals_radius_nm = 0.17    # CH:148
+reachable_from_physchem = false
+
+[[species]]
+tag = "O2m"
+diffusion_m2_per_s = 1.75e-9      # CH:151-155
+charge = -1                       # CH:151-155 (CreateConfiguration arguments)
+van_der_waals_radius_nm = 0.22    # CH:157
+reachable_from_physchem = false
+
+[[species]]
+tag = "O3"
+diffusion_m2_per_s = 2.0e-9       # TY G4O3.cc:71
+charge = 0                        # TY G4O3.cc:71
+van_der_waals_radius_nm = 0.20    # CH:160
+reachable_from_physchem = false
+
+[[species]]
+tag = "O3m"
+diffusion_m2_per_s = 2.0e-9       # CH:163-167
+charge = -1                       # CH:163-167 (CreateConfiguration arguments)
+van_der_waals_radius_nm = 0.20    # CH:169
+reachable_from_physchem = false

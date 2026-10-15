@@ -5,8 +5,13 @@
 
 pub mod error;
 pub mod manifest;
+pub mod penetration;
+pub mod physchem;
 pub mod provenance;
 pub mod rng;
+pub mod sampling;
 pub mod sha256;
+pub mod species;
+pub mod testing;
 pub mod units;
 pub mod vec3;

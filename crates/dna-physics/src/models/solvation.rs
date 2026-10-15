@@ -42,6 +42,9 @@
 use crate::direction::direction_from_angles;
 use crate::error::PhysicsError;
 use crate::sampling::{gaussian_pair, uniform};
+pub use dna_core::penetration::{
+    MEESUNGNOEN_COEFFICIENTS, SIGMA_1D_PER_RMEAN, meesungnoen_r_mean_nm,
+};
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;
 use rand::Rng;
@@ -51,39 +54,6 @@ use std::f64::consts::PI;
 pub const SOLVATION_HIGH_EV: f64 = 7.4;
 /// Displacement used when `r_mean == 0`, nm (`1e-3 * nanometer`).
 pub const SOLVATION_ZERO_RMEAN_DISPLACEMENT_NM: f64 = 1.0e-3;
-/// `sqrt(pi) / 2^{3/2}` (`convertRmean3DToSigma1D`).
-pub const SIGMA_1D_PER_RMEAN: f64 = 0.626_657_068_657_750_1;
-
-/// `Meesungnoen2002::gCoeff` (`G4DNAOneStepThermalizationModel.cc:48-55`), highest power first.
-pub const MEESUNGNOEN_COEFFICIENTS: [f64; 13] = [
-    -4.06217193e-08,
-    3.06848412e-06,
-    -9.93217814e-05,
-    1.80172797e-03,
-    -2.01135480e-02,
-    1.42939448e-01,
-    -6.48348714e-01,
-    1.85227848e+00,
-    -3.36450378e+00,
-    4.37785068e+00,
-    -4.20557339e+00,
-    3.81679083e+00,
-    -2.34069784e-01,
-];
-
-/// `Meesungnoen2002::GetRmean`, in nm: the polynomial for `E > 0.1 eV`, 0 otherwise.
-pub fn meesungnoen_r_mean_nm(energy_ev: f64) -> f64 {
-    if energy_ev > 0.1 {
-        let mut r = 0.0;
-        for i in (0..=12).rev() {
-            r += MEESUNGNOEN_COEFFICIENTS[12 - i] * energy_ev.powf(i as f64);
-        }
-        r
-    } else {
-        0.0
-    }
-}
-
 /// What solvation of one electron produces.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SolvationOutcome {
