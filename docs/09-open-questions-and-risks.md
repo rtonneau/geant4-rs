@@ -5,7 +5,7 @@
 - **Q2** Electron option(s) to support: recommendation option2 first (default in chem6; includes vib/attach), option4/6 only on demand.
 - **Q3** Proton secondary-electron sampling fidelity and cross-section data for Rudd Extended (many ion tables, only p/H needed): audit during M5.
 - **Q4** "hp/cumulated" fast tables vs on-the-fly integration: choose cumulated (faster, Geant4 option-2 default `fasterCode`) after verifying statistical equivalence with the slow path (M2).
-- **Q5 CLARIFIED, awaiting your confirmation:** energy normalisation now defined concretely in 01 section A.4 from the C++ source (E_dep = sum of local deposits; per-event ratio mean as Geant4; we additionally report ratio of totals). Only the solvation deposit and PrimaryKiller details remain to confirm in M0/M2.
+- **Q5 FROZEN at M0 (chem6 scorer read, see 01 A.4; solvation deposit still [U] for M2/M3):** energy normalisation now defined concretely in 01 section A.4 from the C++ source (E_dep = sum of local deposits; per-event ratio mean as Geant4; we additionally report ratio of totals). Only the solvation deposit and PrimaryKiller details remain to confirm in M0/M2.
 - **Q6** Multi-track/boundary chemistry (UHDR prototype, periodic/bounded boxes): out of initial scope; M7 data structures must not preclude it (explicit box, per-species position arrays).
 - **Q7 RESOLVED (user):** the 20-file, 7.0 MB subset is committed under `data/dna/` with a checksum manifest; full dataset stays outside; see `docs/10-data-requirements.md` and `data/README.md`.
 - **Q8** Temperature/density dependence: fixed 298 K water for now; confirm in C++ (G7).

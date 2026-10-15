@@ -48,7 +48,12 @@ So a thermalised sub-excitation electron's energy **is** counted, and energy lea
 3. Report **two** estimators, both always in the output: (a) Geant4-compatible mean of per-event ratios; (b) ratio of totals `sum N / sum E_dep`, with its uncertainty by the delta method (batch means). They agree for large samples; (a) is slightly biased for few events, so (b) is the primary scientific number and (a) is used for Geant4 comparison.
 4. Track-segment mode (needed to compare with `chem6` at a given LET) is a scoring/termination option (`primary_energy_loss_mev`, `min_kinetic_energy`, box size), reproducing `PrimaryKiller` semantics; the plain full-slowing-down mode is the default.
 5. Units: species per 100 eV; mol/J = G x 1.0364e-7.
-Remaining check [U]: confirm solvation deposit and `eLossMin`/`kineticE_Min` kill semantics at M0/M2; any difference is documented here as a deviation.
+**M0 audit of chem6 (read directly, `examples/extended/medical/dna/chem6/src/ScoreSpecies.cc`, `PrimaryKiller.cc`; tree commit `27ea526b`) - convention FROZEN:**
+- `PrimaryKiller` semantics [V]: any track whose post-step position is outside the half-box `|x|,|y|,|z| > size/2` is killed (its remaining energy is not scored). The primary (track id 1, PDG 11 only) accumulates `fELoss += E_pre - E_post` over steps with non-zero loss and is killed when `fELoss >= eLossMin` **or** post-step kinetic energy `<= minKineticE`. The event is aborted when `fELoss > eLossMax`. The accumulator `fELoss` is not reset in this file [U: confirm reset between events in `EventAction`/`RunAction` at M2/M8].
+- `ScoreSpecies` [V]: `edep` is multiplied by the pre-step track weight; an aborted event contributes nothing (`fEdep` zeroed). `G_event = n_mol / (fEdep/eV) * 100` per species and recorded time; the output is `mean = sumG/N`, `err = sqrt((sumG2/N - mean^2)/(N-1))` for N > 1 (denominator `N` for N = 1).
+- **Geant4 quirks, reproduced only in compatibility mode and reported as deviations otherwise:** (i) an event with no molecules, or with `fEdep <= 0`, increments `N` but adds nothing to `sumG`, so it enters the mean as G = 0; (ii) the error formula is the standard error of the mean of per-event ratios (population variance / (N-1)), not a delta-method error of the ratio of totals. Our estimator (b) (ratio of totals, batch means) therefore does not carry these quirks.
+- Still [U] for M2/M3: the exact solvation (< 7.4 eV) deposit, which lives in the process/model code, not in chem6.
+Convention status: A.4 items 1-5 are final.
 
 ## A.5 Units
 Internal: **energy eV, length nm, time ps**, `f64` newtypes (`Energy`, `Length`, `Time`, `Diffusivity`,
