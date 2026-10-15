@@ -15,4 +15,5 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 approx = { workspace = true }
+rayon = { workspace = true }
 proptest = { workspace = true }

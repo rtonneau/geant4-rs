@@ -14,6 +14,7 @@
 //!    the observer and **not transported**.
 //!
 //! # Termination (decision: M2 stops where M3 will take over)
+//! * `InteractionLimit`: optional cap on the number of interactions (first-interaction mode).
 //! * `TrackingCut`: energy below the optional `tracking_cut` (used to compare with Geant4 runs
 //!   that stop the primary at a given energy).
 //! * `BelowLowestWindow`: no model serves the energy (below 7.4 eV): solvation (M3).
@@ -37,10 +38,14 @@ use crate::table::ProcessTable;
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;
 use rand::Rng;
+use serde::Serialize;
 
 /// Why a history ended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Termination {
+    /// `max_interactions` reached (the Geant4 `mfp` example kills the event after the first
+    /// interaction).
+    InteractionLimit,
     TrackingCut,
     BelowLowestWindow,
     NoInelasticChannel,
@@ -51,6 +56,8 @@ pub enum Termination {
 pub struct TransportConfig {
     /// Stop the primary when its energy falls below this value.
     pub tracking_cut: Option<Energy>,
+    /// Stop after this many interactions (`Some(1)`: first-interaction mean-free-path mode).
+    pub max_interactions: Option<u64>,
     /// Guard against runaway histories.
     pub max_steps: u64,
     /// Hard limit of the relative ledger residual at the end of a history.
@@ -61,6 +68,7 @@ impl Default for TransportConfig {
     fn default() -> Self {
         Self {
             tracking_cut: None,
+            max_interactions: None,
             max_steps: 100_000_000,
             ledger_limit_relative: 1e-9,
         }
@@ -142,7 +150,7 @@ impl ProcessCounts {
 }
 
 /// Occurrences of the reproduced Geant4 quirks (see [`Quirks`]).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 pub struct QuirkCounts {
     pub shell2_redraws: u64,
     pub excitation_noop: u64,
@@ -315,6 +323,9 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
     let mut steps = 0u64;
 
     let termination = loop {
+        if config.max_interactions.is_some_and(|m| steps >= m) {
+            break Termination::InteractionLimit;
+        }
         if let Some(cut) = config.tracking_cut
             && energy < cut
         {

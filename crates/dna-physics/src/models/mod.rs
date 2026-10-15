@@ -23,7 +23,7 @@ pub use born_excitation::{BORN_EXCITATION_WINDOW_EV, BornExcitation};
 pub use born_ionisation::{
     BORN_IONISATION_WINDOW_EV, BornIonisation, K_SHELL_INDEX, SHELL2_REJECTION_BELOW_EV,
 };
-pub use champion::{CHAMPION_WINDOW_EV, ChampionElastic, ElasticRotation};
+pub use champion::{CHAMPION_WINDOW_EV, ChampionElastic, ElasticRotation, scatter};
 pub use select::random_select;
 
 use crate::error::PhysicsError;

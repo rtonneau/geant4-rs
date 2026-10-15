@@ -29,3 +29,8 @@ opt-level = 1
 opt-level = 1
 [profile.dev.package.dna-sim]
 opt-level = 1
+
+# The M2 acceptance tests transport 10^4 electrons of up to 1 MeV (about 10^8 interactions):
+# optimise test builds (debug assertions stay on).
+[profile.test]
+opt-level = 3

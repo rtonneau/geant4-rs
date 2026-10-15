@@ -142,6 +142,7 @@ dependencies = [
  "dna-data",
  "proptest",
  "rand 0.10.3",
+ "rayon",
  "serde",
  "thiserror",
 ]
