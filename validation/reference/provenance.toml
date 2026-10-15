@@ -1,0 +1,17 @@
+geant4_version      = "11.4.1"
+geant4_commit       = "geant4-11-04-patch-01"
+g4emlow_version     = "8.8"
+g4emlow_md5         = "328330009df633f7e9b3a9f445745298"
+physics_constructor = "G4EmDNAPhysics_option2"
+generator           = "validation/geant4/g4rs_ref (source as in that commit, including the BeamOn(0) and SetAtomDeexcitation(nullptr) fixes; see BUILD_NOTES.md), geant4-rs git commit 911ccd72ee3389287ed8db75efcfa8f4073bb839"
+date                = "2026-10-15"
+command_lines       = [
+  "g4rs_ref xs xs_per_volume.csv",
+  "g4rs_ref mfp mfp_first_interaction.csv 1000000 20261",
+  "g4rs_ref track track_cut100eV.csv 10000 20262 100",
+  "g4rs_ref mfp mfp_first_interaction_seed2.csv 1000000 20263",
+  "g4rs_ref track track_cut100eV_seed2.csv 10000 20264 100",
+]
+fluo_auger          = "off"
+compiler            = "MSVC 19.50.35729.0 (RelWithDebInfo, Ninja)"
+platform            = "Windows 11 Pro 10.0.26100, x64, serial run manager"

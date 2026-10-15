@@ -35,6 +35,7 @@
 #include "G4Event.hh"
 #include "G4GeometryManager.hh"
 #include "G4LogicalVolume.hh"
+#include "G4LossTableManager.hh"
 #include "G4NistManager.hh"
 #include "G4PVPlacement.hh"
 #include "G4ParticleGun.hh"
@@ -321,7 +322,17 @@ int main(int argc, char** argv)
   G4Random::setTheSeed(seed);
   rm->Initialize();
 
+  // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.1): G4EmDNABuilder
+  // always registers a G4UAtomicDeexcitation, and Born2/Emfietzoglou call GetAtomicShell() and
+  // GenerateParticles() on it for K-shell ionisation without checking IsFluoActive(). With fluo
+  // off its transition tables are not loaded -> fatal exception de0001; with the tables loaded it
+  // would emit fluorescence/Auger. Dropping it (models read it at BeamOn) gives "no
+  // de-excitation": the K-shell binding energy stays local, as in geant4-rs M2.
+  G4LossTableManager::Instance()->SetAtomDeexcitation(nullptr);
+
   if (gMode == Mode::Xs) {
+    // G4EmCalculator needs the physics tables: BeamOn(0) runs RunInitialization without events
+    rm->BeamOn(0);
     RunXs(out);
   }
   else if (gMode == Mode::Mfp) {
