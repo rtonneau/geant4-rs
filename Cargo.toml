@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/dna-core", "crates/dna-data"]
+members = ["crates/dna-core", "crates/dna-data", "crates/dna-physics", "crates/dna-sim"]
 
 [workspace.package]
 version = "0.1.0"
@@ -24,4 +24,8 @@ sha2 = "0.10"
 [profile.dev.package.dna-core]
 opt-level = 1
 [profile.dev.package.dna-data]
+opt-level = 1
+[profile.dev.package.dna-physics]
+opt-level = 1
+[profile.dev.package.dna-sim]
 opt-level = 1
