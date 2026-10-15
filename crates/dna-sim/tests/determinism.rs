@@ -10,7 +10,7 @@ use dna_physics::models::{ElasticRotation, ProcessKind};
 use dna_physics::table::ProcessTable;
 use dna_sim::config::RunConfig;
 use dna_sim::history::HistoryResult;
-use dna_sim::run::{run, run_detailed, run_summary};
+use dna_sim::run::{CsvPhysChemWriter, run, run_detailed, run_summary, run_summary_with_sink};
 
 fn setup() -> Option<(ProcessTable, Manifest)> {
     let root = repo_data_dir();
@@ -326,4 +326,58 @@ fn json_output_carries_provenance_models_and_config() {
     out.write_json(&path).unwrap();
     assert_eq!(std::fs::read_to_string(&path).unwrap(), text);
     std::fs::remove_file(path).unwrap();
+}
+
+/// The physicochemical events reach the CSV sink in history order, identically for any thread
+/// count, and their numbers agree with the interaction counts.
+#[test]
+fn physchem_csv_is_thread_count_independent_and_consistent_with_the_counts() {
+    let Some((table, _)) = setup() else { return };
+    let mut texts = Vec::new();
+    let mut summaries = Vec::new();
+    for threads in [1, 2, 8] {
+        let mut config = RunConfig::new(500.0, 200);
+        config.master_seed = 31;
+        config.threads = Some(threads);
+        config.batch_size = 17;
+        let mut sink = CsvPhysChemWriter::new(Vec::new(), "memory").unwrap();
+        let s = run_summary_with_sink(&table, &config, Some(&mut sink)).unwrap();
+        let rows = sink.rows();
+        texts.push((String::from_utf8(sink.into_inner()).unwrap(), rows));
+        summaries.push(s);
+    }
+    assert!(texts.windows(2).all(|w| w[0] == w[1]));
+    assert!(summaries.windows(2).all(|w| w[0] == w[1]));
+    let (text, rows) = &texts[0];
+    let s = &summaries[0];
+    let mut lines = text.lines();
+    assert_eq!(
+        lines.next().unwrap(),
+        dna_physics::physchem::PHYSCHEM_CSV_HEADER
+    );
+    let mut by_kind = std::collections::BTreeMap::<String, u64>::new();
+    let mut last_history = 0u64;
+    for l in lines {
+        let f: Vec<&str> = l.split(',').collect();
+        assert_eq!(f.len(), 7, "{l}");
+        let h: u64 = f[0].parse().unwrap();
+        assert!(
+            h >= last_history && h < 200,
+            "history order: {h} after {last_history}"
+        );
+        last_history = h;
+        let deposit: f64 = f[6].parse().unwrap();
+        assert!(deposit >= 0.0 && deposit.is_finite());
+        *by_kind.entry(f[1].to_owned()).or_default() += 1;
+    }
+    let count = |p: ProcessKind| s.processes[p.index()].interactions;
+    assert_eq!(by_kind["excitation"], count(ProcessKind::Excitation));
+    // ionisation events: all ionisations except the (unreachable) no-op below the binding energy
+    assert_eq!(
+        by_kind["ionisation"],
+        count(ProcessKind::Ionisation) - s.quirks.ionisation_noop_below_binding
+    );
+    assert_eq!(by_kind["attachment"], count(ProcessKind::Attachment));
+    assert_eq!(by_kind["solvation"], s.solvation.events);
+    assert_eq!(by_kind.values().sum::<u64>(), *rows);
 }

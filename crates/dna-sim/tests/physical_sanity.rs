@@ -66,7 +66,10 @@ fn full_slowing_down_identities_range_w_value_and_solvation_yield_are_sane() {
         assert_eq!(s.terminations.completed, s.n_histories);
         let tracks = s.tracks.tracks_per_history.mean * s.n_histories as f64;
         let ends = s.solvation.events + s.processes[ProcessKind::Attachment.index()].interactions;
-        assert!((tracks - ends as f64).abs() < 1e-6, "{e}: {tracks} vs {ends}");
+        assert!(
+            (tracks - ends as f64).abs() < 1e-6,
+            "{e}: {tracks} vs {ends}"
+        );
         eprintln!(
             "E = {e:>9} eV: primary track {:>12.2} nm, range {:>12.2} nm, W = {:.3} +- {:.3} eV, \
              solvations/100 eV = {:.3}, secondaries/history = {:.1}",
@@ -104,7 +107,11 @@ fn full_slowing_down_identities_range_w_value_and_solvation_yield_are_sane() {
     // W-like quantity
     for (e, s) in &results {
         let w = s.w_value.w_ev_ratio_of_totals.unwrap();
-        assert!(w.ratio.is_finite() && w.ratio > 10.79, "W({e}) = {}", w.ratio);
+        assert!(
+            w.ratio.is_finite() && w.ratio > 10.79,
+            "W({e}) = {}",
+            w.ratio
+        );
         if *e >= 1.0e3 {
             assert!(
                 (18.0..=36.0).contains(&w.ratio),
@@ -129,6 +136,8 @@ fn first_generation_secondary_spectrum_falls_with_energy() {
     // 10 bins per decade starting at 0.1 eV: decade k covers bins [10 k, 10 k + 10)
     let decade = |k: usize| -> u64 { gen1.counts[10 * k..10 * k + 10].iter().sum() };
     let (d10, d100, d1000) = (decade(2), decade(3), decade(4));
-    eprintln!("first generation, 100 keV: [10,100) eV: {d10}, [100,1000) eV: {d100}, [1,10) keV: {d1000}");
+    eprintln!(
+        "first generation, 100 keV: [10,100) eV: {d10}, [100,1000) eV: {d100}, [1,10) keV: {d1000}"
+    );
     assert!(d10 > d100 && d100 > d1000 && d1000 > 0);
 }

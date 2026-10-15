@@ -1,7 +1,8 @@
-//! Performance baseline (docs/08 M2: "no optimisation; record baseline"). Never part of the normal
+//! Performance baseline (docs/08: "no optimisation; record baseline"). Never part of the normal
 //! test run; execute with
 //! `cargo test --release -p dna-sim --test baseline -- --ignored --nocapture`
-//! and compare numbers only on the same machine. Single thread, fixed seed, primaries only.
+//! and compare numbers only on the same machine. Single thread, fixed seed. Since M3 the whole
+//! secondary cascade is transported (the M2 baseline was primaries only).
 
 use dna_data::datadir::{DataDir, repo_data_dir};
 use dna_physics::models::ElasticRotation;
@@ -24,9 +25,9 @@ fn single_thread_throughput() {
     for (e, n) in [
         (100.0, 4000u64),
         (1.0e3, 2000),
-        (1.0e4, 1000),
-        (1.0e5, 200),
-        (1.0e6, 40),
+        (1.0e4, 400),
+        (1.0e5, 40),
+        (1.0e6, 6),
     ] {
         let mut cfg = RunConfig::new(e, n);
         cfg.threads = Some(1);
