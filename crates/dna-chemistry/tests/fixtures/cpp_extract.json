@@ -1,0 +1,646 @@
+{
+ "displacer": {
+  "autoionisation_electron_kinetic_energy_ev": 1.7,
+  "mother_rms_nm": {
+   "A1B1_DissociationDecay": 0.0,
+   "AutoIonisation": 2.0,
+   "B1A1_DissociationDecay": 0.0,
+   "B1A1_DissociationDecay2": 0.0,
+   "DissociativeAttachment": 0.0,
+   "DoubleIonisation_DissociationDecay1": 2.0,
+   "DoubleIonisation_DissociationDecay2": 2.0,
+   "DoubleIonisation_DissociationDecay3": 2.0,
+   "Ionisation_DissociationDecay": 2.0,
+   "QuadrupleIonisation_DissociationDecay": 2.0,
+   "TripleIonisation_DissociationDecay": 2.0
+  },
+  "products": {
+   "A1B1_DissociationDecay": {
+    "branch_probability": [],
+    "fractions": [
+     "-1.0/18.0",
+     "+17.0/18.0"
+    ],
+    "half_factors": [],
+    "rms_nm": [
+     2.4
+    ]
+   },
+   "AutoIonisation": {
+    "branch_probability": [
+     "0.5"
+    ],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     0.0,
+     0.8,
+     0.8,
+     0.0
+    ]
+   },
+   "B1A1_DissociationDecay": {
+    "branch_probability": [],
+    "fractions": [
+     "-16.0/18.0",
+     "+2.0/18.0"
+    ],
+    "half_factors": [
+     "0.5",
+     "-0.5"
+    ],
+    "rms_nm": [
+     0.8,
+     1.1
+    ]
+   },
+   "B1A1_DissociationDecay2": {
+    "branch_probability": [],
+    "fractions": [],
+    "half_factors": [
+     "0.5",
+     "-0.5"
+    ],
+    "rms_nm": [
+     1.6
+    ]
+   },
+   "DissociativeAttachment": {
+    "branch_probability": [],
+    "fractions": [
+     "-16.0/18.0",
+     "+2.0/18.0"
+    ],
+    "half_factors": [
+     "0.5",
+     "-0.5"
+    ],
+    "rms_nm": [
+     0.8,
+     1.1
+    ]
+   },
+   "DoubleIonisation_DissociationDecay1": {
+    "branch_probability": [],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     1.2,
+     0.0,
+     0.3
+    ]
+   },
+   "DoubleIonisation_DissociationDecay2": {
+    "branch_probability": [],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     1.2,
+     0.0,
+     0.8,
+     0.3,
+     0.3
+    ]
+   },
+   "DoubleIonisation_DissociationDecay3": {
+    "branch_probability": [],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     1.2,
+     0.0
+    ]
+   },
+   "Ionisation_DissociationDecay": {
+    "branch_probability": [
+     "0.5"
+    ],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     0.0,
+     0.8,
+     0.8,
+     0.0
+    ]
+   },
+   "QuadrupleIonisation_DissociationDecay": {
+    "branch_probability": [],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     1.2,
+     0.0,
+     0.3,
+     0.3
+    ]
+   },
+   "TripleIonisation_DissociationDecay": {
+    "branch_probability": [],
+    "fractions": [],
+    "half_factors": [],
+    "rms_nm": [
+     1.2,
+     0.0,
+     0.3,
+     0.3
+    ]
+   }
+  },
+  "radial_distribution_of_products_sigma_per_component": "Rrms / sqrt(3)"
+ },
+ "excitation_energies_ev": [
+  8.22,
+  10.0,
+  11.24,
+  12.61,
+  13.77
+ ],
+ "geant4_commit": "27ea526b420dd72f510af81f6828edef0ff635f5",
+ "ionisation_energies_ev": [
+  10.79,
+  13.39,
+  16.05,
+  32.3,
+  539.0
+ ],
+ "recombination": {
+  "A": [
+   0.7017,
+   642.0,
+   -116700.0,
+   9190000.0
+  ],
+  "B": [
+   -2.71,
+   275.4,
+   32450.0
+  ],
+  "C": "A - B - 3",
+  "D": "B + 3",
+  "G4_WATER_density_g_cm3": 1.0,
+  "NTP_Temperature_K": 293.15,
+  "S": [
+   1.667,
+   -11.41,
+   -35260.0
+  ],
+  "Y": [
+   0.0012
+  ],
+  "chemistry_global_temperature_K": 298.0,
+  "clhep": {
+   "e_SI": "1.602176634e-19",
+   "k_Boltzmann": "8.617333e-11",
+   "mu0": "4*pi*1.e-7 * henry/m"
+  },
+  "density_in_g_cm3_source": "DNAMolecularMaterial density table / (g/cm3)",
+  "material_temperature_source": "track.GetMaterial()->GetTemperature()",
+  "onsager_constant": "e_squared / (4. * pi * epsilon0 * k_Boltzmann)",
+  "probability": "1 - exp(-onsagerRadius / distance); 1 if distance == 0",
+  "rest_process_ordering": {
+   "dissociation": 1,
+   "recombination": 2
+  },
+  "search_radius_in_onsager_radii": 10.0
+ },
+ "species": {
+  "H": {
+   "charge": 0,
+   "definition": "G4Hydrogen",
+   "definition_radius_nm": 0.05,
+   "diffusion_m2_s": 7e-09,
+   "vdw_radius_nm": 0.19
+  },
+  "H2": {
+   "charge": 0,
+   "definition": "G4H2",
+   "definition_radius_nm": 0.0958,
+   "diffusion_m2_s": 4.8e-09,
+   "vdw_radius_nm": 0.14
+  },
+  "H2O2": {
+   "charge": 0,
+   "definition": "G4H2O2",
+   "definition_radius_nm": 0.3,
+   "diffusion_m2_s": 2.3e-09,
+   "vdw_radius_nm": 0.21
+  },
+  "H3Op": {
+   "charge": 1,
+   "definition": "G4H3O",
+   "definition_radius_nm": 0.09609999999999999,
+   "diffusion_m2_s": 9.46e-09,
+   "vdw_radius_nm": 0.25
+  },
+  "HO2m": {
+   "charge": -1,
+   "definition": "G4HO2m",
+   "definition_radius_nm": 0.21000000000000002,
+   "diffusion_m2_s": 1.4e-09,
+   "vdw_radius_nm": 0.25
+  },
+  "HO2\u00b0": {
+   "charge": 0,
+   "definition": "G4HO2",
+   "definition_radius_nm": 0.21000000000000002,
+   "diffusion_m2_s": 2.3e-09,
+   "vdw_radius_nm": 0.21
+  },
+  "O2": {
+   "charge": 0,
+   "definition": "G4O2",
+   "definition_radius_nm": 0.16999999999999998,
+   "diffusion_m2_s": 2.4e-09,
+   "vdw_radius_nm": 0.17
+  },
+  "O2m": {
+   "charge": -1,
+   "definition": "G4O2",
+   "definition_radius_nm": 0.16999999999999998,
+   "diffusion_m2_s": 1.75e-09,
+   "vdw_radius_nm": 0.22
+  },
+  "O3": {
+   "charge": 0,
+   "definition": "G4O3",
+   "definition_radius_nm": 0.2,
+   "diffusion_m2_s": 2e-09,
+   "vdw_radius_nm": 0.2
+  },
+  "O3m": {
+   "charge": -1,
+   "definition": "G4O3",
+   "definition_radius_nm": 0.2,
+   "diffusion_m2_s": 2e-09,
+   "vdw_radius_nm": 0.2
+  },
+  "OHm": {
+   "charge": -1,
+   "definition": "G4OHm",
+   "definition_radius_nm": 0.0958,
+   "diffusion_m2_s": 5.3e-09,
+   "vdw_radius_nm": 0.33
+  },
+  "Om": {
+   "charge": -1,
+   "definition": "G4Om",
+   "definition_radius_nm": 0.2,
+   "diffusion_m2_s": 2e-09,
+   "vdw_radius_nm": 0.25
+  },
+  "Oxy": {
+   "charge": 0,
+   "definition": "G4Oxygen",
+   "definition_radius_nm": 0.2,
+   "diffusion_m2_s": 2e-09,
+   "vdw_radius_nm": 0.2
+  },
+  "e_aq": {
+   "charge": -1,
+   "definition": "G4Electron_aq",
+   "definition_radius_nm": 0.23000000000000004,
+   "diffusion_m2_s": 4.9e-09,
+   "vdw_radius_nm": 0.5
+  },
+  "\u00b0OH": {
+   "charge": 0,
+   "definition": "G4OH",
+   "definition_radius_nm": 0.0958,
+   "diffusion_m2_s": 2.2e-09,
+   "vdw_radius_nm": 0.22
+  }
+ },
+ "states": {
+  "A^1B_1": {
+   "channels": [
+    {
+     "displacement": "NoDisplacement",
+     "energy_ev": 8.22,
+     "energy_from_excitation_level": 0,
+     "name": "A^1B_1_Relax",
+     "probability": 0.35,
+     "products": []
+    },
+    {
+     "displacement": "A1B1_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "A^1B_1_DissociDecay",
+     "probability": 0.65,
+     "products": [
+      "\u00b0OH",
+      "H"
+     ]
+    }
+   ],
+   "orbits_filled": [
+    5
+   ],
+   "orbits_vacated": [
+    4
+   ]
+  },
+  "B^1A_1": {
+   "channels": [
+    {
+     "displacement": null,
+     "energy_ev": 10.0,
+     "energy_from_excitation_level": 1,
+     "name": "B^1A_1_Relax_Channel",
+     "probability": 0.175,
+     "products": []
+    },
+    {
+     "displacement": "B1A1_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "B^1A_1_DissociDecay",
+     "probability": 0.0325,
+     "products": [
+      "H2",
+      "\u00b0OH",
+      "\u00b0OH"
+     ]
+    },
+    {
+     "displacement": "AutoIonisation",
+     "energy_ev": 0.0,
+     "name": "B^1A_1_AutoIoni_Channel",
+     "probability": 0.5,
+     "products": [
+      "\u00b0OH",
+      "H3Op",
+      "e_aq"
+     ]
+    },
+    {
+     "displacement": "A1B1_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "A^1B_1_DissociDecay",
+     "probability": 0.2535,
+     "products": [
+      "H",
+      "\u00b0OH"
+     ]
+    },
+    {
+     "displacement": "B1A1_DissociationDecay2",
+     "energy_ev": 0.0,
+     "name": "B^1A_1_DissociDecay2",
+     "probability": 0.039,
+     "products": [
+      "Oxy",
+      "H",
+      "H"
+     ]
+    }
+   ],
+   "orbits_filled": [
+    5
+   ],
+   "orbits_vacated": [
+    3
+   ]
+  },
+  "DissociAttachment_ch1": {
+   "channels": [
+    {
+     "displacement": "DissociativeAttachment",
+     "energy_ev": 0.0,
+     "name": "DissociAttachment_ch1",
+     "probability": 1.0,
+     "products": [
+      "H2",
+      "OHm",
+      "\u00b0OH"
+     ]
+    }
+   ],
+   "orbits_filled": [
+    5
+   ],
+   "orbits_vacated": []
+  },
+  "Exci1stLayer": {
+   "channels": [
+    {
+     "displacement": "AutoIonisation",
+     "energy_ev": 0.0,
+     "name": "Exci1stLayer_AutoIoni_Channel",
+     "probability": 0.5,
+     "products": [
+      "\u00b0OH",
+      "H3Op",
+      "e_aq"
+     ]
+    },
+    {
+     "displacement": null,
+     "energy_ev": 13.77,
+     "energy_from_excitation_level": 4,
+     "name": "Exci1stLayer_Relax_Channel",
+     "probability": 0.5,
+     "products": []
+    }
+   ],
+   "orbits_filled": [
+    5
+   ],
+   "orbits_vacated": [
+    0
+   ]
+  },
+  "Exci2ndLayer": {
+   "channels": [
+    {
+     "displacement": "AutoIonisation",
+     "energy_ev": 0.0,
+     "name": "Exci2ndLayer_AutoIoni_Channel",
+     "probability": 0.5,
+     "products": [
+      "\u00b0OH",
+      "H3Op",
+      "e_aq"
+     ]
+    },
+    {
+     "displacement": null,
+     "energy_ev": 12.61,
+     "energy_from_excitation_level": 3,
+     "name": "Exci2ndLayer_Relax_Channel",
+     "probability": 0.5,
+     "products": []
+    }
+   ],
+   "orbits_filled": [
+    5
+   ],
+   "orbits_vacated": [
+    1
+   ]
+  },
+  "Exci3rdLayer": {
+   "channels": [
+    {
+     "displacement": "AutoIonisation",
+     "energy_ev": 0.0,
+     "name": "Exci3rdLayer_AutoIoni_Channel",
+     "probability": 0.5,
+     "products": [
+      "\u00b0OH",
+      "H3Op",
+      "e_aq"
+     ]
+    },
+    {
+     "displacement": null,
+     "energy_ev": 11.24,
+     "energy_from_excitation_level": 2,
+     "name": "Exci3rdLayer_Relax_Channel",
+     "probability": 0.5,
+     "products": []
+    }
+   ],
+   "orbits_filled": [
+    5
+   ],
+   "orbits_vacated": [
+    2
+   ]
+  },
+  "H2Ovib": {
+   "channels": [
+    {
+     "displacement": "B1A1_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "H2Ovib_DissociDecay1",
+     "probability": 0.1365,
+     "products": [
+      "H2",
+      "\u00b0OH",
+      "\u00b0OH"
+     ]
+    },
+    {
+     "displacement": "A1B1_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "H2Ovib_DissociDecay2",
+     "probability": 0.3575,
+     "products": [
+      "\u00b0OH",
+      "H"
+     ]
+    },
+    {
+     "displacement": "B1A1_DissociationDecay2",
+     "energy_ev": 0.0,
+     "name": "H2Ovib_DissociDecay3",
+     "probability": 0.156,
+     "products": [
+      "Oxy",
+      "H",
+      "H"
+     ]
+    },
+    {
+     "displacement": null,
+     "energy_ev": 0.0,
+     "name": "H2Ovib_DissociDecay4",
+     "probability": 0.35,
+     "products": []
+    }
+   ],
+   "orbits_filled": [],
+   "orbits_vacated": []
+  },
+  "Ioni1": {
+   "channels": [
+    {
+     "displacement": "Ionisation_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "Ioni_Channel",
+     "probability": 1.0,
+     "products": [
+      "H3Op",
+      "\u00b0OH"
+     ]
+    }
+   ],
+   "orbits_filled": [],
+   "orbits_vacated": [
+    0
+   ]
+  },
+  "Ioni2": {
+   "channels": [
+    {
+     "displacement": "Ionisation_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "Ioni_Channel",
+     "probability": 1.0,
+     "products": [
+      "H3Op",
+      "\u00b0OH"
+     ]
+    }
+   ],
+   "orbits_filled": [],
+   "orbits_vacated": [
+    1
+   ]
+  },
+  "Ioni3": {
+   "channels": [
+    {
+     "displacement": "Ionisation_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "Ioni_Channel",
+     "probability": 1.0,
+     "products": [
+      "H3Op",
+      "\u00b0OH"
+     ]
+    }
+   ],
+   "orbits_filled": [],
+   "orbits_vacated": [
+    2
+   ]
+  },
+  "Ioni4": {
+   "channels": [
+    {
+     "displacement": "Ionisation_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "Ioni_Channel",
+     "probability": 1.0,
+     "products": [
+      "H3Op",
+      "\u00b0OH"
+     ]
+    }
+   ],
+   "orbits_filled": [],
+   "orbits_vacated": [
+    3
+   ]
+  },
+  "Ioni5": {
+   "channels": [
+    {
+     "displacement": "Ionisation_DissociationDecay",
+     "energy_ev": 0.0,
+     "name": "Ioni_Channel",
+     "probability": 1.0,
+     "products": [
+      "H3Op",
+      "\u00b0OH"
+     ]
+    }
+   ],
+   "orbits_filled": [],
+   "orbits_vacated": [
+    4
+   ]
+  }
+ }
+}

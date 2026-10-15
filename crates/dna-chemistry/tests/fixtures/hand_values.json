@@ -1,0 +1,144 @@
+{
+ "channel_balance": {
+  "A^1B_1/A^1B_1_DissociDecay": {
+   "extra_waters": 0,
+   "relax": false
+  },
+  "A^1B_1/A^1B_1_Relax": {
+   "extra_waters": 0,
+   "relax": true
+  },
+  "B^1A_1/A^1B_1_DissociDecay": {
+   "extra_waters": 0,
+   "relax": false
+  },
+  "B^1A_1/B^1A_1_AutoIoni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "B^1A_1/B^1A_1_DissociDecay": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "B^1A_1/B^1A_1_DissociDecay2": {
+   "extra_waters": 0,
+   "relax": false
+  },
+  "B^1A_1/B^1A_1_Relax_Channel": {
+   "extra_waters": 0,
+   "relax": true
+  },
+  "DissociAttachment_ch1/DissociAttachment_ch1": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Exci1stLayer/Exci1stLayer_AutoIoni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Exci1stLayer/Exci1stLayer_Relax_Channel": {
+   "extra_waters": 0,
+   "relax": true
+  },
+  "Exci2ndLayer/Exci2ndLayer_AutoIoni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Exci2ndLayer/Exci2ndLayer_Relax_Channel": {
+   "extra_waters": 0,
+   "relax": true
+  },
+  "Exci3rdLayer/Exci3rdLayer_AutoIoni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Exci3rdLayer/Exci3rdLayer_Relax_Channel": {
+   "extra_waters": 0,
+   "relax": true
+  },
+  "H2Ovib/H2Ovib_DissociDecay1": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "H2Ovib/H2Ovib_DissociDecay2": {
+   "extra_waters": 0,
+   "relax": false
+  },
+  "H2Ovib/H2Ovib_DissociDecay3": {
+   "extra_waters": 0,
+   "relax": false
+  },
+  "H2Ovib/H2Ovib_DissociDecay4": {
+   "extra_waters": 0,
+   "relax": true
+  },
+  "Ioni1/Ioni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Ioni2/Ioni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Ioni3/Ioni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Ioni4/Ioni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  },
+  "Ioni5/Ioni_Channel": {
+   "extra_waters": 1,
+   "relax": false
+  }
+ },
+ "nominal_rms_nm": {
+  "A1B1_DissociationDecay": {
+   "H": 2.2666666666666666,
+   "OH": 0.13333333333333333,
+   "OH-H separation": 2.4
+  },
+  "AutoIonisation": {
+   "OH_or_H3Op_extra_rms": 0.8,
+   "mother_shift_rms": 2.0
+  },
+  "B1A1_DissociationDecay": {
+   "H2": 0.7111111111111111,
+   "OH": 0.5571366390463844
+  },
+  "B1A1_DissociationDecay2": {
+   "H": 0.8,
+   "O": 0.0
+  },
+  "DissociativeAttachment": {
+   "H2": 0.7111111111111111,
+   "OH": 0.5571366390463844,
+   "OHm": 0.0
+  },
+  "Ionisation_DissociationDecay": {
+   "H3Op_or_OH_each_product_mean_square": 4.32,
+   "separation_mean_square": 0.6400000000000001
+  }
+ },
+ "onsager": {
+  "density_g_cm3": 1.0,
+  "dielectric_constant": 80.09980939292657,
+  "epsilon_at": {
+   "273.15": 87.82186334672207,
+   "293.15": 80.09980939292657,
+   "298.0": 78.41602599292237
+  },
+  "onsager_constant_m_K": 1.671009518906398e-05,
+  "onsager_radius_nm": 0.7116353983042855,
+  "probabilities_at_distance_nm": {
+   "0.25": 0.9419552836086285,
+   "0.5": 0.7590752889565466,
+   "1.0": 0.5091591795261386,
+   "2.0": 0.2993996713718574,
+   "5.0": 0.13266247837592904,
+   "7.0": 0.096665353202112
+  },
+  "temperature_K": 293.15
+ }
+}
