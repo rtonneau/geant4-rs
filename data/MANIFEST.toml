@@ -1,0 +1,122 @@
+dataset = "G4EMLOW"
+version = "8.8"
+
+[[file]]
+path = "dna/sigma_elastic_e_champion.dat"
+group = "electron_option2"
+bytes = 3896
+sha256 = "5b65332bb521e28cc8324ba257333e84b05825be3e821a1227b77fbd99450ee4"
+
+[[file]]
+path = "dna/sigmadiff_cumulated_elastic_e_champion_hp.dat"
+group = "electron_option2"
+bytes = 932331
+sha256 = "862544e4ab9a60c0e4b2777fae13a3ee2eca22167274594b43959e2e84960100"
+
+[[file]]
+path = "dna/sigma_excitation_e_born.dat"
+group = "electron_option2"
+bytes = 6557
+sha256 = "3904844159483c554d8dab2887dc212f3435c173eb4c565cc4f7cd7f24fd44b6"
+
+[[file]]
+path = "dna/sigma_ionisation_e_born.dat"
+group = "electron_option2"
+bytes = 6474
+sha256 = "d3e1478280367e5226a2de8a150d991ce7a2a656b85ae166c58b06b8e6603c28"
+
+[[file]]
+path = "dna/sigmadiff_cumulated_ionisation_e_born_hp.dat"
+group = "electron_option2"
+bytes = 1145520
+sha256 = "bc4abba41d36883bdbc906c8a75403093ccf6828a37279b070d5abfa046cd04b"
+
+[[file]]
+path = "dna/sigmadiff_ionisation_e_born.dat"
+group = "electron_option2"
+bytes = 811538
+sha256 = "16a4aeba9625bf4dbe1e67500c19990e6860dd9fdfc6c9204c6ecd538b67155f"
+
+[[file]]
+path = "dna/sigma_excitationvib_e_sanche.dat"
+group = "electron_option2"
+bytes = 1924
+sha256 = "72dd4c78d5e2a4a967cb3260b61d9c5b8edc3fc8692400a9031ec2e96c8fc955"
+
+[[file]]
+path = "dna/sigma_attachment_e_melton.dat"
+group = "electron_option2"
+bytes = 109
+sha256 = "f8c41aca769ba35ad31f741d6280400438068d5201868f1650516b8a1c7ab67d"
+
+[[file]]
+path = "dna/sigma_excitation_p_born.dat"
+group = "proton_option2"
+bytes = 7379
+sha256 = "ccf2f50acffb22c45845e8d44f7c9770582773d577a6dca6a0ada3e7717426f0"
+
+[[file]]
+path = "dna/sigma_ionisation_p_born.dat"
+group = "proton_option2"
+bytes = 25132
+sha256 = "ad1053544cd81095bc34c468734f7d4ead1019e6adeba4e0b80c562da36e48b3"
+
+[[file]]
+path = "dna/sigmadiff_cumulated_ionisation_p_born_hp.dat"
+group = "proton_option2"
+bytes = 598920
+sha256 = "50c42adf9f3518556c52e0b13616708a1085e6015f305734791667dc6a10ef82"
+
+[[file]]
+path = "dna/sigmadiff_ionisation_p_born.dat"
+group = "proton_option2"
+bytes = 528953
+sha256 = "15486ce711f182b7771a3ce29eb5d28aa8b7ad5ab92e713fab1880560bf2b9e2"
+
+[[file]]
+path = "dna/sigma_ionisation_p_rudd.dat"
+group = "proton_option2"
+bytes = 51317
+sha256 = "5a22d0aec87219985a31393a60cb88b5272aa81112f59a1e351cd08d0a43ff9d"
+
+[[file]]
+path = "dna/sigma_ionisation_h_rudd.dat"
+group = "proton_option2"
+bytes = 46800
+sha256 = "13048dfa6a28d4de5f86d21290b61e54ab222648a62bde615510bd068c83fd93"
+
+[[file]]
+path = "dna/sigma_elastic_proton_HTran.dat"
+group = "proton_option2"
+bytes = 1300
+sha256 = "0bbe4e69cedba40b6689a14dca8a1a051494b26e972bcc874310e158c16bc4be"
+
+[[file]]
+path = "dna/sigmadiff_cumulated_elastic_proton_HTran.dat"
+group = "proton_option2"
+bytes = 255000
+sha256 = "47228e3cf0d87b88dbbce78bf333e854f91bc103e74b9df59a1c10b61c64b129"
+
+[[file]]
+path = "dna/sigma_excitation_p_RPWBA.dat"
+group = "proton_option2"
+bytes = 43200
+sha256 = "64a58084ac6ce246eb03c9530306500f8696576c9f721759dc612dc4a5a5a6cc"
+
+[[file]]
+path = "dna/sigma_ionisation_p_RPWBA.dat"
+group = "proton_option2"
+bytes = 43200
+sha256 = "291a6a27814ce0bc1124b6d4da698275ee1e371f4c3340095fb9b3cf9cd66e54"
+
+[[file]]
+path = "dna/sigmadiff_cumulated_ionisation_p_RPWBA.dat"
+group = "proton_option2"
+bytes = 1411200
+sha256 = "e2a8ddedc2377a44ca2d6c9ae55c91f608d3e751522d9aab4b5385505245d897"
+
+[[file]]
+path = "dna/sigmadiff_ionisation_p_RPWBA.dat"
+group = "proton_option2"
+bytes = 1411200
+sha256 = "338459e5ac665a280b92663764112ca3177113e305364f021d079f4f33b6db01"
