@@ -93,6 +93,39 @@
    "relax": false
   }
  },
+ "expected_mean_square_nm2": {
+  "a1b1_dissociation_decay": {
+   "H": 5.137777777777777,
+   "OH": 0.017777777777777778
+  },
+  "auto_ionisation": {
+   "H3Op": 4.32,
+   "OH": 4.32,
+   "e_aq": 13.336659120468635
+  },
+  "b1a1_dissociation_decay": {
+   "H2": 0.505679012345679,
+   "OH": 0.3104012345679013
+  },
+  "b1a1_dissociation_decay2": {
+   "H": 0.6400000000000001,
+   "Oxy": 0.0
+  },
+  "dissociative_attachment": {
+   "H2": 0.505679012345679,
+   "OH": 0.3104012345679013,
+   "OHm": 0.0
+  },
+  "ionisation_dissociation_decay": {
+   "H3Op": 4.32,
+   "OH": 4.32
+  }
+ },
+ "expected_separation_mean_square_nm2": {
+  "a1b1_dissociation_decay/OH-H": 5.76,
+  "auto_ionisation/OH-H3Op": 0.6400000000000001,
+  "ionisation_dissociation_decay/H3Op-OH": 0.6400000000000001
+ },
  "nominal_rms_nm": {
   "A1B1_DissociationDecay": {
    "H": 2.2666666666666666,
@@ -140,5 +173,11 @@
    "7.0": 0.096665353202112
   },
   "temperature_K": 293.15
+ },
+ "penetration": {
+  "ke_ev": 1.7,
+  "mean_square_nm2": 9.336659120468635,
+  "r_mean_nm": 2.815173601265458,
+  "sigma_1d_nm": 1.7641484367316935
  }
 }

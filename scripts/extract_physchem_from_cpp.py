@@ -225,6 +225,14 @@ recomb["rest_process_ordering"] = {
     "recombination": int(re.search(r"AddRestProcess\(new G4DNAElectronHoleRecombination\(\), (\d)\)", text(root / "physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc")).group(1)),
 }
 
+# ---------------------------------------------------------------- penetration law of the auto-ionisation electron
+th = strip_comments(text(DNA / "models/src/G4DNAOneStepThermalizationModel.cc"))
+m = re.search(r"Meesungnoen2002::gCoeff\[13\]\s*=\s*\{(.*?)\};", th, flags=re.S)
+penetration = {
+    "meesungnoen2002_gcoeff": [float(x) for x in re.findall(r"[+-]?\d+\.\d+e[+-]?\d+", m.group(1))],
+    "sigma_1d_per_rmean": float(re.search(r"convertRmean3DToSigma1D = ([\d.]+);", th).group(1)),
+}
+
 sha = subprocess.run(["git", "-C", sys.argv[1], "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
 print(json.dumps({
     "geant4_commit": sha,
@@ -234,4 +242,5 @@ print(json.dumps({
     "states": states,
     "displacer": disp,
     "recombination": recomb,
+    "penetration": penetration,
 }, indent=1, sort_keys=True))

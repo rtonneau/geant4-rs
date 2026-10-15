@@ -104,4 +104,33 @@ for st, v in x["states"].items():
         assert q == q0, (st, ch["name"], q, q0)
         balance[f"{st}/{ch['name']}"] = {"extra_waters": int(extra_h2o_from_o), "relax": False}
 
-print(json.dumps({"onsager": onsager, "nominal_rms_nm": rms, "channel_balance": balance}, indent=1, sort_keys=True))
+# ---- auto-ionisation electron: Meesungnoen2002 r_mean at ke, Gaussian of sigma_1D = 0.62665706865775 r_mean ---------
+g = x["penetration"]["meesungnoen2002_gcoeff"]
+ke = x["displacer"]["autoionisation_electron_kinetic_energy_ev"]
+r_mean = sum(g[12 - i] * ke**i for i in range(13))
+sigma1d = x["penetration"]["sigma_1d_per_rmean"] * r_mean
+assert abs(x["penetration"]["sigma_1d_per_rmean"] - math.sqrt(math.pi) / 2 ** 1.5) < 1e-15
+penetration = {"ke_ev": ke, "r_mean_nm": r_mean, "sigma_1d_nm": sigma1d, "mean_square_nm2": 3 * sigma1d**2}
+
+# ---- expected mean square |d|^2 (nm^2) of each product position relative to the event, per channel kind ---------------
+# (hand derivation; independent Gaussians add in quadrature; R = 3-D RMS of radialDistributionOfProducts)
+ms = {}
+ms["a1b1_dissociation_decay"] = {"OH": (2.4 / 18) ** 2, "H": (2.4 * 17 / 18) ** 2}
+oh_b1a1 = (0.8 * 2 / 18) ** 2 + 0.25 * 1.1**2  # O-atom recoil + (+-0.5) of an independent 1.1 nm vector
+ms["b1a1_dissociation_decay"] = {"H2": (0.8 * 16 / 18) ** 2, "OH": oh_b1a1}
+ms["b1a1_dissociation_decay2"] = {"Oxy": 0.0, "H": 0.25 * 1.6**2}
+mother = 2.0**2
+extra = 0.5 * 0.8**2  # displaced by 0.8 nm in half of the cases
+ms["ionisation_dissociation_decay"] = {"H3Op": mother + extra, "OH": mother + extra}
+ms["auto_ionisation"] = {"OH": mother + extra, "H3Op": mother + extra, "e_aq": mother + penetration["mean_square_nm2"]}
+ms["dissociative_attachment"] = {"H2": (0.8 * 16 / 18) ** 2, "OHm": 0.0, "OH": oh_b1a1}
+# separations between products (mean square of the difference vector)
+sep = {
+    "a1b1_dissociation_decay/OH-H": 2.4**2,
+    "ionisation_dissociation_decay/H3Op-OH": 0.8**2,
+    "auto_ionisation/OH-H3Op": 2 * extra,  # one of the two displaced by 0.8 nm, the common shift cancels... see below
+}
+# OH-H3O+ in the auto-ionisation: displaced one has |d|^2 = 0.8^2 w.p. 1; the other 0 => separation ms = 0.8^2
+sep["auto_ionisation/OH-H3Op"] = 0.8**2
+
+print(json.dumps({"onsager": onsager, "penetration": penetration, "expected_mean_square_nm2": ms, "expected_separation_mean_square_nm2": sep, "nominal_rms_nm": rms, "channel_balance": balance}, indent=1, sort_keys=True))

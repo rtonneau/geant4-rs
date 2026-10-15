@@ -1,0 +1,38 @@
+# Parameters of the physicochemical stage of G4EmDNAChemistry_option3 (Geant4 11.4.1).
+
+[creation]
+# G4DNAChemistryManager::CreateWaterMolecule / CreateSolvatedElectron build the track at `picosecond + delayedTime`
+# (utils/src/G4DNAChemistryManager.cc:655 for the water molecule, :691 for the solvated electron; delayedTime = 0 without a pulse structure) and the
+# decay process places the products at the global time of the mother (G4DNAMolecularDissociation::DecayIt,
+# processes/src/G4DNAMolecularDissociation.cc:258, BuildTrack(track.GetGlobalTime(), ...)). H2O has decay time 0
+# (molecules/types/src/G4H2O.cc:65, "0 // lifetime"), so every initial species is born at 1 ps.
+birth_time_ps = 1.0
+
+[autoionisation]
+# G4DNAWaterDissociationDisplacer constructor: ke(1.7*eV) (processes/src/G4DNAWaterDissociationDisplacer.cc:144),
+# used by radialDistributionOfElectron() with the default penetration law Meesungnoen2002 (utils/src/G4EmLowEParameters.cc:78).
+electron_kinetic_energy_ev = 1.7
+
+[recombination]
+# G4DNAElectronHoleRecombination (processes/src/G4DNAElectronHoleRecombination.cc), registered for H2O as rest
+# process of ordering 2, the dissociation process having ordering 1 (G4EmDNAChemistry_option3.cc:733 and :741; the GPIL vector is the reverse of the DoIt vector, G4ProcessManager.cc:1135-1159, and the step processor keeps the first strictly shortest lifetime, G4ITStepProcessor.cc:561-575: with both lifetimes 0 the recombination wins).
+# Probability that an ionised water molecule recombines with its nearest alive e_aq at distance d:
+#   p = 1 - exp(-r_Onsager / d)   (1 if d == 0)        [cc:268-273, 300-304]
+# Only e_aq within `search_radius_in_onsager_radii` * r_Onsager are considered [cc:251, 283].
+enabled = true
+search_radius_in_onsager_radii = 10.0
+# r_Onsager = e^2 / (4 pi eps0 k_B) / (T * epsilon(rho, T))     [cc:51, 229]
+# T = temperature of the material G4_WATER = NTP_Temperature (cc:225; materials/include/G4Material.hh:114);
+# rho in g/cm^3 = 1.0 (cc:223-227; materials/src/G4NistMaterialBuilder.cc:712).
+temperature_k = 293.15
+density_g_cm3 = 1.0
+# epsilon = 1 + 10^( Y*(C + (S-1) log10 rho) + D + log10 rho ),  Y = 1/(1 + y0/rho^2), C = A - B - 3, D = B + 3,
+# A(T) = a0 + a1/T + a2/T^2 + a3/T^3, B(T) = b0 + b1/T + b2/T^2, S(T) = s0 + s1/T + s2/T^2      [cc:57-103]
+y0 = 0.0012
+a = [0.7017, 642.0, -1.167e5, 9.190e6]
+b = [-2.71, 275.4, 0.3245e5]
+s = [1.667, -11.41, -35260.0]
+# CLHEP constants of the reference tree (externals/clhep/include/CLHEP/Units): k_Boltzmann = 8.617333e-11 MeV/K
+# (PhysicalConstants.h:116), mu0 = 4 pi 1e-7 henry/m (:90), e_SI = 1.602176634e-19 (SystemOfUnits.h:164).
+k_boltzmann_mev_per_k = 8.617333e-11
+e_si = 1.602176634e-19
