@@ -22,6 +22,8 @@ Current repo state: one placeholder crate (`geant4-rs`, edition 2024, `src/lib.r
 | Complexity | lowest | moderate | highest |
 | Scientific traceability | ok | ok; each model file carries its C++ source tag | diluted |
 
+**Implemented so far:** `dna-core` (M0), `dna-data` (M1), `dna-physics` and `dna-sim` (M2). `dna-physics` holds models, `ProcessTable` and the transport loop (no rayon, no JSON); `dna-sim` holds `RunConfig`, the per-history driver, the scorers (`Scorer` consumes `HistoryResult`s only) and the JSON output. `dna-chemistry` and `dna-cli` do not exist yet.
+
 ## Recommendation: **B**, with these rules
 1. Dependency DAG: `core <- physics`, `core <- chemistry`, `{physics, chemistry} <- sim <- cli`. `physics` and `chemistry` never depend on each other; they exchange only `dna-core` types (`PhysChemEvent`, `SpeciesInstance`) via `sim`.
 2. Closed sets are enums (`ParticleKind`, `ChargeState`, `ProcessKind`, `ReactionKind`); open sets (cross-section/final-state models, chemistry engines) are traits used as `Box<dyn ...>` **at configuration time only**; per-step hot paths use enum dispatch over a per-(particle, material) `ProcessTable` built once, to avoid dyn calls in the inner loop.

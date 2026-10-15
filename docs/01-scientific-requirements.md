@@ -55,6 +55,8 @@ So a thermalised sub-excitation electron's energy **is** counted, and energy lea
 - Still [U] for M2/M3: the exact solvation (< 7.4 eV) deposit, which lives in the process/model code, not in chem6.
 Convention status: A.4 items 1-5 are final.
 
+**M2 ledger (primaries only, `dna-physics::transport::Ledger`):** `E_in = deposited_excitation + deposited_binding + secondaries + remaining_untracked`, per history, accumulated with compensated sums and checked at the end of every history (hard limit 1e-9 relative, V7; observed <= 2.8e-13 up to 1 MeV). `deposited_*` follow the table above for the **primary track only**; `secondaries` is the kinetic energy of the recorded, not transported, delta electrons (in the full chain it becomes deposit later, so `E_dep` of A.4 item 1 equals `deposited_excitation + deposited_binding` plus what the secondaries will deposit); `remaining_untracked` is the primary's kinetic energy at termination (M3: solvation deposit). `E_escaped` is zero (infinite medium). Not reproduced: Auger/fluorescence energy carried away from a K-shell hole (docs/09 Q12).
+
 ## A.5 Units
 Internal: **energy eV, length nm, time ps**, `f64` newtypes (`Energy`, `Length`, `Time`, `Diffusivity`,
 `RateConstant`). Geant4 uses mm, ns, MeV: do not mix. Conversion facts: 1 m^2/s = 1e6 nm^2/ps;
