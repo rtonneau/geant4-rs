@@ -27,12 +27,55 @@ File names below are from the C++ loaders (`source/processes/electromagnetic/dna
 - Uehara elastic (option4) uses no table file ([U] confirm).
 ## Not needed
 Other `G4EMLOW8.8` subfolders, `G4PARTICLEXS`, `G4NDL`, etc. Ion tables beyond p/H Rudd (He, Li ... Fe) are out of scope.
-## Format knowledge
-Loaders are `G4DNACrossSectionDataSet`/`G4DNAEmfietzoglou...::LoadData` (total cross section: energy/value columns with unit and scale factor) and per-model readers for differential tables. Format will be read from the C++ loaders in M1; a few `head -20` samples pasted by you into an issue/chat are enough to confirm, no data upload needed.
+## Loader specification, transcribed from the C++ (M1, audit G2)
+Verified against Geant4 11.4.1 (`rtonneau/geant4` @ `27ea526`). All paths are in `source/processes/electromagnetic/dna/models/src`, `Loader` = `G4DNACrossSectionDataSet` unless stated. Implemented in `crates/dna-data` (`catalog.rs` holds the same table as code and a test checks it against `data/MANIFEST.toml`). **Energies are eV in all 20 files.** `cm^2`-type scale factors are CLHEP `cm*cm`; the internal unit is nm^2 (`dna-core::units::Area`, 1 cm^2 = 1e14 nm^2).
+
+Reading rules common to all files (see docs/02 B.7.1): numbers are whitespace separated (space or tab), `#` comments, CRLF and LF equivalent, blank lines skipped. Only `sigma_ionisation_p_rudd.dat` is CRLF in the committed copy (checked: every other file contains no `\r`); `sigma_attachment_e_melton.dat` and `sigma_excitationvib_e_sanche.dat` are tab-separated, and the Sanche file has no final newline.
+
+### A. Cross sections (`E  sigma_1 ... sigma_n`)
+| File (`dna/`) | Rows | Table range (eV) | Columns after E | Value unit (scale factor, source) | Interpolation | Read by (model window, eV) |
+|---|---|---|---|---|---|---|
+| `sigma_attachment_e_melton` | 14 | 0 - 12.3 | 1: total | `1e-18 cm^2` (`G4DNAMeltonAttachmentModel.cc:141`) | log-log | `G4DNAMeltonAttachmentModel`, 4 - 13 (`:49-50`) |
+| `sigma_elastic_e_champion` | 101 | 7.4 - 1e7 | 1: total | `1e-16 cm^2` (`G4DNAChampionElasticModel.cc:129`) | log-log | `G4DNAChampionElasticModel`, 7.4 - 1e6 (`:46-47`) |
+| `sigma_elastic_proton_HTran` | 50 | 100 - 1e6 | 1: total | `1e-16 cm^2` (`G4DNAIonElasticModel.cc:121`) | log-log | `G4DNAIonElasticModel` p, H; `DBL_MAX` below 100 eV (`:267`), 0 - 1e6 (`:51-52`) |
+| `sigma_excitation_e_born` | 83 | 8 - 1e6 | 5 levels | `(1e-22/3.343) m^2` (`G4DNABornExcitationModel1.cc:112`) | log-log | `G4DNABornExcitationModel1` e-, 9 - 1e6 (`:99-100`) |
+| `sigma_excitation_p_born` | 82 | 1e5 - 1e8 | 5 levels | `(1e-22/3.343) m^2` (same `:112`) | log-log | same model, proton, 5e5 - 1e8 (`:105-106`) |
+| `sigma_excitation_p_RPWBA` | 400 | 1e5 - 3e8 | 5 levels | `1 cm^2` (`G4DNARPWBAExcitationModel.cc:101`) | log-log | `G4DNARPWBAExcitationModel`, 1e8 - 3e8 (`:90-91`) |
+| `sigma_excitationvib_e_sanche` | 38 | 0 - 100 | 9 vibrational levels | `1e-16 cm^2` (`G4DNASancheExcitationModel.cc:309`; the model multiplies the sum by 2 for the liquid phase, `:222`) | **lin-lin** (`:407-418`), own reader (`:139-178`), 1e-12 protection at 100 eV | `G4DNASancheExcitationModel`, 2 - 100 (`:48-49`) |
+| `sigma_ionisation_e_born` | 83 | 8 - 1e6 | 5 shells | `(1e-22/3.343) m^2` (`G4DNABornIonisationModel1.cc:116`) | log-log | `G4DNABornIonisationModel1` e-, 11 - 1e6 (`:126-127`) |
+| `sigma_ionisation_p_born` | 244 | 1e5 - 1e8 | 5 shells | same `:116` | log-log | same, proton, 5e5 - 1e8 (`:212-213`) |
+| `sigma_ionisation_p_RPWBA` | 400 | 1e5 - 3e8 | 5 shells | `1 cm^2` (`G4DNARPWBAIonisationModel.cc:99`) | log-log | `G4DNARPWBAIonisationModel`, 1e8 - 3e8 (`:101-102`) |
+| `sigma_ionisation_p_rudd` | 645 | 100 - 9.85e11 | 5 shells | `1 m^2` (`G4DNARuddIonisationExtendedModel.cc:61`) | log-log | `G4DNARuddIonisationExtendedModel` proton; stops <= 100 eV (`:78, 296-300`); linear in E below its own `fElow` (`:265-266`) |
+| `sigma_ionisation_h_rudd` | 600 | 100 - 1e8 | 5 shells | `1 m^2` (same `:61`) | log-log | same model, hydrogen |
+
+Level/shell order (component `i` = column `i+1`): excitation 0..4 = A1B1, B1A1, Rydberg A+B, Rydberg C+D, diffuse bands with thresholds 8.22, 10.00, 11.24, 12.61, 13.77 eV (`utils/src/G4DNAWaterExcitationStructure.cc:31-35`); ionisation 0..4 with binding energies 10.79, 13.39, 16.05, 32.30, 539.0 eV (`utils/src/G4DNAWaterIonisationStructure.cc:31-35`); Sanche level energies 0.010, 0.024, 0.061, 0.092, 0.204, 0.417, 0.460, 0.500, 0.835 eV (`G4DNASancheExcitationModel.cc:347`). The shell order of the Rudd files is "component `i` = shell `i`" in `SelectShell` (`...RuddIonisationExtendedModel.cc:371-386`); its correspondence with the binding-energy list is confirmed in the M5 audit [U].
+
+### B. Differential / cumulative tables (blocks of constant incident energy)
+| File (`dna/`) | Incident energies | Rows per block | Columns | Unit / meaning | Lookup in C++ |
+|---|---|---|---|---|---|
+| `sigmadiff_cumulated_elastic_e_champion_hp` | 101: 7.4 - 1e7 | 181 | `E`, `P`, `theta` | `P` cumulative probability 0..1 (first 0, last exactly 1), `theta` lab polar angle in **degrees** (0..180, 1 degree steps), `cos(theta*pi/180)` (`G4DNAChampionElasticModel.cc:459`) | `Theta` (`:316-378`): bracket `E` and `P` in each of two blocks, 2-D **lin-lin** `QuadInterpolator` (`:411-445`) |
+| `sigmadiff_cumulated_elastic_proton_HTran` | 50: 100 - 1e6 | 100 | `E`, `P`, `theta_CM` | as above, `theta` in the centre-of-mass frame, converted to lab with `atan(sin/(m_ion/18 + cos))` (`G4DNAIonElasticModel.cc:326-327`); first row has `P = 0`, `theta = 0.5846` | `Theta` (`:369-424`), lin-lin (`:463-492`), `k(1-1e-12)` at last energy (`:385`) |
+| `sigmadiff_cumulated_ionisation_e_born_hp` | 83: 8 - 1e6 | variable | `E`, `W`, `P_0..P_4` | `W` energy transfer in eV **including** the binding energy (the secondary gets `W - B_shell`, `Born1.cc:995-999`); `P_s` cumulative probability of shell `s`, non-decreasing, plateau `0` below threshold and padding `2` above the kinematic limit | `TransferedEnergy` (`Born1.cc:1012-1290`): inverse map `P -> W` keeping the last `W` per equal `P`; log-lin in `P` then in `E` (`Interpolate`, `:819-875`) |
+| `sigmadiff_cumulated_ionisation_p_born_hp` | 31: 1e5 - 1e8 | 161 | same | same | same code, proton branch (`:1146-1290`) |
+| `sigmadiff_cumulated_ionisation_p_RPWBA` | 40: 1e5 - 3e8 | 280 | same | same | `G4DNARPWBAIonisationModel` own `TransferedEnergy` **[U: not read yet]**; table loads and passes the monotonicity checks |
+| `sigmadiff_ionisation_e_born` | 83: 8 - 1e6 | variable | `E`, `W`, `dsigma/dW_0..4` | `W` in eV; values multiplied by the model scale `(1e-22/3.343) m^2` (`Born1.cc:199`) and used only as **relative** weights in rejection sampling (`:598-815`), so the absolute dimension of `dsigma/dW` is not needed and not asserted | `DifferentialCrossSection` (`:692-815`), log-log `Interpolate` (slow branch) |
+| `sigmadiff_ionisation_p_born` | 31: 1e5 - 1e8 | 151 | same | same (`:259`) | same, proton |
+| `sigmadiff_ionisation_p_RPWBA` | 40: 1e5 - 3e8 | 280 | same | scale `1 cm^2` (`G4DNARPWBAIonisationModel.cc:157`) | RPWBA own code **[U]** |
+
+Fast vs slow tables: option2 sets `SetDNAFast(true)` (`G4EmDNAPhysics_option2.cc:54`) and `G4DNABornIonisationModel1` reads it at `:72`, so the cumulated ("hp") files drive the reference runs; the `sigmadiff_ionisation_*` files exist for the Q4 equivalence check (M2).
+
+### C. Rust behaviour that differs from the C++ (intentional, tested)
+1. Outside `[E_first, E_last]` of a table: `UnsupportedEnergy` instead of the constant clamp of `G4EMDataSet::FindValue`. The model windows lie inside the tables for every file except Melton (table ends at 12.3 eV, window 13 eV, `sigma = 0` there in Geant4); the M2 model layer must handle that explicitly.
+2. Malformed tokens, ragged rows and non-finite numbers are errors with file and line (the C++ silently truncates).
+3. 2-D lookups: `UnsupportedEnergy` below the first and above the last incident energy (C++ undefined / out-of-bounds); the last energy uses the same `1e-12` protection as Born1 and Ion elastic; `P = 1` uses the last interval; combinations where the C++ reads past a vector end return `UndefinedLookup`.
+4. The EOF artefact of the C++ stream loops (one duplicated last entry) is not reproduced; it does not change any lookup.
+5. Nothing is applied beyond the file scale: the Sanche factor 2, the `sigma = 1e-30` replacement of a zero Sanche value (`:312, 339`) and the `Rudd` below-table scaling are *model* behaviour for M2/M5.
+
+### D. Remaining [U] items (do not block M1)
+- Rudd shell order vs binding energies, and the RPWBA `TransferedEnergy` code (M5).
+- Which of the proton-only files are loaded in an actual option2 proton run (`G4DNARuddIonisationExtendedModel` vs `G4DNABornIonisationModel1` handover energies are in docs/02 B.3; to be exercised in M5).
+- Absolute dimension of `dsigma/dW` (irrelevant for relative-weight sampling).
 
 ## Observed file formats (checked on the committed files, 20/20 SHA-256 verified)
-- Whitespace-separated plain text; **mixed line endings** (some files LF, some CRLF, e.g. `sigma_ionisation_p_rudd.dat`) and mixed separators (spaces, tabs). Parsers must split on any whitespace and tolerate `\r`.
-- Total cross sections, one row per energy (eV): `sigma_elastic_e_champion` = energy + 1 column (101 rows, from 7.4 eV); `sigma_excitation_e_born` / `sigma_ionisation_e_born` = energy + 1 column per level/shell (5 shown; 83 rows, from 8 eV, zeros below each threshold); Rudd p/H tables = energy + 5 shell columns (645 rows, from 100 eV, CRLF).
-- Sanche vibrational (`sigma_excitationvib_e_sanche`, tab-separated, 37 rows) = energy + 9+ columns; Melton attachment = 14 rows, energy + cross section.
-- `sigmadiff_cumulated_*_hp.dat` = 3 columns (incident energy, cumulative probability / angle value, index) in long blocks (18281 rows for Champion elastic); the exact meaning of columns is read from each model's loader in M1 (audit G2).
-- **Units/scale factors are not in the files**: they are set in the C++ loaders (`G4DNACrossSectionDataSet(..., scaleFactor)`), e.g. `1e-20 m^2` or `cm^2`-based factors. Must be transcribed per file in M1 and covered by a V2 test; never guess.
+- Whitespace-separated plain text, no comments or headers in the committed copies. One file is CRLF (`sigma_ionisation_p_rudd.dat`, 645 lines); two use tabs; spaces otherwise. Parsers split on any whitespace and ignore `\r`.
+- Differential files are long blocks: Champion elastic 18281 rows, Born electron cumulated 9546 rows, proton RPWBA 11200 rows.

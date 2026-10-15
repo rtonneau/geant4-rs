@@ -14,6 +14,7 @@ Scope: `G4RS_DATA_DIR` resolution, `data/MANIFEST.toml` (generated locally by `s
 Refs: `D/utils/src/G4DNACrossSectionDataSet.cc` (G2), `D/models/src/G4DNAChampionElasticModel.cc`, `G4DNABornIonisationModel1.cc`.
 Tests: V1; interpolation vs Geant4 numbers for a few hand-picked points exported once; proptest monotonic CDFs.
 Acceptance: V2 infrastructure ready for any table; licence decision Q7 recorded. Risk: file format surprises (units/scale factors).
+**Status: implemented (branch `claude/inspiring-edison-v1kw1a`).** Crate `crates/dna-data`: tolerant parser, `CrossSectionTable` (log-log / lin-lin), `AngularCdfTable` (`Theta`), `IonisationCdfTable` (`TransferedEnergy`), `DnaFile` catalog of the 20 files with units and consumers, `DataDir` (`G4RS_DATA_DIR`, manifest verification). G2 and G8 closed in docs/02 B.7.1-B.7.2; per-file units in docs/10. Not done (M2): sampling, the slow-path `DifferentialCrossSection` lookup, RPWBA `TransferedEnergy`, model-level windows/policies (e.g. Melton 12.3-13 eV).
 
 ## M2 Electron transport, option2, E <= 1 MeV, primaries only (no secondary tracking)
 Scope: Champion elastic, Born excitation, Born1 ionisation (energy loss, secondary *recorded* not transported), infinite water, energy ledger, `mfp` and `range`-like scorers.
