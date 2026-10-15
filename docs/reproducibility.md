@@ -22,3 +22,6 @@ crate version, `rustc -V`, Geant4 reference version (11.4.1), dataset name/versi
 ## Statistical test acceptance (fixed before running)
 - KS uniformity: N = 1e5, `D < 1.95/sqrt(N)` (alpha ~ 0.001); fixed seed, so the test is deterministic.
 - Mean of uniforms within 5 sigma of 0.5.
+
+## Draw order of the M2 electron physics (stream `(seed, history, Physics)`)
+Per step: 1 uniform for the free path (`-ln u / Sigma_tot`), 1 for the process, then the model draws: Champion 2 (`cos theta`, `phi`); Born excitation 1 (level); Born1 ionisation 1 per shell draw (repeated for shell 2 below 19 eV), 1 for the energy transfer, 1 or 2 or 0 for the Born polar angle (`W < 50 eV`, 50-200 eV, > 200 eV) and 1 for `phi`. Any change of this order or of a model changes every later number of every history (statistically equivalent, not bitwise comparable); `dna-sim` tests pin thread-count independence, not values, so a deliberate change needs no fixture update, but note it here. Geant4 draws one number of interaction lengths per process instead of one total free path; both are the same Poisson process, so only distributions, never individual histories, can be compared with Geant4.

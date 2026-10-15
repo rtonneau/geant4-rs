@@ -25,6 +25,8 @@ Pre-registered acceptance criteria below are fixed **before** the first comparis
 | V13 | Thread-count / seed reproducibility | L1 | identical results for 1, 2, 8 threads (same platform); different seeds -> statistically compatible |
 Statistical details: batch means (>=30 batches) for correlated scores; Geant4 reference errors from its own batch means; independent-seed repeat of each reference run to estimate its run-to-run scatter; report both z and effect size. No result is called "scientifically valid" from L2/L3 alone.
 
+**M2 implementation notes.** V7 and V13 run in `cargo test` (ledger: 10^4 histories at five energies, about one minute with `[profile.test] opt-level = 3`). V2-like and V4 run against the raw data files and an independent Python re-implementation (`scripts/hand_cross_sections.py`), not against Geant4. V2/V3/V5 against Geant4 are in `crates/dna-sim/tests/geant4_reference.rs`, `#[ignore]`d until `validation/reference/*.csv` and `provenance.toml` exist (`validation/geant4/README.md`); their criteria are stated in that file's header. Performance baseline: `crates/dna-sim/tests/baseline.rs` (`--ignored`).
+
 ## G.3 Regression fixtures
 (A *fixture* is a small stored input or expected-output file that a test compares against, e.g. a CSV of Geant4 reference values or a saved result of a fixed-seed run. Not the same as the `data/` cross-section tables, which are simulation inputs.)
 Deterministic tiny runs (fixed seed, 10^3 histories) store summary scalars to 1e-12 relative in `tests/fixtures/`; intentionally regenerated via `cargo xtask`-like script with a changelog entry whenever model or RNG consumption changes.

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/dna-core", "crates/dna-data"]
+members = ["crates/dna-core", "crates/dna-data", "crates/dna-physics", "crates/dna-sim"]
 
 [workspace.package]
 version = "0.1.0"
@@ -25,3 +25,12 @@ sha2 = "0.10"
 opt-level = 1
 [profile.dev.package.dna-data]
 opt-level = 1
+[profile.dev.package.dna-physics]
+opt-level = 1
+[profile.dev.package.dna-sim]
+opt-level = 1
+
+# The M2 acceptance tests transport 10^4 electrons of up to 1 MeV (about 10^8 interactions):
+# optimise test builds (debug assertions stay on).
+[profile.test]
+opt-level = 3

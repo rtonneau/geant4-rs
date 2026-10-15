@@ -76,6 +76,13 @@ Fast vs slow tables: option2 sets `SetDNAFast(true)` (`G4EmDNAPhysics_option2.cc
 - Which of the proton-only files are loaded in an actual option2 proton run (`G4DNARuddIonisationExtendedModel` vs `G4DNABornIonisationModel1` handover energies are in docs/02 B.3; to be exercised in M5).
 - Absolute dimension of `dsigma/dW` (irrelevant for relative-weight sampling).
 
+## M2 usage notes (what the electron models read, checked on the committed files)
+- `sigma_elastic_e_champion`, `sigma_excitation_e_born`, `sigma_ionisation_e_born` are used as totals (sum of the 1 / 5 / 5 columns) and as partials for the level/shell choice; table ranges (7.4 eV-1e7, 8 eV-1e6, 8 eV-1e6) cover the model windows (7.4 eV-1 MeV, 9 eV-1 MeV, 11 eV-1 MeV), which `ChampionElastic::new`, `BornExcitation::new` and `BornIonisation::new` assert (`TableDoesNotCoverWindow`).
+- Shell thresholds in `sigma_ionisation_e_born` (first non-zero value): shell 0 at 11 eV, shell 1 at 14, shell 2 at 18, shell 3 at 35, shell 4 at 545 eV; at a node below its threshold the table value is exactly 0 and the interpolation returns `1e-300 x scale` (M1 behaviour), e.g. `3e-305 nm^2` for shell 4 at 100 eV; this never selects the shell.
+- `sigmadiff_cumulated_ionisation_e_born_hp`: 83 incident energies, block length varies (160 rows at 1 keV, `W` grid in 0.52 eV steps there), `P = 0` plateau below the threshold and `P = 2` padding above the kinematic limit; the lookup keeps the last `W` of each equal `P` (M1). The test oracle in `crates/dna-physics/tests/sampling.rs` rebuilds the inverse CDF from the raw file independently of `dna-data` and agrees (KS) for the open shells at 100 eV (0-3), and for all five shells at 1, 10 and 100 keV.
+- `sigmadiff_cumulated_elastic_e_champion_hp`: 101 incident energies, 181 rows per block (1-degree grid), used with exactly the M1 lin-lin lookup; KS agreement with the raw block at five nodes.
+- Not read in M2: `sigmadiff_ionisation_e_born` (slow path, docs/09 Q4), Sanche, Melton (M3), all proton files (M5).
+
 ## Observed file formats (checked on the committed files, 20/20 SHA-256 verified)
 - Whitespace-separated plain text, no comments or headers in the committed copies. One file is CRLF (`sigma_ionisation_p_rudd.dat`, 645 lines); two use tabs; spaces otherwise. Parsers split on any whitespace and ignore `\r`.
 - Differential files are long blocks: Champion elastic 18281 rows, Born electron cumulated 9546 rows, proton RPWBA 11200 rows.

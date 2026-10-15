@@ -134,6 +134,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "dna-physics"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "dna-core",
+ "dna-data",
+ "proptest",
+ "rand 0.10.3",
+ "rayon",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "dna-sim"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "dna-core",
+ "dna-data",
+ "dna-physics",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "either"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
