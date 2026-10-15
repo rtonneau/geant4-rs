@@ -33,4 +33,4 @@ Deterministic tiny runs (fixed seed, 10^3 histories) store summary scalars to 1e
 - `ci.yml` (every PR): `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test --workspace` (includes doctests and small deterministic regressions, < 5 min).
 - `statistical.yml` (manual + nightly): V4, V5, V9, V11 at reduced statistics against stored fixtures.
 - `bench.yml` (manual): criterion benches; results as artifacts, never gating.
-- Data: lives in the repository `data/` folder (user-provided, Q7), verified against `data/MANIFEST.toml` checksums in a test; no network access needed in CI.
+- Data: outside the repository (`DNA_DATA_DIR`, see `10-data-requirements.md`). PR CI runs data-free tests and committed small fixtures only; data-dependent tests (V1-V5 against real tables) run locally and are skipped loudly otherwise.

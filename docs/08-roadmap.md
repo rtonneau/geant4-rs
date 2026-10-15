@@ -10,7 +10,7 @@ Acceptance: all listed tests; A.4 G-value convention frozen in docs after readin
 Risks: `rand` API churn. DoD: CI green on a fresh clone.
 
 ## M1 Data layer
-Scope: `data/MANIFEST.toml` + checksum verification of the user-provided `data/` folder (no download script), table readers for cross-section and differential-cumulative files named in B.4, log-log and 2-D interpolation exactly as `G4DNACrossSectionDataSet` / `QuadInterpolator`, energy-domain enforcement.
+Scope: `DNA_DATA_DIR` resolution, `data/MANIFEST.toml` (generated locally by `scripts/make_data_manifest.py`) + optional checksum verification, table readers for cross-section and differential-cumulative files named in B.4, log-log and 2-D interpolation exactly as `G4DNACrossSectionDataSet` / `QuadInterpolator`, energy-domain enforcement.
 Refs: `D/utils/src/G4DNACrossSectionDataSet.cc` (G2), `D/models/src/G4DNAChampionElasticModel.cc`, `G4DNABornIonisationModel1.cc`.
 Tests: V1; interpolation vs Geant4 numbers for a few hand-picked points exported once; proptest monotonic CDFs.
 Acceptance: V2 infrastructure ready for any table; licence decision Q7 recorded. Risk: file format surprises (units/scale factors).
