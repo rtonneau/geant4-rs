@@ -79,6 +79,8 @@ Additional approved dependencies:
 - `criterion` — benchmarking.
 - `proptest` — property-based testing.
 - `tokio` — only when asynchronous execution is genuinely needed.
+- `serde_json` — machine-readable output.
+- `sha2` — SHA-256 checksums of data files.
 
 Prefer the standard library when practical. Additional crates require justification based on reliability, maintenance, complexity and performance.
 

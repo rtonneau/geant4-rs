@@ -1,0 +1,2 @@
+# Geant4 data files must stay byte-identical (checksums in data/MANIFEST.toml).
+data/dna/** -text
