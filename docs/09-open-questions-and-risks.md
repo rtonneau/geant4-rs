@@ -1,15 +1,15 @@
 # I. Open questions and risks
 
 ## Open questions (owner: project lead unless stated)
-- **Q1** How to treat 1-10 MeV electrons (D.1 a/b/c). Resolve: decide before M5; investigate Geant4 behaviour by running `dnaphysics` at 5 MeV and inspecting where energy is deposited by DNA vs standard models.
+- **Q1 RESOLVED (user):** limit primary energy to <= 1 MeV initially. Electron beams > 1 MeV are rejected with a typed error; the 1-10 MeV question (D.1 a/b/c) moves to M11.
 - **Q2** Electron option(s) to support: recommendation option2 first (default in chem6; includes vib/attach), option4/6 only on demand.
 - **Q3** Proton secondary-electron sampling fidelity and cross-section data for Rudd Extended (many ion tables, only p/H needed): audit during M5.
 - **Q4** "hp/cumulated" fast tables vs on-the-fly integration: choose cumulated (faster, Geant4 option-2 default `fasterCode`) after verifying statistical equivalence with the slow path (M2).
-- **Q5** Fate of ionisation binding energy and sub-threshold electron energy in deposited-energy normalisation (A.4). Resolve by reading `SampleSecondaries` and chem6 scorer; document deviations.
+- **Q5 CLARIFIED, awaiting your confirmation:** energy normalisation now defined concretely in 01 section A.4 from the C++ source (E_dep = sum of local deposits; per-event ratio mean as Geant4; we additionally report ratio of totals). Only the solvation deposit and PrimaryKiller details remain to confirm in M0/M2.
 - **Q6** Multi-track/boundary chemistry (UHDR prototype, periodic/bounded boxes): out of initial scope; M7 data structures must not preclude it (explicit box, per-species position arrays).
-- **Q7** Licensing/redistribution of G4EMLOW data and Geant4-derived reaction tables: Geant4 Software License must be read (`LICENSE` in reference repo) before committing any fixture; default is script-fetch with MD5.
+- **Q7 RESOLVED (user):** the user will add a `data/` folder with the Geant4 cross-section data. Rust side: loaders read `data/` (path configurable via TOML / `DNA_DATA_DIR`), a `data/MANIFEST.toml` records for each file its Geant4 dataset (G4EMLOW 8.8), original path, MD5/SHA-256, units, and consuming model; tests verify checksums. Licence note (Geant4 Software License attribution) goes in `data/README.md`. No fetch script needed for those files.
 - **Q8** Temperature/density dependence: fixed 298 K water for now; confirm in C++ (G7).
-- **Q9** Approval for `serde_json` (F).
+- **Q9 RESOLVED (user):** `serde_json` approved for machine-readable output.
 - **Q10** Whether to keep package name `geant4-rs` for a facade crate or rename (cosmetic).
 
 ## Risks (ranked)

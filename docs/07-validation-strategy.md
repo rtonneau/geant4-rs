@@ -26,10 +26,11 @@ Pre-registered acceptance criteria below are fixed **before** the first comparis
 Statistical details: batch means (>=30 batches) for correlated scores; Geant4 reference errors from its own batch means; independent-seed repeat of each reference run to estimate its run-to-run scatter; report both z and effect size. No result is called "scientifically valid" from L2/L3 alone.
 
 ## G.3 Regression fixtures
+(A *fixture* is a small stored input or expected-output file that a test compares against, e.g. a CSV of Geant4 reference values or a saved result of a fixed-seed run. Not the same as the `data/` cross-section tables, which are simulation inputs.)
 Deterministic tiny runs (fixed seed, 10^3 histories) store summary scalars to 1e-12 relative in `tests/fixtures/`; intentionally regenerated via `cargo xtask`-like script with a changelog entry whenever model or RNG consumption changes.
 
 ## G.4 CI (GitHub Actions)
 - `ci.yml` (every PR): `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test --workspace` (includes doctests and small deterministic regressions, < 5 min).
 - `statistical.yml` (manual + nightly): V4, V5, V9, V11 at reduced statistics against stored fixtures.
 - `bench.yml` (manual): criterion benches; results as artifacts, never gating.
-- Data: dataset downloaded by script with MD5 check and cached; tests needing it are skipped *loudly* (`#[ignore]` with reason) unless `DNA_DATA_DIR` is set; PR CI uses a committed minimal subset where licence permits (M1 decision Q7).
+- Data: lives in the repository `data/` folder (user-provided, Q7), verified against `data/MANIFEST.toml` checksums in a test; no network access needed in CI.
