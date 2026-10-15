@@ -1,8 +1,8 @@
 # Data requirements (G4EMLOW 8.8, `dna/` subfolder only)
 
 **Policy (decision Q7, revised):** the Geant4 data stay **outside the repository** (full `G4EMLOW8.8` is ~2.1 GB / 43k files; only `dna/` is relevant).
-- Location is given by env var `DNA_DATA_DIR` (pointing at the `G4EMLOW8.8` folder, i.e. the directory that contains `dna/`) or the TOML key `data_dir`. Local example: `C:\DEV\GEANT4\Geant4-ressources-data\G4EMLOW8.8`.
-- Tests needing the data are `#[ignore]`d/skipped with an explicit message when `DNA_DATA_DIR` is unset. Cloud sessions and CI therefore run only data-free tests plus small committed fixtures.
+- Location is given by env var `G4RS_DATA_DIR` (pointing at the `G4EMLOW8.8` folder, i.e. the directory that contains `dna/`) or the TOML key `data_dir`. Local example: `C:\DEV\GEANT4\Geant4-ressources-data\G4EMLOW8.8`.
+- Tests needing the data are `#[ignore]`d/skipped with an explicit message when `G4RS_DATA_DIR` is unset. Cloud sessions and CI therefore run only data-free tests plus small committed fixtures.
 - The repo stores `data/MANIFEST.toml`: file names, sizes, SHA-256, consuming model. Generated locally by `scripts/make_data_manifest.py`; at run time the loader verifies checksums when `verify_data = true`.
 - Output metadata always records dataset name/version and the manifest hash.
 - Licence: Geant4 Software License attribution applies if any derived fixture is committed (check before doing so).
