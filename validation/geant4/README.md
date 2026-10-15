@@ -154,7 +154,7 @@ assumes it can read; every energy found in `slow_sums.csv` is compared, with the
 
 **Run a timing check first** (about a minute) and extrapolate:
 `./build/g4rs_ref slow /tmp/slow_timing 1 8:1000,100:1000,1000:100,10000:10,100000:1`. Rust needs about
-1.7e6 interactions per second per core; interactions per event are about 25 (8 eV), 316 (100 eV), 2.8e3
+1.7e6 interactions per second per core; interactions per event are about 43 (8 eV), 130 (30 eV), 316 (100 eV), 2.8e3
 (1 keV), 2.7e4 (10 keV), 2.6e5 (100 keV), 2.3e6 (900 keV). The default list is about 2.5e8 interactions in
 total. Geant4 is usually 10-50 times slower per step than the Rust loop, so **the expected runtime is
 between 40 minutes and 3 hours on one core, dominated by the 10 keV-900 keV entries (this is an estimate, I
