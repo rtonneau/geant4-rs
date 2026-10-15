@@ -1,5 +1,29 @@
 # Next round
 
+> ## Session B notes (written at the end of M6 session A, branch `claude/m6-physchem-a`, no PR yet)
+> **State.** Crate `dna-chemistry` (physicochemical stage), data in `data/chemistry/`, tests green (docs/08 M6 status). Audit: docs/02 B.7.6.
+> **API for B.** `PhysChemEngine::option3()?` then `engine.convert_history(&events, &mut rng)?` with `rng = streams.stream(history_id, Stage::PhysChem)`;
+> `events` = `HistoryResult::physchem` of `dna-sim` (needs `RunConfig::record_physchem = true`). Result: `HistoryChemistry { species, stats }`
+> (`PhysChemStats`: events by kind, channel counts per state, recombination counters, `decay_energy_ev`, species counts; `add` merges histories).
+> `with_recombination_enabled(false)` is the ablation switch; `decay_in_state` / `decay_event` give single-event decays for tests.
+> **Not wired yet.** `dna-sim` only dev-depends on `dna-chemistry` (test `physchem_a.rs`). B must add the stage to the run layer
+> (fixed-order reduction, JSON schema bump, provenance of the chemistry data hash) and the scoring.
+> **Things B must know.**
+> 1. Species are born at **1 ps** (not 0; docs/02 B.7.6 item 1, Q22): G(t) output times are global times.
+> 2. The initial yields depend strongly on the **electron-hole recombination** of option3 (21.7 % of the ionised molecules at 10 keV, informational
+>    numbers in docs/08): ablation on/off and the event-order sensitivity (Q21: shuffle the order of the water-molecule events, compare yields) are B's
+>    first checks; they are not validated against Geant4 yet (R14).
+> 3. **Relax channels re-book the excitation energy** in the chemical stage; `E_dep` excludes it (Q20). Confirm against the `chem6` `E_dep` when the
+>    Geant4 data exist.
+> 4. Geant4 generator for B: `G4EmDNAChemistry_option3` with the scheduler ended at 1 ps (chem6 style) counts species at 1 ps; remember `OH-` appears
+>    only through the attachment (rare), `O` (`Oxy`) from `B^1A_1` and `H2Ovib` channels. The Rust side offers `species_counts` per history.
+> 5. Quirks reproduced, not fixed: `OH-` is not displaced in the dissociative attachment, attachment products `H2 + OH- + OH` need an extra water,
+>    the temperature of the Onsager radius is 293.15 K (chemistry 298 K) (docs/09 R15, Q23).
+> 6. Open items inherited: `G4DNARuddAngle` (M5), validity of the Meesungnoen fit above ~7 eV (affects only the solvation of M3, already validated),
+>    the pair-correlation observables of prompt item 3 (OH-e_aq, OH-H3O+ distances) are free to define in B; the displacement distributions are already
+>    verified analytically (docs/08 M6).
+
+
 Written after the M3 validation gate closed (branch `claude/inspiring-edison-v1kw1a`, **no PR opened yet**: open one
 when you are ready; `main` is at `5c55626`, the merge of the M2 Geant4 reference data). Part (i) is for the human,
 part (ii) is the draft of the next prompt for the coding agent. Update this file at the end of every round (the agent
@@ -69,7 +93,7 @@ then run B on the same branch.
 - **Session B** (scoring, statistical tests, Geant4 `physchem` generator, docs, final gate): about 4-6 USD. The
   generator can be written but not built or run in the cloud (no Geant4); you run it locally.
 
-### Session A: species data and event -> species engine
+### Session A: species data and event -> species engine (DONE, see the notes at the top and docs/08 M6)
 
 ```text
 Start milestone M6 (physicochemical stage) of the geant4-rs project, part A of 2 (data and engine only).

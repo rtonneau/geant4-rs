@@ -75,16 +75,23 @@ impl SpeciesTable {
         })?;
         let mut slots: Vec<Option<SpeciesProps>> = vec![None; Species::ALL.len()];
         for r in raw.species {
-            let species = Species::from_tag(&r.tag)
-                .ok_or_else(|| ChemistryError::invalid(FILE, format!("unknown species tag '{}'", r.tag)))?;
+            let species = Species::from_tag(&r.tag).ok_or_else(|| {
+                ChemistryError::invalid(FILE, format!("unknown species tag '{}'", r.tag))
+            })?;
             if r.diffusion_m2_per_s <= 0.0 || r.van_der_waals_radius_nm <= 0.0 {
                 return Err(ChemistryError::invalid(
                     FILE,
-                    format!("{}: diffusion coefficient and radius must be positive", r.tag),
+                    format!(
+                        "{}: diffusion coefficient and radius must be positive",
+                        r.tag
+                    ),
                 ));
             }
             if slots[species.index()].is_some() {
-                return Err(ChemistryError::invalid(FILE, format!("species '{}' listed twice", r.tag)));
+                return Err(ChemistryError::invalid(
+                    FILE,
+                    format!("species '{}' listed twice", r.tag),
+                ));
             }
             slots[species.index()] = Some(SpeciesProps {
                 species,

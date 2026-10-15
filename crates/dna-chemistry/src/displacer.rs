@@ -201,7 +201,13 @@ mod tests {
         );
         let mut check = ScriptedRng::new(&[0.35, 0.45, 0.55, 0.65]);
         let m = radial_distribution(MOTHER_RMS_NM, &mut check);
-        assert!((d[1].x - m.x).abs() < 1e-9, "OH carries only the mother shift");
-        assert!((d[0].x - m.x).abs() > 1e-6, "H3O+ carries the extra 0.8 nm displacement");
+        assert!(
+            (d[1].x - m.x).abs() < 1e-9,
+            "OH carries only the mother shift"
+        );
+        assert!(
+            (d[0].x - m.x).abs() > 1e-6,
+            "H3O+ carries the extra 0.8 nm displacement"
+        );
     }
 }

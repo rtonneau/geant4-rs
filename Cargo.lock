@@ -166,6 +166,7 @@ name = "dna-sim"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "dna-chemistry",
  "dna-core",
  "dna-data",
  "dna-physics",

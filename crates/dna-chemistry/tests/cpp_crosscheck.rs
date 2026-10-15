@@ -27,13 +27,26 @@ fn species_table_equals_the_extraction() {
     assert_eq!(fx.len(), 15, "the extraction lists 15 species");
     for (cpp_tag, v) in fx {
         let tag = rust_tag(cpp_tag);
-        let species = Species::from_tag(&tag).unwrap_or_else(|| panic!("no Rust species for {cpp_tag}"));
+        let species =
+            Species::from_tag(&tag).unwrap_or_else(|| panic!("no Rust species for {cpp_tag}"));
         let p = table.get(species);
         // Geant4 m^2/s -> nm^2/ps: x 1e6
         let d = v["diffusion_m2_s"].as_f64().unwrap() * 1.0e6;
-        assert!(rel_eq(p.diffusivity.nm2_per_ps(), d, 1e-14), "{tag}: D {} vs {d}", p.diffusivity.nm2_per_ps());
-        assert_eq!(i64::from(p.charge), v["charge"].as_i64().unwrap(), "{tag}: charge");
-        assert_eq!(p.radius.nm(), v["vdw_radius_nm"].as_f64().unwrap(), "{tag}: radius");
+        assert!(
+            rel_eq(p.diffusivity.nm2_per_ps(), d, 1e-14),
+            "{tag}: D {} vs {d}",
+            p.diffusivity.nm2_per_ps()
+        );
+        assert_eq!(
+            i64::from(p.charge),
+            v["charge"].as_i64().unwrap(),
+            "{tag}: charge"
+        );
+        assert_eq!(
+            p.radius.nm(),
+            v["vdw_radius_nm"].as_f64().unwrap(),
+            "{tag}: radius"
+        );
     }
 }
 
@@ -53,27 +66,64 @@ fn channel_table_equals_the_extraction() {
             .find(|s| &s.name == name)
             .unwrap_or_else(|| panic!("state {name} missing in the Rust table"));
         // electronic configuration: orbit emptied (None for attachment/recombined)
-        let vacated: Vec<u64> = v["orbits_vacated"].as_array().unwrap().iter().map(|o| o.as_u64().unwrap()).collect();
+        let vacated: Vec<u64> = v["orbits_vacated"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| o.as_u64().unwrap())
+            .collect();
         match st.orbit_vacated {
             Some(o) => assert_eq!(vacated, vec![u64::from(o)], "{name}: orbit"),
             None => assert!(vacated.is_empty(), "{name}: orbit"),
         }
-        let filled: Vec<u64> = v["orbits_filled"].as_array().unwrap().iter().map(|o| o.as_u64().unwrap()).collect();
+        let filled: Vec<u64> = v["orbits_filled"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| o.as_u64().unwrap())
+            .collect();
         match st.kind {
-            StateKind::Excitation => assert_eq!(filled, vec![5], "{name}: an excitation fills orbit 5"),
-            _ => assert!(filled.is_empty() || st.kind == StateKind::Attachment, "{name}"),
+            StateKind::Excitation => {
+                assert_eq!(filled, vec![5], "{name}: an excitation fills orbit 5")
+            }
+            _ => assert!(
+                filled.is_empty() || st.kind == StateKind::Attachment,
+                "{name}"
+            ),
         }
         let chans = v["channels"].as_array().unwrap();
         assert_eq!(chans.len(), st.channels.len(), "{name}: number of channels");
         for (fc, rc) in chans.iter().zip(&st.channels) {
             n_channels += 1;
-            assert_eq!(fc["name"].as_str().unwrap(), rc.name, "{name}: channel name/order");
-            assert_eq!(fc["probability"].as_f64().unwrap(), rc.probability, "{}: p", rc.name);
-            assert_eq!(fc["energy_ev"].as_f64().unwrap(), rc.decay_energy.ev(), "{}: energy", rc.name);
+            assert_eq!(
+                fc["name"].as_str().unwrap(),
+                rc.name,
+                "{name}: channel name/order"
+            );
+            assert_eq!(
+                fc["probability"].as_f64().unwrap(),
+                rc.probability,
+                "{}: p",
+                rc.name
+            );
+            assert_eq!(
+                fc["energy_ev"].as_f64().unwrap(),
+                rc.decay_energy.ev(),
+                "{}: energy",
+                rc.name
+            );
             if let Some(level) = fc.get("energy_from_excitation_level") {
-                assert_eq!(exc[level.as_u64().unwrap() as usize].as_f64().unwrap(), rc.decay_energy.ev());
+                assert_eq!(
+                    exc[level.as_u64().unwrap() as usize].as_f64().unwrap(),
+                    rc.decay_energy.ev()
+                );
             }
-            let prods: Vec<String> = fc["products"].as_array().unwrap().iter().map(|p| rust_tag(p.as_str().unwrap())).collect();
+            let prods: Vec<String> = fc["products"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| rust_tag(p.as_str().unwrap()))
+                .collect();
             let ours: Vec<String> = rc.products.iter().map(|s| s.tag().to_owned()).collect();
             assert_eq!(prods, ours, "{}: products", rc.name);
             match (fc["displacement"].as_str(), rc.displacement.cpp_case()) {
@@ -105,50 +155,116 @@ fn displacer_constants_equal_the_extraction() {
     let x = fixture("cpp_extract.json");
     let d = &x["displacer"];
     let rms = |case: &str| -> Vec<f64> {
-        d["products"][case]["rms_nm"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect()
+        d["products"][case]["rms_nm"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_f64().unwrap())
+            .collect()
     };
     let strs = |case: &str, key: &str| -> Vec<String> {
-        d["products"][case][key].as_array().unwrap().iter().map(|v| v.as_str().unwrap().to_owned()).collect()
+        d["products"][case][key]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_owned())
+            .collect()
     };
     // A1B1: R = 2.4 nm, OH -1/18, H +17/18
     assert_eq!(rms("A1B1_DissociationDecay"), vec![displacer::A1B1_RMS_NM]);
-    assert_eq!(strs("A1B1_DissociationDecay", "fractions"), ["-1.0/18.0", "+17.0/18.0"]);
+    assert_eq!(
+        strs("A1B1_DissociationDecay", "fractions"),
+        ["-1.0/18.0", "+17.0/18.0"]
+    );
     // B1A1 and dissociative attachment: R = 0.8 nm (H2 -16/18, O recoil +2/18), OH pair 1.1 nm, factors +-0.5
     for case in ["B1A1_DissociationDecay", "DissociativeAttachment"] {
-        assert_eq!(rms(case), vec![displacer::B1A1_AXIS_RMS_NM, displacer::OH_PAIR_RMS_NM], "{case}");
-        assert_eq!(strs(case, "fractions"), ["-16.0/18.0", "+2.0/18.0"], "{case}");
+        assert_eq!(
+            rms(case),
+            vec![displacer::B1A1_AXIS_RMS_NM, displacer::OH_PAIR_RMS_NM],
+            "{case}"
+        );
+        assert_eq!(
+            strs(case, "fractions"),
+            ["-16.0/18.0", "+2.0/18.0"],
+            "{case}"
+        );
         assert_eq!(strs(case, "half_factors"), ["0.5", "-0.5"], "{case}");
     }
     // B1A1 2: each H 1.6 nm, factors +-0.5
-    assert_eq!(rms("B1A1_DissociationDecay2"), vec![displacer::B1A1_2_H_RMS_NM]);
-    assert_eq!(strs("B1A1_DissociationDecay2", "half_factors"), ["0.5", "-0.5"]);
+    assert_eq!(
+        rms("B1A1_DissociationDecay2"),
+        vec![displacer::B1A1_2_H_RMS_NM]
+    );
+    assert_eq!(
+        strs("B1A1_DissociationDecay2", "half_factors"),
+        ["0.5", "-0.5"]
+    );
     // Ionisation and auto-ionisation: 50/50 branch, displaced product 0.8 nm
     for case in ["Ionisation_DissociationDecay", "AutoIonisation"] {
-        assert_eq!(rms(case), vec![0.0, displacer::IONISATION_RMS_NM, displacer::IONISATION_RMS_NM, 0.0], "{case}");
+        assert_eq!(
+            rms(case),
+            vec![
+                0.0,
+                displacer::IONISATION_RMS_NM,
+                displacer::IONISATION_RMS_NM,
+                0.0
+            ],
+            "{case}"
+        );
         assert_eq!(strs(case, "branch_probability"), ["0.5"], "{case}");
     }
     // mother displacement: 2.0 nm for the two ionising cases, 0 for the others used here
     let mother = |case: &str| d["mother_rms_nm"][case].as_f64().unwrap();
-    assert_eq!(mother("Ionisation_DissociationDecay"), displacer::MOTHER_RMS_NM);
+    assert_eq!(
+        mother("Ionisation_DissociationDecay"),
+        displacer::MOTHER_RMS_NM
+    );
     assert_eq!(mother("AutoIonisation"), displacer::MOTHER_RMS_NM);
-    for case in ["A1B1_DissociationDecay", "B1A1_DissociationDecay", "B1A1_DissociationDecay2", "DissociativeAttachment"] {
+    for case in [
+        "A1B1_DissociationDecay",
+        "B1A1_DissociationDecay",
+        "B1A1_DissociationDecay2",
+        "DissociativeAttachment",
+    ] {
         assert_eq!(mother(case), 0.0, "{case}");
     }
-    assert_eq!(d["radial_distribution_of_products_sigma_per_component"].as_str().unwrap(), "Rrms / sqrt(3)");
+    assert_eq!(
+        d["radial_distribution_of_products_sigma_per_component"]
+            .as_str()
+            .unwrap(),
+        "Rrms / sqrt(3)"
+    );
     // auto-ionisation electron: energy and Meesungnoen2002 penetration
     let params = PhysChemParams::option3().unwrap();
-    assert_eq!(d["autoionisation_electron_kinetic_energy_ev"].as_f64().unwrap(), params.autoionisation_electron_energy.ev());
+    assert_eq!(
+        d["autoionisation_electron_kinetic_energy_ev"]
+            .as_f64()
+            .unwrap(),
+        params.autoionisation_electron_energy.ev()
+    );
 }
 
 #[test]
 fn penetration_law_equals_the_extraction_and_the_hand_value() {
     let x = fixture("cpp_extract.json");
     let h = fixture("hand_values.json");
-    let g: Vec<f64> = x["penetration"]["meesungnoen2002_gcoeff"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+    let g: Vec<f64> = x["penetration"]["meesungnoen2002_gcoeff"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_f64().unwrap())
+        .collect();
     assert_eq!(g, dna_core::penetration::MEESUNGNOEN_COEFFICIENTS.to_vec());
-    assert_eq!(x["penetration"]["sigma_1d_per_rmean"].as_f64().unwrap(), dna_core::penetration::SIGMA_1D_PER_RMEAN);
+    assert_eq!(
+        x["penetration"]["sigma_1d_per_rmean"].as_f64().unwrap(),
+        dna_core::penetration::SIGMA_1D_PER_RMEAN
+    );
     let ke = h["penetration"]["ke_ev"].as_f64().unwrap();
-    assert!(rel_eq(autoionisation_r_mean_nm(ke), h["penetration"]["r_mean_nm"].as_f64().unwrap(), 1e-12));
+    assert!(rel_eq(
+        autoionisation_r_mean_nm(ke),
+        h["penetration"]["r_mean_nm"].as_f64().unwrap(),
+        1e-12
+    ));
 }
 
 #[test]
@@ -156,33 +272,79 @@ fn recombination_parameters_and_onsager_radius_equal_the_hand_values() {
     let x = fixture("cpp_extract.json");
     let h = fixture("hand_values.json");
     let rc = &x["recombination"];
-    let text = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../data/chemistry/physchem_option3.toml")).unwrap();
+    let text = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../data/chemistry/physchem_option3.toml"
+    ))
+    .unwrap();
     let toml: toml::Value = toml::from_str(&text).unwrap();
     let r = &toml["recombination"];
-    let arr = |v: &toml::Value| -> Vec<f64> { v.as_array().unwrap().iter().map(|e| e.as_float().unwrap()).collect() };
-    let fx = |k: &str| -> Vec<f64> { rc[k].as_array().unwrap().iter().map(|e| e.as_f64().unwrap()).collect() };
+    let arr = |v: &toml::Value| -> Vec<f64> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|e| e.as_float().unwrap())
+            .collect()
+    };
+    let fx = |k: &str| -> Vec<f64> {
+        rc[k]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|e| e.as_f64().unwrap())
+            .collect()
+    };
     assert_eq!(arr(&r["a"]), fx("A"));
     assert_eq!(arr(&r["b"]), fx("B"));
     assert_eq!(arr(&r["s"]), fx("S"));
     assert_eq!(r["y0"].as_float().unwrap(), fx("Y")[0]);
-    assert_eq!(r["search_radius_in_onsager_radii"].as_float().unwrap(), rc["search_radius_in_onsager_radii"].as_f64().unwrap());
-    assert_eq!(r["temperature_k"].as_float().unwrap(), rc["NTP_Temperature_K"].as_f64().unwrap());
-    assert_eq!(r["density_g_cm3"].as_float().unwrap(), rc["G4_WATER_density_g_cm3"].as_f64().unwrap());
-    assert_eq!(r["k_boltzmann_mev_per_k"].as_float().unwrap().to_string(), "0.00000000008617333");
+    assert_eq!(
+        r["search_radius_in_onsager_radii"].as_float().unwrap(),
+        rc["search_radius_in_onsager_radii"].as_f64().unwrap()
+    );
+    assert_eq!(
+        r["temperature_k"].as_float().unwrap(),
+        rc["NTP_Temperature_K"].as_f64().unwrap()
+    );
+    assert_eq!(
+        r["density_g_cm3"].as_float().unwrap(),
+        rc["G4_WATER_density_g_cm3"].as_f64().unwrap()
+    );
+    assert_eq!(
+        r["k_boltzmann_mev_per_k"].as_float().unwrap().to_string(),
+        "0.00000000008617333"
+    );
     assert_eq!(rc["clhep"]["k_Boltzmann"].as_str().unwrap(), "8.617333e-11");
     assert_eq!(r["e_si"].as_float().unwrap(), 1.602176634e-19);
     // Onsager radius, dielectric constant and probabilities from the independent Python evaluation
     let rec = PhysChemParams::option3().unwrap().recombination;
     let o = &h["onsager"];
-    assert!(rel_eq(rec.dielectric_constant, o["dielectric_constant"].as_f64().unwrap(), 1e-12));
-    assert!(rel_eq(rec.onsager_radius.nm(), o["onsager_radius_nm"].as_f64().unwrap(), 1e-12));
+    assert!(rel_eq(
+        rec.dielectric_constant,
+        o["dielectric_constant"].as_f64().unwrap(),
+        1e-12
+    ));
+    assert!(rel_eq(
+        rec.onsager_radius.nm(),
+        o["onsager_radius_nm"].as_f64().unwrap(),
+        1e-12
+    ));
     for (d, p) in o["probabilities_at_distance_nm"].as_object().unwrap() {
         let d: f64 = d.parse().unwrap();
-        assert!(rel_eq(rec.probability(d), p.as_f64().unwrap(), 1e-12), "p({d})");
+        assert!(
+            rel_eq(rec.probability(d), p.as_f64().unwrap(), 1e-12),
+            "p({d})"
+        );
     }
     // the rest-process ordering that makes the recombination win the tie
-    assert_eq!(rc["rest_process_ordering"]["dissociation"].as_i64(), Some(1));
-    assert_eq!(rc["rest_process_ordering"]["recombination"].as_i64(), Some(2));
+    assert_eq!(
+        rc["rest_process_ordering"]["dissociation"].as_i64(),
+        Some(1)
+    );
+    assert_eq!(
+        rc["rest_process_ordering"]["recombination"].as_i64(),
+        Some(2)
+    );
 }
 
 #[test]
@@ -201,7 +363,11 @@ fn every_channel_balances_as_in_the_hand_table() {
                 continue;
             }
             let o: i32 = ch.products.iter().map(|&s| atoms(s).1).sum();
-            assert_eq!(i64::from(o - 1), hv["extra_waters"].as_i64().unwrap(), "{key}: extra waters");
+            assert_eq!(
+                i64::from(o - 1),
+                hv["extra_waters"].as_i64().unwrap(),
+                "{key}: extra waters"
+            );
             checked += 1;
         }
     }

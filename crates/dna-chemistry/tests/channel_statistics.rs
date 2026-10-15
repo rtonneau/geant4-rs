@@ -49,8 +49,16 @@ fn the_selected_channel_follows_the_table() {
             })
             .sum();
         let p = chi2_pvalue(chi2, state.channels.len() - 1);
-        eprintln!("{:>14}: chi2 = {chi2:7.3} (dof {}), p = {p:.4}", state.name, state.channels.len() - 1);
-        assert!(p > ALPHA, "{}: chi2 = {chi2}, p = {p} <= {ALPHA}", state.name);
+        eprintln!(
+            "{:>14}: chi2 = {chi2:7.3} (dof {}), p = {p:.4}",
+            state.name,
+            state.channels.len() - 1
+        );
+        assert!(
+            p > ALPHA,
+            "{}: chi2 = {chi2}, p = {p} <= {ALPHA}",
+            state.name
+        );
     }
     assert_eq!(n_tests, 6);
 }
@@ -91,7 +99,10 @@ fn single_channel_states_are_deterministic_and_the_event_maps_to_the_right_state
         d.species.iter().map(|s| s.species).collect::<Vec<_>>(),
         vec![Species::H2, Species::Ohm, Species::Oh]
     );
-    assert_eq!(engine.channel_table().states()[d.state].kind, StateKind::Attachment);
+    assert_eq!(
+        engine.channel_table().states()[d.state].kind,
+        StateKind::Attachment
+    );
 }
 
 #[test]
@@ -123,7 +134,10 @@ fn relaxation_channels_book_the_excitation_energy_of_their_level() {
         }
         // a floating-point sum of up to 20 000 equal terms: relative 1e-12, not bitwise
         let exact = n_relax as f64 * e_exc;
-        assert!((sum - exact).abs() <= 1e-12 * exact.max(1.0), "level {level}: {sum} vs {exact}");
+        assert!(
+            (sum - exact).abs() <= 1e-12 * exact.max(1.0),
+            "level {level}: {sum} vs {exact}"
+        );
     }
 }
 

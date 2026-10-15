@@ -23,7 +23,8 @@ use serde::Deserialize;
 const FILE: &str = "physchem_option3.toml";
 
 /// Embedded default data.
-pub const DEFAULT_PHYSCHEM_TOML: &str = include_str!("../../../data/chemistry/physchem_option3.toml");
+pub const DEFAULT_PHYSCHEM_TOML: &str =
+    include_str!("../../../data/chemistry/physchem_option3.toml");
 
 /// Speed of light, m/s (exact; CLHEP `c_light = 299.792458 mm/ns`).
 const C_LIGHT_M_PER_S: f64 = 299_792_458.0;
@@ -74,11 +75,22 @@ pub struct Recombination {
 
 impl Recombination {
     fn from_raw(r: &RawRecombination) -> Result<Self, ChemistryError> {
-        if r.temperature_k <= 0.0 || r.density_g_cm3 <= 0.0 || r.search_radius_in_onsager_radii <= 0.0 {
-            return Err(ChemistryError::invalid(FILE, "recombination: temperature, density and search radius must be positive"));
+        if r.temperature_k <= 0.0
+            || r.density_g_cm3 <= 0.0
+            || r.search_radius_in_onsager_radii <= 0.0
+        {
+            return Err(ChemistryError::invalid(
+                FILE,
+                "recombination: temperature, density and search radius must be positive",
+            ));
         }
         let t = r.temperature_k;
-        let poly = |c: &[f64]| c.iter().enumerate().map(|(i, &x)| x / t.powi(i as i32)).sum::<f64>();
+        let poly = |c: &[f64]| {
+            c.iter()
+                .enumerate()
+                .map(|(i, &x)| x / t.powi(i as i32))
+                .sum::<f64>()
+        };
         let (a, b, s) = (poly(&r.a), poly(&r.b), poly(&r.s));
         let (c, d) = (a - b - 3.0, b + 3.0);
         let y = 1.0 / (1.0 + r.y0 / (r.density_g_cm3 * r.density_g_cm3));
@@ -86,7 +98,8 @@ impl Recombination {
         let epsilon = 1.0 + 10f64.powf(y * (c + (s - 1.0) * lr) + d + lr);
         // e^2 / (4 pi eps0 k_B) = e_SI^2 c^2 1e-7 / k_B[J/K], k_B[J/K] = k_B[MeV/K] * 1e6 * e_SI
         let k_b_j_per_k = r.k_boltzmann_mev_per_k * 1.0e6 * r.e_si;
-        let onsager_constant_m_k = r.e_si * r.e_si * C_LIGHT_M_PER_S * C_LIGHT_M_PER_S * 1.0e-7 / k_b_j_per_k;
+        let onsager_constant_m_k =
+            r.e_si * r.e_si * C_LIGHT_M_PER_S * C_LIGHT_M_PER_S * 1.0e-7 / k_b_j_per_k;
         let onsager_nm = onsager_constant_m_k / (t * epsilon) * 1.0e9;
         Ok(Self {
             enabled: r.enabled,
@@ -128,7 +141,8 @@ impl PhysChemParams {
             file: FILE,
             message: e.to_string(),
         })?;
-        if raw.creation.birth_time_ps < 0.0 || raw.autoionisation.electron_kinetic_energy_ev <= 0.1 {
+        if raw.creation.birth_time_ps < 0.0 || raw.autoionisation.electron_kinetic_energy_ev <= 0.1
+        {
             return Err(ChemistryError::invalid(
                 FILE,
                 "birth time must be >= 0 and the auto-ionisation electron energy above 0.1 eV (r_mean > 0)",
@@ -136,7 +150,9 @@ impl PhysChemParams {
         }
         Ok(Self {
             birth_time: Time::from_ps(raw.creation.birth_time_ps),
-            autoionisation_electron_energy: Energy::from_ev(raw.autoionisation.electron_kinetic_energy_ev),
+            autoionisation_electron_energy: Energy::from_ev(
+                raw.autoionisation.electron_kinetic_energy_ev,
+            ),
             recombination: Recombination::from_raw(&raw.recombination)?,
         })
     }
@@ -160,7 +176,8 @@ mod tests {
 
     #[test]
     fn invalid_parameters_are_rejected() {
-        let bad = DEFAULT_PHYSCHEM_TOML.replacen("temperature_k = 293.15", "temperature_k = -1.0", 1);
+        let bad =
+            DEFAULT_PHYSCHEM_TOML.replacen("temperature_k = 293.15", "temperature_k = -1.0", 1);
         assert!(PhysChemParams::from_toml(&bad).is_err());
         assert!(PhysChemParams::from_toml("[creation]").is_err());
     }

@@ -189,13 +189,13 @@ impl ChannelTable {
                     ));
                 }
             };
-            if matches!(kind, StateKind::Excitation | StateKind::Ionisation) {
-                if rs.index > 4 || rs.orbit_vacated != Some(4 - rs.index.min(4)) {
-                    return Err(ChemistryError::invalid(
-                        FILE,
-                        format!("state '{}': orbit_vacated must be 4 - index", rs.name),
-                    ));
-                }
+            if matches!(kind, StateKind::Excitation | StateKind::Ionisation)
+                && (rs.index > 4 || rs.orbit_vacated != Some(4 - rs.index.min(4)))
+            {
+                return Err(ChemistryError::invalid(
+                    FILE,
+                    format!("state '{}': orbit_vacated must be 4 - index", rs.name),
+                ));
             }
             let parent_charge: i32 = match kind {
                 StateKind::Excitation | StateKind::Recombined => 0,
@@ -205,16 +205,23 @@ impl ChannelTable {
             let mut channels = Vec::with_capacity(rs.channel.len());
             let mut sum = 0.0;
             for rc in rs.channel {
-                let displacement = DisplacementKind::from_name(&rc.displacement).ok_or_else(|| {
-                    ChemistryError::invalid(
-                        FILE,
-                        format!("channel '{}': unknown displacement '{}'", rc.name, rc.displacement),
-                    )
-                })?;
+                let displacement =
+                    DisplacementKind::from_name(&rc.displacement).ok_or_else(|| {
+                        ChemistryError::invalid(
+                            FILE,
+                            format!(
+                                "channel '{}': unknown displacement '{}'",
+                                rc.name, rc.displacement
+                            ),
+                        )
+                    })?;
                 let mut products = Vec::with_capacity(rc.products.len());
                 for t in &rc.products {
                     products.push(Species::from_tag(t).ok_or_else(|| {
-                        ChemistryError::invalid(FILE, format!("channel '{}': unknown product '{t}'", rc.name))
+                        ChemistryError::invalid(
+                            FILE,
+                            format!("channel '{}': unknown product '{t}'", rc.name),
+                        )
                     })?);
                 }
                 if products.is_empty() != (displacement == DisplacementKind::None) {
@@ -226,7 +233,10 @@ impl ChannelTable {
                 if !products.is_empty() {
                     let h: i32 = products.iter().map(|&s| atoms(s).0).sum();
                     let o: i32 = products.iter().map(|&s| atoms(s).1).sum();
-                    let q: i32 = products.iter().map(|&s| i32::from(species.get(s).charge)).sum();
+                    let q: i32 = products
+                        .iter()
+                        .map(|&s| i32::from(species.get(s).charge))
+                        .sum();
                     // parent H2O has 2 H and 1 O; the products may hold n extra water molecules.
                     let extra_o = o - 1;
                     if !(0..=1).contains(&extra_o) || h - 2 != 2 * extra_o || q != parent_charge {
@@ -262,7 +272,10 @@ impl ChannelTable {
                 ));
             }
             if channels.is_empty() {
-                return Err(ChemistryError::invalid(FILE, format!("state '{}' has no channel", rs.name)));
+                return Err(ChemistryError::invalid(
+                    FILE,
+                    format!("state '{}' has no channel", rs.name),
+                ));
             }
             states.push(DecayState {
                 name: rs.name,
@@ -283,7 +296,10 @@ impl ChannelTable {
                 [i] => Ok(*i),
                 _ => Err(ChemistryError::invalid(
                     FILE,
-                    format!("expected exactly one {kind:?} state with index {index}, found {}", hits.len()),
+                    format!(
+                        "expected exactly one {kind:?} state with index {index}, found {}",
+                        hits.len()
+                    ),
                 )),
             }
         };
@@ -316,8 +332,16 @@ impl ChannelTable {
             index,
         };
         match kind {
-            PhysChemKind::Excitation => self.excitation.get(usize::from(index)).copied().ok_or_else(unknown),
-            PhysChemKind::Ionisation => self.ionisation.get(usize::from(index)).copied().ok_or_else(unknown),
+            PhysChemKind::Excitation => self
+                .excitation
+                .get(usize::from(index))
+                .copied()
+                .ok_or_else(unknown),
+            PhysChemKind::Ionisation => self
+                .ionisation
+                .get(usize::from(index))
+                .copied()
+                .ok_or_else(unknown),
             PhysChemKind::Attachment => {
                 if index == 0 {
                     Ok(self.attachment)
@@ -349,9 +373,18 @@ mod tests {
         assert_eq!(t.states().len(), 5 + 5 + 1 + 1);
         let n_channels: usize = t.states().iter().map(|s| s.channels.len()).sum();
         assert_eq!(n_channels, 23);
-        assert_eq!(t.states()[t.state_index(PhysChemKind::Excitation, 0).unwrap()].name, "A^1B_1");
-        assert_eq!(t.states()[t.state_index(PhysChemKind::Ionisation, 0).unwrap()].name, "Ioni5");
-        assert_eq!(t.states()[t.state_index(PhysChemKind::Ionisation, 4).unwrap()].name, "Ioni1");
+        assert_eq!(
+            t.states()[t.state_index(PhysChemKind::Excitation, 0).unwrap()].name,
+            "A^1B_1"
+        );
+        assert_eq!(
+            t.states()[t.state_index(PhysChemKind::Ionisation, 0).unwrap()].name,
+            "Ioni5"
+        );
+        assert_eq!(
+            t.states()[t.state_index(PhysChemKind::Ionisation, 4).unwrap()].name,
+            "Ioni1"
+        );
         assert_eq!(t.states()[t.recombined_index()].name, "H2Ovib");
     }
 
@@ -373,14 +406,20 @@ mod tests {
     #[test]
     fn invalid_data_are_rejected() {
         let sp = SpeciesTable::option3().unwrap();
-        let bad_sum = DEFAULT_DISSOCIATION_TOML.replacen("probability = 0.65", "probability = 0.64", 1);
+        let bad_sum =
+            DEFAULT_DISSOCIATION_TOML.replacen("probability = 0.65", "probability = 0.64", 1);
         assert!(ChannelTable::from_toml(&bad_sum, &sp).is_err());
         let bad_tag = DEFAULT_DISSOCIATION_TOML.replacen("\"OH\", \"H\"", "\"OH\", \"HH\"", 1);
         assert!(ChannelTable::from_toml(&bad_tag, &sp).is_err());
         // an unbalanced channel: replace H by H2 in the A1B1 dissociation
-        let unbalanced = DEFAULT_DISSOCIATION_TOML.replacen("products = [\"OH\", \"H\"]", "products = [\"OH\", \"H2\"]", 1);
+        let unbalanced = DEFAULT_DISSOCIATION_TOML.replacen(
+            "products = [\"OH\", \"H\"]",
+            "products = [\"OH\", \"H2\"]",
+            1,
+        );
         assert!(ChannelTable::from_toml(&unbalanced, &sp).is_err());
-        let bad_orbit = DEFAULT_DISSOCIATION_TOML.replacen("orbit_vacated = 4", "orbit_vacated = 3", 1);
+        let bad_orbit =
+            DEFAULT_DISSOCIATION_TOML.replacen("orbit_vacated = 4", "orbit_vacated = 3", 1);
         assert!(ChannelTable::from_toml(&bad_orbit, &sp).is_err());
     }
 

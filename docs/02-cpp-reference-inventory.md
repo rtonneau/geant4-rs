@@ -89,8 +89,8 @@ G2 **CLOSED (M1, see B.7.1)** `G4DNACrossSectionDataSet` interpolation/extrapola
 G3 **CLOSED for the DNA range (B.7.3 item 6)**: charge-increase window 100 eV-100 MeV. Standard hadron physics above the DNA range is out of scope (energy limit decision Q1).
 G4 Exact `chem6` scoring/energy normalisation -> M8.
 G5 SBS time-step computer and `G4Scheduler` -> M7 (oracle only).
-G6 **CLOSED (B.7.3 item 4)** default solvation model = Meesungnoen2002. `G4DNATransformElectronModel` (0-0.025 eV) not yet read -> M6.
-G7 Temperature and `G4IRTUtils::GetRCutOff`, time-step parameters (`G4EmParameters` chemistry section ~L1570-1630) -> M7.
+G6 **CLOSED (B.7.3 item 4, B.7.6)** default solvation model = Meesungnoen2002; `G4DNATransformElectronModel` is registered by no 11.4.1 physics constructor (B.7.5). Positions of the solvated electron and of every decay product: B.7.6.
+G7 Chemistry temperature **298 K** (`G4MolecularConfiguration.cc:53`) and the 293.15 K of the Onsager radius: closed in B.7.6. `G4IRTUtils::GetRCutOff`, time-step parameters (`G4EmParameters` chemistry section ~L1570-1630) -> M7.
 G8 **CLOSED (M1, see B.7.2)** Electron production cut/tracking cut behaviour for DNA models (`SetLowEnergyLimit` kill below limit?). Residual [U] items are listed in B.7.2.
 
 ### B.7.1 G2 closed: `G4DNACrossSectionDataSet`, `G4EMDataSet`, `G4LogLogInterpolation` [V, M1]
@@ -185,3 +185,51 @@ Paths relative to `source/processes/electromagnetic/dna`; `M` = `models/src`; tr
 
 **5. What was *not* reproduced.** `G4RandGauss::shoot` (only the distribution: Box-Muller from two uniforms), the navigator correction of the solvated-electron position (infinite medium), the 25 meV proposal with chemistry on, the chemistry-manager calls (the `PhysChemEvent` record replaces them, M6).
 
+### B.7.6 M6 part A audit: physical-stage hand-off, decay channels, displacer, electron-hole recombination [V, M6 A]
+Paths: `CH` = `physics_lists/constructors/electromagnetic/src/G4ChemDissociationChannels_option1.cc`, `D` = `source/processes/electromagnetic/dna`.
+Data transcribed in `data/chemistry/` (provenance and line numbers inside the files); machine-extracted twin in
+`crates/dna-chemistry/tests/fixtures/cpp_extract.json` (`scripts/extract_physchem_from_cpp.py`).
+
+1. **Hand-off** (`D/utils/src/G4DNAChemistryManager.cc:600-696`). `CreateWaterMolecule(modification, level, track)` builds a water molecule with
+   `ExciteMolecule(4 - level)` (orbit `4 - level` emptied, orbit 5 filled), `IonizeMolecule(4 - level)` (orbit emptied) or `AddElectron(5, 1)`
+   (attachment) at `track.GetPosition()` (the interaction point) and **time `picosecond`** (`:655`, plus a pulse delay that is 0 without a
+   pulse structure). `CreateSolvatedElectron` creates `e_aq` at `*pFinalPosition` (the displaced position) at `picosecond` (`:691`). The
+   molecule decays through the rest process `G4DNAMolecularDissociation` with the decay time of `H2O`, which is 0 (`G4H2O.cc:65`), and the
+   products are built at the **global time of the mother** (`G4DNAMolecularDissociation.cc:258`): every initial species is born at **1 ps**, not 0.
+   Physics index -> decay state: excitation level 0..4 = `A^1B_1`, `B^1A_1`, `Exci3rdLayer`, `Exci2ndLayer`, `Exci1stLayer`; ionisation shell 0..4 =
+   `Ioni5`, `Ioni4`, `Ioni3`, `Ioni2`, `Ioni1` (`CH:240-407`, orbit vacated `4 - index`, confirmed by the electronic configurations).
+2. **Channels** (`CH:194-466`; 23 channels in 12 states, probabilities sum to 1 in every state). Selection: one uniform, scan in file order,
+   `u < p` selects else `u -= p` (`G4DNAMolecularDissociation.cc:142-153`). Relaxation channels have no product and deposit their excitation
+   energy as **chemistry-stage** local deposit (`ProposeLocalEnergyDeposit(decayEnergy)`, `G4DNAMolecularDissociation.cc:157-162`): this is a second booking of the
+   excitation energy that the physical stage already deposited. The IT stepping code (`D/management/src/G4ITStepProcessor*.cc`) contains no
+   `ProcessHits` call and resets the step deposit (`G4ITStepProcessor.cc:886`), so the sensitive detector of `chem6` (`ScoreSpecies`) does not
+   see it (grep of the management sources; not an exhaustive proof) -> not part of `E_dep` (docs/09 Q20).
+3. **Dissociative attachment** products are `H2 + OH- + OH` (`CH:413-428`): balanced for the captured electron plus **two** water molecules
+   (H4O2, charge -1), like the ionisation channel `H3O+ + OH` (H4O2, charge +1) which balances H2O+ plus one water of the medium; every channel
+   of the table conserves hydrogen, oxygen and charge with 0 or 1 additional water molecule (checked at load and against an independent hand
+   table).
+4. **Displacer** (`D/processes/src/G4DNAWaterDissociationDisplacer.cc`). Product displacements are drawn first, then the mother displacement
+   (RMS 2.0 nm for `Ionisation_DissociationDecay` and `AutoIonisation`, 0 otherwise, `GetMotherMoleculeDisplacement` `:182-234`; products `GetProductsDisplacement` `:236-`), added to every product
+   (`G4DNAMolecularDissociation.cc:218-258`; the `0.8 x safety` clipping is a navigator effect that does not exist in an infinite medium).
+   `radialDistributionOfProducts(R)` is three Gaussians of `R/sqrt(3)` (`:683-692`). A product is identified by its **molecule definition**: `OH-`
+   has its own definition (`CH:75`), so in `DissociativeAttachment` it gets **no** displacement, and in the ionisation maps only `H3O+` and `OH` appear.
+   The auto-ionisation electron uses `radialDistributionOfElectron()` with `ke = 1.7 eV` (`:144`) and the default penetration law
+   `Meesungnoen2002` (`G4EmLowEParameters.cc:78`): `r_mean(1.7 eV) = 2.815 nm`, `sigma_1D = 1.764 nm` (independent Python evaluation).
+5. **Electron-hole recombination** (`D/processes/src/G4DNAElectronHoleRecombination.cc`), registered for `H2O` with rest-process ordering 2, the
+   dissociation having ordering 1 (`G4EmDNAChemistry_option3.cc:733, 741`). For a charge +1 water molecule it looks for `e_aq` within
+   `10 r_Onsager` (cc:251, 283), sorted by distance; `GetMeanLifeTime` is 0 if the nearest has `p = 1 - exp(-r_Onsager/d) > u`
+   (cc:268-273, 300-304, 308; `GetMeanLifeTime` `:336`); `MakeReaction` (`:161-205`) takes the first alive electron of the list and recombines if its `p > u` (`:176`), then changes the molecule
+   to `H2Ovib` (`:190`) and kills the electron (`:201`). The GPIL vector is the reverse of the DoIt vector (`G4ProcessManager.cc:1135-1159`) and the IT
+   step processor keeps the first strictly shortest lifetime (`G4ITStepProcessor.cc:561-575`): with both lifetimes 0 the recombination
+   (ordering 2, scanned first) wins. `H2Ovib` then decays through its own four channels (`CH:430-466`). `r_Onsager = e^2/(4 pi eps0 k_B)/(T eps(rho, T))`
+   with the `A, B, S, Y` parameterisation of the source (cc:57-103), `T` = **temperature of the material** `G4_WATER` = `NTP_Temperature` = 293.15 K
+   (`materials/include/G4Material.hh:114`; cc:225) and `rho = 1 g/cm3` (`G4NistMaterialBuilder.cc:712`): `eps = 80.0998`, `r_Onsager = 0.71164 nm`
+   with the CLHEP constants of the tree (`k_Boltzmann = 8.617333e-11 MeV/K`, `mu0 = 4 pi 1e-7`, `externals/clhep/.../PhysicalConstants.h:90, 116`).
+   The chemistry itself uses 298 K (`G4MolecularConfiguration.cc:53`, docs/09 Q23).
+6. **Species data** (`CH:54-190`): option3 overrides the diffusion coefficients of the molecule definitions for `H3Op` (9.46e-9 m2/s), `OH` (2.2e-9),
+   `H2` (4.8e-9), `H2O2` (2.3e-9) and creates `OHm`, `HO2m`, `Om`, `O2m`, `O3m` with their own values; every species gets a van der Waals radius
+   (0.14-0.50 nm). Temperature scaling of `D` (`ScaleAllDiffusionCoefficientsOnWater`, `G4MolecularConfiguration.cc:1430-1433`) happens only inside
+   `SetGlobalTemperature` (`:1463`), which neither the chemistry constructors nor `chem6` call (grep of `source` and `chem6`; it is reachable through a UI command, `G4DNAChemistryManager.cc:261`): the table is the 298 K one.
+7. **Not implemented** (not reachable with option2 events): `Double/Triple/QuadrupleIonisation_DissociationDecay` displacer cases, `H2O(B)/H3Op(B)/OHm(B)`/`NoneM`
+   bookkeeping species (chemistry, M7). `ExtendLowEnergyLimit(0.025 eV)` of the Sanche model in `ConstructProcess` (option3 chemistry, `:692`) is unreachable
+   with solvation active (E <= 7.4 eV is always solvated, B.7.2).

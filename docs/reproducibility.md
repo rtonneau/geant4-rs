@@ -37,3 +37,13 @@ A track whose energy is at or below 7.4 eV (including a secondary created below 
 Consequences: a change of any model, of the process order in `ProcessKind::ALL` (elastic, excitation, ionisation, vibrational, attachment) or of the stack discipline changes every later number of every history (statistically equivalent, not bitwise comparable). Thread-count independence is unaffected because the whole cascade of a history is on one stream and is run by one thread (`dna-sim/tests/determinism.rs` pins 1/2/8-thread bitwise equality of every per-history field, of the spectra, of the radial profile and of the physicochemical events). With `transport_secondaries = false` (M2 comparison mode) secondaries are recorded, not followed, and the stream is the one of the primary alone.
 Geant4 draws one number of interaction lengths per process and a different Gaussian generator: only distributions, never individual histories, can be compared with Geant4.
 
+## Draw order of the physicochemical stage (stream `(seed, history, PhysChem)`, `dna-chemistry`)
+One stream per history, consumed in the order of the event list: solvation events first (no draws), then every excitation / ionisation / attachment event in order:
+1. ionisation only: **1 uniform** for the recombination test, *always* drawn (also when no electron is in range or the process is switched off);
+2. **1 uniform** for the channel of the selected decay state (`H2Ovib` after a recombination, otherwise the state of the event);
+3. the displacer of the channel, with a "triple" = 4 uniforms (two Box-Muller pairs, the fourth variate discarded):
+   `A1B1`: triple(2.4); `B1A1` and attachment: triple(0.8) + one triple(1.1) per `OH` (the `OH-` of the attachment draws nothing); `B1A1_2`: one triple(1.6) per H;
+   ionisation: 1 uniform (which product is displaced) + one triple(0.8) for the displaced product + triple(2.0) for the mother shift;
+   auto-ionisation: the same + one triple with sigma_1D = 0.62666 r_mean(1.7 eV) for the `e_aq`; relaxation channels: nothing.
+Consequences: adding a species or a channel, changing the processing order (docs/09 Q21) or the number of draws changes every later number of the history. Geant4 draws differently (`G4RandGauss`, two calls of its recombination sampler); only distributions can be compared.
+

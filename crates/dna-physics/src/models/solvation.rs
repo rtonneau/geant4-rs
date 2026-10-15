@@ -42,11 +42,11 @@
 use crate::direction::direction_from_angles;
 use crate::error::PhysicsError;
 use crate::sampling::{gaussian_pair, uniform};
-use dna_core::units::Energy;
-use dna_core::vec3::Vec3;
 pub use dna_core::penetration::{
     MEESUNGNOEN_COEFFICIENTS, SIGMA_1D_PER_RMEAN, meesungnoen_r_mean_nm,
 };
+use dna_core::units::Energy;
+use dna_core::vec3::Vec3;
 use rand::Rng;
 use std::f64::consts::PI;
 

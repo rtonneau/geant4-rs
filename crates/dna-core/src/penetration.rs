@@ -40,7 +40,6 @@ pub fn meesungnoen_r_mean_nm(energy_ev: f64) -> f64 {
     }
 }
 
-
 /// Gaussian displacement of a solvated electron whose mean radius is `r_mean_nm`
 /// (`GetGaussianPenetrationFromRmean3D`, `G4DNAOneStepThermalizationModel.cc:123-142`): three
 /// independent Gaussians of `sigma_1D = r_mean * sqrt(pi) / 2^{3/2}`. `r_mean_nm` must be

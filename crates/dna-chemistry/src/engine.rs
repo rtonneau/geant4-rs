@@ -53,7 +53,11 @@ impl PhysChemStats {
     fn new(table: &ChannelTable) -> Self {
         Self {
             events: [0; 4],
-            channel_counts: table.states().iter().map(|s| vec![0; s.channels.len()]).collect(),
+            channel_counts: table
+                .states()
+                .iter()
+                .map(|s| vec![0; s.channels.len()])
+                .collect(),
             holes_with_candidate: 0,
             recombinations: 0,
             decay_energy_ev: 0.0,
@@ -127,7 +131,13 @@ impl ElectronGrid {
     }
 
     /// Nearest alive electron within `radius_nm` (<= the cell edge) of `p`; ties go to the lowest id.
-    fn nearest(&self, p: Vec3, radius_nm: f64, species: &[SpeciesInstance], alive: &[bool]) -> Option<(u32, f64)> {
+    fn nearest(
+        &self,
+        p: Vec3,
+        radius_nm: f64,
+        species: &[SpeciesInstance],
+        alive: &[bool],
+    ) -> Option<(u32, f64)> {
         let k = self.key(p);
         let mut best: Option<(u32, f64)> = None;
         for dx in -1..=1 {
@@ -141,8 +151,11 @@ impl ElectronGrid {
                             continue;
                         }
                         let q = species[id as usize].position;
-                        let d = ((q.x - p.x).powi(2) + (q.y - p.y).powi(2) + (q.z - p.z).powi(2)).sqrt();
-                        if d <= radius_nm && best.is_none_or(|(bid, bd)| d < bd || (d == bd && id < bid)) {
+                        let d = ((q.x - p.x).powi(2) + (q.y - p.y).powi(2) + (q.z - p.z).powi(2))
+                            .sqrt();
+                        if d <= radius_nm
+                            && best.is_none_or(|(bid, bd)| d < bd || (d == bd && id < bid))
+                        {
                             best = Some((id, d));
                         }
                     }
@@ -170,8 +183,13 @@ impl PhysChemEngine {
         Self::new(species, channels, PhysChemParams::option3()?)
     }
 
-    pub fn new(species: SpeciesTable, channels: ChannelTable, params: PhysChemParams) -> Result<Self, ChemistryError> {
-        let electron_r_mean_nm = autoionisation_r_mean_nm(params.autoionisation_electron_energy.ev());
+    pub fn new(
+        species: SpeciesTable,
+        channels: ChannelTable,
+        params: PhysChemParams,
+    ) -> Result<Self, ChemistryError> {
+        let electron_r_mean_nm =
+            autoionisation_r_mean_nm(params.autoionisation_electron_energy.ev());
         Ok(Self {
             species,
             channels,
@@ -208,7 +226,12 @@ impl PhysChemEngine {
         let u = uniform(rng);
         let ci = state.select(u);
         let channel = &state.channels[ci];
-        let offsets = displacements(channel.displacement, &channel.products, self.electron_r_mean_nm, rng);
+        let offsets = displacements(
+            channel.displacement,
+            &channel.products,
+            self.electron_r_mean_nm,
+            rng,
+        );
         for (&species, &offset) in channel.products.iter().zip(&offsets) {
             out.push(SpeciesInstance {
                 species,
@@ -221,16 +244,28 @@ impl PhysChemEngine {
 
     /// Decay one excitation / ionisation / attachment event alone (without recombination). Used to validate the
     /// channel statistics and the displacements; the history conversion is [`PhysChemEngine::convert_history`].
-    pub fn decay_event<R: Rng + ?Sized>(&self, event: &PhysChemEvent, rng: &mut R) -> Result<EventDecay, ChemistryError> {
-        let si = self.channels.state_index(event.kind, event.level_or_shell)?;
+    pub fn decay_event<R: Rng + ?Sized>(
+        &self,
+        event: &PhysChemEvent,
+        rng: &mut R,
+    ) -> Result<EventDecay, ChemistryError> {
+        let si = self
+            .channels
+            .state_index(event.kind, event.level_or_shell)?;
         Ok(self.decay_in_state(si, event.position, rng))
     }
 
     /// Decay a water molecule that sits in decay state `state` (index in [`ChannelTable::states`], e.g. the
     /// recombined `H2Ovib` state) at `position`.
-    pub fn decay_in_state<R: Rng + ?Sized>(&self, state: usize, position: Vec3, rng: &mut R) -> EventDecay {
+    pub fn decay_in_state<R: Rng + ?Sized>(
+        &self,
+        state: usize,
+        position: Vec3,
+        rng: &mut R,
+    ) -> EventDecay {
         let mut species = Vec::new();
-        let (channel, decay_energy) = self.decay(&self.channels.states()[state], position, rng, &mut species);
+        let (channel, decay_energy) =
+            self.decay(&self.channels.states()[state], position, rng, &mut species);
         EventDecay {
             state,
             channel,
@@ -279,7 +314,9 @@ impl PhysChemEngine {
             if ev.kind == PhysChemKind::Ionisation {
                 let u_rec = uniform(rng); // always drawn (docs/reproducibility.md)
                 if rec.enabled {
-                    if let Some((id, d)) = grid.nearest(ev.position, rec.search_radius.nm(), &species, &alive) {
+                    if let Some((id, d)) =
+                        grid.nearest(ev.position, rec.search_radius.nm(), &species, &alive)
+                    {
                         stats.holes_with_candidate += 1;
                         if rec.probability(d) > u_rec {
                             alive[id as usize] = false;
