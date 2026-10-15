@@ -121,7 +121,10 @@ mod tests {
     #[test]
     fn errors_report_file_and_line() {
         let e = RawTable::parse("f.dat", "1 2\n3 x\n").unwrap_err();
-        assert!(matches!(&e, DataError::Parse { file, line: 2, .. } if file == "f.dat"), "{e:?}");
+        assert!(
+            matches!(&e, DataError::Parse { file, line: 2, .. } if file == "f.dat"),
+            "{e:?}"
+        );
         let e = RawTable::parse("f.dat", "1 2\n3\n").unwrap_err();
         assert!(matches!(e, DataError::Parse { line: 2, .. }), "{e:?}");
         let e = RawTable::parse("f.dat", "1 NaN\n").unwrap_err();

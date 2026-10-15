@@ -124,7 +124,10 @@ mod tests {
         // a directory without dna/
         let d = std::env::temp_dir().join(format!("dna-data-nodna-{}", std::process::id()));
         std::fs::create_dir_all(&d).unwrap();
-        assert!(matches!(DataDir::new(&d), Err(DataError::InvalidDataDir { .. })));
+        assert!(matches!(
+            DataDir::new(&d),
+            Err(DataError::InvalidDataDir { .. })
+        ));
         std::fs::remove_dir_all(d).unwrap();
     }
 
@@ -133,7 +136,10 @@ mod tests {
         let d = scratch("missing");
         let dir = DataDir::new(&d).unwrap();
         let err = dir.load(DnaFile::MeltonAttachmentE).unwrap_err();
-        assert!(matches!(err, DataError::Core(DnaError::MissingDataFile { .. })), "{err:?}");
+        assert!(
+            matches!(err, DataError::Core(DnaError::MissingDataFile { .. })),
+            "{err:?}"
+        );
         std::fs::remove_dir_all(d).unwrap();
     }
 }

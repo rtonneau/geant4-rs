@@ -146,7 +146,10 @@ impl DnaFile {
     pub fn n_components(self) -> usize {
         use DnaFile::*;
         match self {
-            MeltonAttachmentE | ChampionElasticE | HtranElasticProton | ChampionElasticCdfE
+            MeltonAttachmentE
+            | ChampionElasticE
+            | HtranElasticProton
+            | ChampionElasticCdfE
             | HtranElasticCdfProton => 1,
             SancheVibrationalE => 9,
             _ => 5,
@@ -167,7 +170,9 @@ impl DnaFile {
             | RuddIonisationP => {
                 "E [eV]; cross section for each of the 5 ionisation shells (binding 10.79, 13.39, 16.05, 32.30, 539.0 eV)"
             }
-            SancheVibrationalE => "E [eV]; cross section for each of the 9 vibrational levels (0.010, 0.024, 0.061, 0.092, 0.204, 0.417, 0.460, 0.500, 0.835 eV)",
+            SancheVibrationalE => {
+                "E [eV]; cross section for each of the 9 vibrational levels (0.010, 0.024, 0.061, 0.092, 0.204, 0.417, 0.460, 0.500, 0.835 eV)"
+            }
             ChampionElasticCdfE | HtranElasticCdfProton => {
                 "E [eV]; cumulative probability P in [0, 1]; polar angle theta [deg]"
             }
@@ -225,7 +230,7 @@ impl DnaFile {
             )],
             SancheVibrationalE => &[c!(
                 "G4DNASancheExcitationModel (e-)",
-                "G4DNASancheExcitationModel.cc:140-175 reader, :309 scale, :407 lin-lin (window :48-49)",
+                "G4DNASancheExcitationModel.cc:139-178 reader, :309 scale, :407 lin-lin (window :48-49)",
                 Some((2.0, 100.0)),
             )],
             BornIonisationE => &[c!(
@@ -240,7 +245,7 @@ impl DnaFile {
             )],
             RpwbaIonisationP => &[c!(
                 "G4DNARPWBAIonisationModel (proton)",
-                "G4DNARPWBAIonisationModel.cc:98-114 (window 100-300 MeV :100-101)",
+                "G4DNARPWBAIonisationModel.cc:98-114 (window 100-300 MeV :101-102)",
                 Some((1.0e8, 3.0e8)),
             )],
             RuddIonisationP => &[c!(
@@ -255,17 +260,17 @@ impl DnaFile {
             )],
             ChampionElasticCdfE => &[c!(
                 "G4DNAChampionElasticModel (e-), Theta()",
-                "G4DNAChampionElasticModel.cc:150-190 reader, :316-378 Theta, :448-462",
+                "G4DNAChampionElasticModel.cc:150-195 reader, :316-378 Theta, :448-462",
                 Some((7.4, 1.0e6)),
             )],
             HtranElasticCdfProton => &[c!(
                 "G4DNAIonElasticModel (p, H), Theta() (centre-of-mass angle)",
-                "G4DNAIonElasticModel.cc:156-206 reader, :369-424 Theta, :320-330 CM -> lab",
+                "G4DNAIonElasticModel.cc:156-212 reader, :369-424 Theta, :320-330 CM -> lab",
                 Some((100.0, 1.0e6)),
             )],
             BornIonisationCdfE => &[c!(
                 "G4DNABornIonisationModel1 (e-), fasterCode = true",
-                "G4DNABornIonisationModel1.cc:140-200 reader, :1012-1290 TransferedEnergy",
+                "G4DNABornIonisationModel1.cc:139-205 reader, :1012-1290 TransferedEnergy",
                 Some((11.0, 1.0e6)),
             )],
             BornIonisationCdfP => &[c!(
@@ -275,22 +280,22 @@ impl DnaFile {
             )],
             RpwbaIonisationCdfP => &[c!(
                 "G4DNARPWBAIonisationModel (proton), fasterCode = true",
-                "G4DNARPWBAIonisationModel.cc:120-160 reader (own TransferedEnergy not yet audited)",
+                "G4DNARPWBAIonisationModel.cc:119-165 reader (own TransferedEnergy not yet audited)",
                 Some((1.0e8, 3.0e8)),
             )],
             BornIonisationDcsE => &[c!(
                 "G4DNABornIonisationModel1 (e-), fasterCode = false",
-                "G4DNABornIonisationModel1.cc:141,197-198 reader (x scale), :598-815 rejection sampling",
+                "G4DNABornIonisationModel1.cc:141,178-205 reader (x scale :199), :598-815 rejection sampling",
                 Some((11.0, 1.0e6)),
             )],
             BornIonisationDcsP => &[c!(
                 "G4DNABornIonisationModel1 (proton), fasterCode = false",
-                "G4DNABornIonisationModel1.cc:228,252-253 reader (x scale), :598-815",
+                "G4DNABornIonisationModel1.cc:228,242-262 reader (x scale :259), :598-815",
                 Some((5.0e5, 1.0e8)),
             )],
             RpwbaIonisationDcsP => &[c!(
                 "G4DNARPWBAIonisationModel (proton), fasterCode = false",
-                "G4DNARPWBAIonisationModel.cc:121,148-150 reader (x cm^2)",
+                "G4DNARPWBAIonisationModel.cc:121,132-165 reader (x cm^2 :157)",
                 Some((1.0e8, 3.0e8)),
             )],
         }

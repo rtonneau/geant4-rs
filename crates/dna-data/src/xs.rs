@@ -268,6 +268,7 @@ mod tests {
         assert_relative_eq!(
             t.component(0, Energy::from_ev(100.0)).unwrap().nm2(),
             50.0,
+            epsilon = 0.0,
             max_relative = 1e-13
         );
     }
@@ -280,10 +281,16 @@ mod tests {
         assert_relative_eq!(
             t.component(0, Energy::from_ev(e)).unwrap().nm2(),
             10.0,
+            epsilon = 0.0,
             max_relative = 1e-12
         );
         // total = sum of components: 10 + 40.
-        assert_relative_eq!(t.total(Energy::from_ev(e)).unwrap().nm2(), 50.0, max_relative = 1e-12);
+        assert_relative_eq!(
+            t.total(Energy::from_ev(e)).unwrap().nm2(),
+            50.0,
+            epsilon = 0.0,
+            max_relative = 1e-12
+        );
     }
 
     #[test]
@@ -299,6 +306,7 @@ mod tests {
         assert_relative_eq!(
             t.component(0, Energy::from_ev(e)).unwrap().nm2(),
             expected,
+            epsilon = 0.0,
             max_relative = 1e-9
         );
     }
@@ -347,13 +355,33 @@ mod tests {
         };
         let t = CrossSectionTable::from_text("t", "0 0 1\n10 10 3\n30 50 3\n", spec).unwrap();
         // E = 5 in (0, 10): c0 = 5, c1 = 2 (x scale 2).
-        assert_relative_eq!(t.component(0, Energy::from_ev(5.0)).unwrap().nm2(), 10.0, max_relative = 1e-14);
-        assert_relative_eq!(t.component(1, Energy::from_ev(5.0)).unwrap().nm2(), 4.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.component(0, Energy::from_ev(5.0)).unwrap().nm2(),
+            10.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
+        assert_relative_eq!(
+            t.component(1, Energy::from_ev(5.0)).unwrap().nm2(),
+            4.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
         // Node sums at 10 and 30 are 13 and 53: E = 20 -> 33 -> 66 nm^2.
-        assert_relative_eq!(t.total(Energy::from_ev(20.0)).unwrap().nm2(), 66.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.total(Energy::from_ev(20.0)).unwrap().nm2(),
+            66.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
         // First node (energy 0 is valid for lin-lin) and last node (1e-12 protection).
         assert_eq!(t.component(0, Energy::from_ev(0.0)).unwrap().nm2(), 0.0);
-        assert_relative_eq!(t.component(0, Energy::from_ev(30.0)).unwrap().nm2(), 100.0, max_relative = 1e-11);
+        assert_relative_eq!(
+            t.component(0, Energy::from_ev(30.0)).unwrap().nm2(),
+            100.0,
+            epsilon = 0.0,
+            max_relative = 1e-11
+        );
     }
 
     #[test]

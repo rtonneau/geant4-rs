@@ -20,7 +20,7 @@ use std::path::Path;
 /// Number of water ionisation shells in the differential files (`for (j<5)` in the loaders).
 pub const N_SHELLS: usize = 5;
 
-/// `k (1 - 1e-12)` protection at the last tabulated energy (`G4DNAIonElasticModel.cc` `Theta`,
+/// `k (1 - 1e-12)` protection at the last tabulated energy (`G4DNAIonElasticModel.cc:385`,
 /// `G4DNABornIonisationModel1.cc:1034, 1146`).
 const LAST_ENERGY_PROTECTION: f64 = 1.0 - 1e-12;
 
@@ -152,7 +152,9 @@ fn check_probability(p: f64) -> Result<(), DataError> {
 /// last interval is used (continuity). `None` if `p` lies below the first node or the list has
 /// fewer than two nodes.
 fn bracket_nodes(nodes: &[(f64, f64)], p: f64) -> Option<((f64, f64), (f64, f64))> {
-    let hi = nodes.partition_point(|n| n.0 <= p).min(nodes.len().checked_sub(1)?);
+    let hi = nodes
+        .partition_point(|n| n.0 <= p)
+        .min(nodes.len().checked_sub(1)?);
     if hi == 0 {
         return None;
     }
@@ -463,11 +465,26 @@ mod tests {
     fn angle_exact_node_and_hand_values() {
         let t = angles();
         // E = 10 (block node), p = 0.25: halfway between (0, 0) and (0.5, 20) -> 10 degrees.
-        assert_relative_eq!(t.angle_deg(Energy::from_ev(10.0), 0.25).unwrap(), 10.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.angle_deg(Energy::from_ev(10.0), 0.25).unwrap(),
+            10.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
         // E = 15: block 10 gives 10, block 20 at p=0.25 is exactly its node 10 -> mean 10.
-        assert_relative_eq!(t.angle_deg(Energy::from_ev(15.0), 0.25).unwrap(), 10.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.angle_deg(Energy::from_ev(15.0), 0.25).unwrap(),
+            10.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
         // E = 15, p = 0.75: block 10 -> 30; block 20: 10 + (0.75-0.25)/0.75*60 = 50 -> 40.
-        assert_relative_eq!(t.angle_deg(Energy::from_ev(15.0), 0.75).unwrap(), 40.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.angle_deg(Energy::from_ev(15.0), 0.75).unwrap(),
+            40.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
         // p = 0 selects the (P = 0) node of both blocks, whose angle is 0.
         assert_eq!(t.angle_deg(Energy::from_ev(15.0), 0.0).unwrap(), 0.0);
     }
@@ -476,9 +493,19 @@ mod tests {
     fn angle_at_last_energy_and_p_one_use_continuity() {
         let t = angles();
         // Last energy: Geant4 lowers k by 1e-12 relative; the value is the block-20 value to 1e-11.
-        assert_relative_eq!(t.angle_deg(Energy::from_ev(20.0), 0.625).unwrap(), 40.0, max_relative = 1e-10);
+        assert_relative_eq!(
+            t.angle_deg(Energy::from_ev(20.0), 0.625).unwrap(),
+            40.0,
+            epsilon = 0.0,
+            max_relative = 1e-10
+        );
         // p = 1 reads past the end in C++; here it is the end node of the last interval.
-        assert_relative_eq!(t.angle_deg(Energy::from_ev(10.0), 1.0).unwrap(), 40.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.angle_deg(Energy::from_ev(10.0), 1.0).unwrap(),
+            40.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
     }
 
     #[test]
@@ -487,11 +514,16 @@ mod tests {
         for e in [9.999, 20.001] {
             assert!(matches!(
                 t.angle_deg(Energy::from_ev(e), 0.5),
-                Err(DataError::Core(dna_core::error::DnaError::UnsupportedEnergy { .. }))
+                Err(DataError::Core(
+                    dna_core::error::DnaError::UnsupportedEnergy { .. }
+                ))
             ));
         }
         for p in [-0.001, 1.001, f64::NAN] {
-            assert!(matches!(t.angle_deg(Energy::from_ev(15.0), p), Err(DataError::InvalidProbability(_))));
+            assert!(matches!(
+                t.angle_deg(Energy::from_ev(15.0), p),
+                Err(DataError::InvalidProbability(_))
+            ));
         }
     }
 
@@ -505,13 +537,26 @@ mod tests {
         assert!(AngularCdfTable::from_text("t", "10 0 0\n10 1 181\n20 0 0\n20 1 5\n").is_err());
         // first probability above 0 gets the (0, 0) sentinel node
         let t = AngularCdfTable::from_text("t", "10 0.5 8\n10 1 10\n20 0.5 8\n20 1 10\n").unwrap();
-        assert_relative_eq!(t.angle_deg(Energy::from_ev(10.0), 0.25).unwrap(), 4.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            t.angle_deg(Energy::from_ev(10.0), 0.25).unwrap(),
+            4.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
     }
 
     /// Two energies, one shell varies. Shell 0 carries the hand-checked data; other shells copy it.
     fn cdf_text() -> String {
         // columns: E W cum0..cum4 (cum of shells 1-4 equal shell 0 except shell 4: closed at E=10)
-        let rows10 = [(1.0, 0.0), (2.0, 0.0), (3.0, 0.25), (4.0, 0.5), (5.0, 1.0), (6.0, 2.0), (7.0, 2.0)];
+        let rows10 = [
+            (1.0, 0.0),
+            (2.0, 0.0),
+            (3.0, 0.25),
+            (4.0, 0.5),
+            (5.0, 1.0),
+            (6.0, 2.0),
+            (7.0, 2.0),
+        ];
         let rows20 = [(1.0, 0.0), (2.0, 0.1), (4.0, 0.6), (8.0, 1.0), (9.0, 2.0)];
         let mut s = String::new();
         for (e, rows, closed) in [(10.0, &rows10[..], true), (20.0, &rows20[..], false)] {
@@ -528,11 +573,20 @@ mod tests {
         let t = IonisationCdfTable::from_text("t", &cdf_text()).unwrap();
         // E = 10: P = 0 plateau covers W = 1, 2 -> map keeps W = 2; P = 2 plateau keeps W = 7.
         // p = 0.125 lies between (0, 2) and (0.25, 3): log-lin W = 10^(log 2 + (log 3 - log 2)/2).
-        let w = t.transferred_energy_ev(0, Energy::from_ev(10.0), 0.125).unwrap();
-        assert_relative_eq!(w, (2.0f64 * 3.0).sqrt(), max_relative = 1e-12);
+        let w = t
+            .transferred_energy_ev(0, Energy::from_ev(10.0), 0.125)
+            .unwrap();
+        assert_relative_eq!(
+            w,
+            (2.0f64 * 3.0).sqrt(),
+            epsilon = 0.0,
+            max_relative = 1e-12
+        );
         // p = 0 returns (log-lin with zero?) both nodes non-zero -> W at the interval start: 2.
-        let w0 = t.transferred_energy_ev(0, Energy::from_ev(10.0), 0.0).unwrap();
-        assert_relative_eq!(w0, 2.0, max_relative = 1e-12);
+        let w0 = t
+            .transferred_energy_ev(0, Energy::from_ev(10.0), 0.0)
+            .unwrap();
+        assert_relative_eq!(w0, 2.0, epsilon = 0.0, max_relative = 1e-12);
     }
 
     #[test]
@@ -544,8 +598,10 @@ mod tests {
         let w1 = 4.0f64;
         let w2 = 2.0f64 * (2.0f64).powf(0.8);
         let expect = 10f64.powf(w1.log10() + (w2.log10() - w1.log10()) * (15.0 - 10.0) / 10.0);
-        let got = t.transferred_energy_ev(0, Energy::from_ev(15.0), 0.5).unwrap();
-        assert_relative_eq!(got, expect, max_relative = 1e-12);
+        let got = t
+            .transferred_energy_ev(0, Energy::from_ev(15.0), 0.5)
+            .unwrap();
+        assert_relative_eq!(got, expect, epsilon = 0.0, max_relative = 1e-12);
     }
 
     #[test]
@@ -555,8 +611,10 @@ mod tests {
         // block 20 shell 4: (0.1, 2)-(0.6, 4) at p = 0.3: 10^(log2 + log2 * 0.2/0.5), then
         // linear scaling from 0 at E = 10 to this value at E = 20; E = 12.5 -> 25 %.
         let w2 = 2.0f64 * 2.0f64.powf(0.4);
-        let got = t.transferred_energy_ev(4, Energy::from_ev(12.5), 0.3).unwrap();
-        assert_relative_eq!(got, 0.25 * w2, max_relative = 1e-12);
+        let got = t
+            .transferred_energy_ev(4, Energy::from_ev(12.5), 0.3)
+            .unwrap();
+        assert_relative_eq!(got, 0.25 * w2, epsilon = 0.0, max_relative = 1e-12);
         // Shell 4 open at 20 but p above its back at the *upper* block cannot happen here; a
         // shell closed at both blocks is undefined:
         let closed = "10 1 0 0 0 0 0\n10 2 1 1 1 1 0\n20 1 0 0 0 0 0\n20 2 1 1 1 1 0\n";
@@ -570,20 +628,35 @@ mod tests {
     #[test]
     fn ionisation_cdf_validation_and_arguments() {
         // cumulative probability must not decrease
-        assert!(IonisationCdfTable::from_text("t", "10 1 1 0 0 0 0\n10 2 0.5 0 0 0 0\n20 1 0 0 0 0 0\n20 2 1 1 0 0 0\n").is_err());
+        assert!(
+            IonisationCdfTable::from_text(
+                "t",
+                "10 1 1 0 0 0 0\n10 2 0.5 0 0 0 0\n20 1 0 0 0 0 0\n20 2 1 1 0 0 0\n"
+            )
+            .is_err()
+        );
         let t = IonisationCdfTable::from_text("t", &cdf_text()).unwrap();
         assert!(matches!(
             t.transferred_energy_ev(5, Energy::from_ev(15.0), 0.5),
             Err(DataError::ComponentOutOfRange { index: 5, count: 5 })
         ));
-        assert!(t.transferred_energy_ev(0, Energy::from_ev(9.0), 0.5).is_err());
-        assert!(t.transferred_energy_ev(0, Energy::from_ev(21.0), 0.5).is_err());
+        assert!(
+            t.transferred_energy_ev(0, Energy::from_ev(9.0), 0.5)
+                .is_err()
+        );
+        assert!(
+            t.transferred_energy_ev(0, Energy::from_ev(21.0), 0.5)
+                .is_err()
+        );
         assert!(matches!(
             t.transferred_energy_ev(0, Energy::from_ev(15.0), 1.5),
             Err(DataError::InvalidProbability(_))
         ));
         // Upper end of the table works through the 1e-12 protection.
-        assert!(t.transferred_energy_ev(0, Energy::from_ev(20.0), 0.5).is_ok());
+        assert!(
+            t.transferred_energy_ev(0, Energy::from_ev(20.0), 0.5)
+                .is_ok()
+        );
     }
 
     #[test]

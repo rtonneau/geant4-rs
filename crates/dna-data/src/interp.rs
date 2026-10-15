@@ -97,7 +97,12 @@ mod tests {
     #[test]
     fn log_lin_is_geometric_mean_at_midpoint() {
         // log10 y linear in x: midpoint gives sqrt(y1 y2).
-        assert_relative_eq!(log_lin_or_lin(0.0, 2.0, 1.0, 4.0, 9.0), 6.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            log_lin_or_lin(0.0, 2.0, 1.0, 4.0, 9.0),
+            6.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
     }
 
     #[test]
@@ -110,7 +115,12 @@ mod tests {
     #[test]
     fn log_log_is_geometric_mean_at_log_midpoint() {
         // x = sqrt(x1 x2) -> y = sqrt(y1 y2) for a power law.
-        assert_relative_eq!(log_log(1.0, 100.0, 10.0, 2.0, 200.0), 20.0, max_relative = 1e-14);
+        assert_relative_eq!(
+            log_log(1.0, 100.0, 10.0, 2.0, 200.0),
+            20.0,
+            epsilon = 0.0,
+            max_relative = 1e-14
+        );
         assert_eq!(log_log(0.0, 100.0, 10.0, 2.0, 200.0), 0.0);
     }
 
@@ -126,6 +136,6 @@ mod tests {
             1.5,
             0.6,
         );
-        assert_relative_eq!(v, f(1.5, 0.6), max_relative = 1e-14);
+        assert_relative_eq!(v, f(1.5, 0.6), epsilon = 0.0, max_relative = 1e-14);
     }
 }
