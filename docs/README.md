@@ -1,7 +1,8 @@
 # geant4-rs planning package
 
-Status: planning package, kept up to date as milestones land (M0 foundations, M1 data layer and M2 electron
-transport are implemented, see 08-roadmap.md). Written against the
+Status: planning package, kept up to date as milestones land (M0 foundations, M1 data layer, M2 electron
+transport and M3 secondary electrons / low-energy processes are implemented, M2 is validated against Geant4,
+M3 is not yet; see 08-roadmap.md). Written against the
 Geant4 C++ tree in `rtonneau/geant4` (CMake version 11.4.1; the tree is a single squashed
 commit `27ea526b420dd72f510af81f6828edef0ff635f5`, so "v11.4.1" is established from
 `CMakeLists.txt` lines 32-35, not from a git tag).
