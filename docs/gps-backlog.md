@@ -1,7 +1,7 @@
 # gps backlog: M6 closure, M7, M8
 
 Seeds for `/gps start <slug>`, registered with `scout-merge.js --from docs/gps-backlog.md`. They replace
-the former hand-written to-do file. Check progress with `/gps status`.
+the former hand-written to-do file. Check progress with `/gps status`. All 13 seeds below were registered on 2026-10-16 (`/gps status` lists them as scouted ideas); each section heading is the `/gps start` argument.
 
 ## How seeds work
 
