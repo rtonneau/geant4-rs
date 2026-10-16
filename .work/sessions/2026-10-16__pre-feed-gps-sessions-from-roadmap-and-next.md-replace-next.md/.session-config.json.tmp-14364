@@ -1,0 +1,99 @@
+{
+  "session_id": "2026-10-16__pre-feed-gps-sessions-from-roadmap-and-next.md-replace-next.md",
+  "feature_name": "Pre-feed gps sessions from roadmap and next.md, replace next.md",
+  "scratch_dir": ".scratch/tests/2026-10-16__pre-feed-gps-sessions-from-roadmap-and-next.md-replace-next.md",
+  "created_at": "2026-10-16T16:51:43.300Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T16:51:43.300Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T17:14:44.784Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T17:16:07.938Z",
+      "event": "auto_started",
+      "phase": "plan-not-started",
+      "detail": {
+        "target": "finish",
+        "steps": "plan → write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-16T17:16:08.031Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T17:16:49.841Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "docs/gps-roadmap-backlog",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T17:16:49.871Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-run-requests-convention.md",
+        "02-plan/tickets/02-gps-backlog.md",
+        "02-plan/tickets/03-decisions-and-roadmap-pointers.md",
+        "02-plan/tickets/04-drop-next-md.md",
+        "02-plan/tickets/05-register-seeds.md"
+      ],
+      "detail": {
+        "tickets": 5
+      }
+    },
+    {
+      "at": "2026-10-16T17:16:54.144Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-run-requests-convention.md",
+        "03-implement/01-run-requests-convention/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-run-requests-convention"
+      }
+    },
+    {
+      "at": "2026-10-16T17:17:18.994Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-run-requests-convention/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-run-requests-convention",
+        "commit": "dca4eb1"
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "docs/gps-roadmap-backlog",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T17:16:49.841Z",
+    "pr_url": null
+  },
+  "ship_mode": "inline"
+}
