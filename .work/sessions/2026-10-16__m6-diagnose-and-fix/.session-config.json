@@ -52,6 +52,30 @@
       "detail": {
         "tickets": 4
       }
+    },
+    {
+      "at": "2026-10-16T20:00:44.265Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-establish-snapshot-semantics.md",
+        "03-implement/01-establish-snapshot-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-establish-snapshot-semantics"
+      }
+    },
+    {
+      "at": "2026-10-16T20:09:46.515Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-establish-snapshot-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-establish-snapshot-semantics",
+        "commit": "8a281fd"
+      }
     }
   ],
   "current_phase": "ship",
@@ -60,5 +84,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-16T20:00:00.651Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent"
 }
