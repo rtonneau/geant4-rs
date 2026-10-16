@@ -78,8 +78,8 @@ fn initial_yields_and_spatial_scores_are_physically_sane() {
         if species.alive_total > 0 {
             assert!(species.rms_radius_nm.unwrap().is_finite());
         }
-        if species.rms_product_displacement_nm.is_some() {
-            assert!(species.rms_product_displacement_nm.unwrap().is_finite());
+        if let Some(rms) = species.rms_product_displacement_nm {
+            assert!(rms.is_finite());
         }
     }
     assert!(summary.pair_distances.iter().all(|p| p.count > 0));
