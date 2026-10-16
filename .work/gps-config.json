@@ -7,5 +7,23 @@
   "jev": {
     "enabled": true,
     "detected_at": "2026-10-16T07:29:10.389Z"
+  },
+  "delegation": {
+    "codex": {
+      "models": {
+        "haiku": {
+          "model": "gpt-6-luna",
+          "efforts": ["low", "medium", "high", "xhigh"]
+        },
+        "sonnet": {
+          "model": "gpt-6-sol",
+          "efforts": ["low", "medium", "high", "xhigh"]
+        },
+        "opus": {
+          "model": "gpt-6.1-sol",
+          "efforts": ["low", "medium", "high", "xhigh"]
+        }
+      }
+    }
   }
 }
