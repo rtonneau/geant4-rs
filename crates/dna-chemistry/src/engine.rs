@@ -11,7 +11,15 @@
 //! (excitation, ionisation, attachment) are processed **in the order of the event list**, which is the order of
 //! the physical cascade. Auto-ionisation e_aq appear when their parent is processed, so they are candidates for
 //! the holes that follow. Geant4 processes the molecules in the order of its track list, which is not specified by
-//! the source read (docs/09 Q21); only the pairing of a hole with an e_aq depends on it.
+//! the source read (docs/09 Q21). This can change recombination counts as well as pairings and positions.
+//! The ordering ablation is documented in docs/04 D.2.1; event order remains the default assumption.
+//!
+//! This is a sequential projection of Geant4's scheduler, not an exact scheduler port. Geant4 caches
+//! candidates and a uniform in `FindReactant` during interaction-length selection, then tests the first
+//! still-alive cached electron in `MakeReaction` (`G4DNAElectronHoleRecombination.cc:161-205,211-308`).
+//! `G4ITStepProcessor::ComputeInteractionLength` scans the main list before `DoIt` steps it in reverse,
+//! and secondaries join afterwards (`G4ITStepProcessor.cc:598-625`, `G4ITStepProcessor2.cc:110-190`).
+//! A fresh nearest-alive search per event does not establish equivalence to that cached-candidate path.
 //!
 //! # Random numbers (per history, in order)
 //! For each non-solvation event: [ionisation only: one uniform for the recombination test, always drawn];

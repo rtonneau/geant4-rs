@@ -240,3 +240,24 @@ Data transcribed in `data/chemistry/` (provenance and line numbers inside the fi
 ### B.7.7 M6 reference-run lifecycle reading [V, M6 B]
 
 `chem6/src/StackingAction.cc:58-65` starts chemistry from `NewStage()` only when the urgent physical stack is empty. `RunAction.cc:64-82` forwards begin/end-run notifications to `G4DNAChemistryManager`. `ActionInitialization.cc:71-79` registers a per-event-reset `G4MoleculeCounter`, ignores bulk H2O, and compares times at 1 ps precision. `G4UserTimeStepAction::StartProcessing` is called before chemistry time stepping; the IT track holder exposes the alive molecular tracks and their positions. The compact reference generator attempts the same lifecycle, but its current smoke run access-violates at chemistry start (Q24), so this reading is recorded as incomplete rather than evidence that the generator is correct.
+
+### B.7.8 M6 conversion re-audit [V, 2026-10-16, Geant4 11.4.1]
+
+Re-read the complete `CH::ConstructDissociationChannels` and compared every channel with the Rust TOML, dispatch and existing machine-extracted fixture. No channel-definition or decay-timing defect was found. The following rows cover all 23 channels in their selection order; `-` means no products / no displacement. Products retain C++ order. Displacer abbreviations refer to the exact cases of `G4DNAWaterDissociationDisplacer`: A = `A1B1_DissociationDecay`, B = `B1A1_DissociationDecay`, B2 = `B1A1_DissociationDecay2`, AI = `AutoIonisation`, I = `Ionisation_DissociationDecay`, DA = `DissociativeAttachment`.
+
+| State; physical index / vacancy | Ordered probability: products [displacer] | Source in CH |
+|---|---|---|
+| A^1B_1; excitation 0 / orbit 4 | .35: - [-]; .65: OH,H [A] | 225-242 |
+| B^1A_1; excitation 1 / orbit 3 | .175: - [-]; .0325: H2,OH,OH [B]; .5: OH,H3Op,e_aq [AI]; .2535: H,OH [A]; .039: Oxy,H,H [B2] | 246-292 |
+| Exci3rdLayer; excitation 2 / orbit 2 | .5: OH,H3Op,e_aq [AI]; .5: - [-] | 297-319 |
+| Exci2ndLayer; excitation 3 / orbit 1 | .5: OH,H3Op,e_aq [AI]; .5: - [-] | 324-344 |
+| Exci1stLayer; excitation 4 / orbit 0 | .5: OH,H3Op,e_aq [AI]; .5: - [-] | 349-368 |
+| Ioni5,Ioni4,Ioni3,Ioni2,Ioni1; ionisation 0..4 / orbit 4..0 | Each 1: H3Op,OH [I] | 376-408 |
+| DissociAttachment_ch1; attachment adds electron to orbit 5 | 1: H2,OHm,OH [DA] | 413-428 |
+| H2Ovib; recombined neutral water | .1365: H2,OH,OH [B]; .3575: OH,H [A]; .156: Oxy,H,H [B2]; .35: - [-] | 433-465 |
+
+Only the five excitation relaxations release energy: 8.22, 10.0, 11.24, 12.61, 13.77 eV (`D/utils/src/G4DNAWaterExcitationStructure.cc`, constructor). In particular, **H2Ovib relaxation releases zero energy**, as do all product channels: `G4MolecularDissociationChannel.cc:49-54` initializes released energy to zero, and CH sets no energy for them. Default displacement is `NoDisplacement`; omitted setters on relaxation branches are intentional. Every state inherits H2O's zero lifetime (`D/molecules/types/src/G4H2O.cc:65`, `D/molecules/management/src/G4MolecularConfiguration.cc:96,439,481`). The fixed-lifetime process (`D/processes/src/G4DNAMolecularDissociation.cc:73,108-114,344-352`) creates products at the mother's global time (`:258`). The manager creates initial water/e_aq at 1 ps, without pulse delay (`D/utils/src/G4DNAChemistryManager.cc:632-660,691-696`). These are physicochemical products, separate from both the physics energy ledger and M7 reaction products.
+
+The existing `cpp_crosscheck` checks all probabilities, energies, ordered products, vacancies and displacement cases against the extraction. `channel_statistics::every_cpp_channel_produces_its_products_at_one_picosecond` additionally executes every branch through physical-event dispatch (H2Ovib directly) against that independent fixture; the sampling test remains the pre-registered chi-square test.
+
+Recombination remains a scheduler approximation. `D/processes/src/G4DNAElectronHoleRecombination.cc:211-308` caches candidates and a uniform during `FindReactant`; `MakeReaction` (`:161-205`) skips killed candidates and tests the first alive cached candidate, then stops even if that candidate fails. `D/management/src/G4ITStepProcessor.cc:598-625` selects interaction lengths over the main list before `G4ITStepProcessor2.cc:110-190` steps the initial list in reverse and merges secondaries. Rust instead searches alive electrons immediately before each hole, then decays that water immediately; auto-ionisation electrons can serve later holes. Thus reversing Rust events measures sensitivity, but does not reproduce the C++ cached-candidate scheduling. A matched dissociation-only reference and further scheduler tracing are needed before choosing a replacement (Q21/R14); measured ablations are in docs/04 D.2.1.

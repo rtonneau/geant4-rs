@@ -17,12 +17,78 @@ use dna_chemistry::channels::StateKind;
 use dna_core::physchem::{PhysChemEvent, PhysChemKind};
 use dna_core::rng::{RngStreams, Stage};
 use dna_core::species::Species;
+use dna_core::testing::ScriptedRng;
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;
 
 const N: u64 = 400_000;
 const SEED: u64 = 20261015;
 const ALPHA: f64 = 1.0e-3 / 6.0;
+
+/// Catch dispatch, product-order, energy, or birth-time regressions in every branch,
+/// including rare B1A1 and H2Ovib channels. Expected values come from the independent
+/// C++ extraction, rather than the Rust table used by the engine.
+#[test]
+fn every_cpp_channel_produces_its_products_at_one_picosecond() {
+    let cpp = common::fixture("cpp_extract.json");
+    let engine = PhysChemEngine::option3().unwrap();
+    let mut checked = 0;
+    for (si, state) in engine.channel_table().states().iter().enumerate() {
+        let mut cumulative = 0.0;
+        for (ci, expected) in cpp["states"][&state.name]["channels"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
+            let probability = expected["probability"].as_f64().unwrap();
+            let mut draws = vec![0.37; 32];
+            draws[0] = cumulative + probability / 2.0;
+            cumulative += probability;
+            let mut rng = ScriptedRng::new(&draws);
+            let result = match state.kind {
+                StateKind::Recombined => engine.decay_in_state(si, Vec3::ZERO, &mut rng),
+                kind => engine
+                    .decay_event(
+                        &PhysChemEvent {
+                            kind: match kind {
+                                StateKind::Excitation => PhysChemKind::Excitation,
+                                StateKind::Ionisation => PhysChemKind::Ionisation,
+                                StateKind::Attachment => PhysChemKind::Attachment,
+                                StateKind::Recombined => unreachable!(),
+                            },
+                            level_or_shell: state.index,
+                            position: Vec3::ZERO,
+                            deposited_energy: Energy::from_ev(0.0),
+                            parent_history: 0,
+                        },
+                        &mut rng,
+                    )
+                    .unwrap(),
+            };
+            assert_eq!((result.state, result.channel), (si, ci), "{}", state.name);
+            let products: Vec<_> = result
+                .species
+                .iter()
+                .map(|s| s.species.chemistry_name())
+                .collect();
+            let expected_products: Vec<_> = expected["products"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| p.as_str().unwrap())
+                .collect();
+            assert_eq!(products, expected_products, "{}/{}", state.name, ci);
+            assert_eq!(
+                result.decay_energy.ev(),
+                expected["energy_ev"].as_f64().unwrap()
+            );
+            assert!(result.species.iter().all(|s| s.time.ps() == 1.0));
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 23);
+}
 
 #[test]
 fn the_selected_channel_follows_the_table() {

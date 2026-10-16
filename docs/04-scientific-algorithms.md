@@ -24,7 +24,37 @@ For each event (all [V] in `G4ChemDissociationChannels_option1.cc`, `G4DNAWaterD
 - Displacement: Gaussian with fixed RMS per product (e.g. 2.4 nm, 0.8, 1.1, 1.6 nm; H3O+/OH 0.8 nm for ionisation split 50:50 between assignments) and mother-molecule recoil; thermalisation length of the sub-excitation electron from Meesungnoen 2002 (mean r as function of energy, then 3-D Gaussian) or Terrisol 1990 table depending on model chosen by `GetMacroDefinedModel` [U G6].
 Rust (implemented, M6 A; details and C++ line numbers in docs/02 B.7.6): channels and species are TOML data (`data/chemistry/`) loaded and validated by `dna-chemistry` (probabilities sum to 1 within 1e-12, elemental balance, orbit mapping); the displacer is `displacements(kind, products, r_mean, rng)`; `PhysChemEngine::convert_history(events, rng)` returns the alive species of one history at 1 ps. Per history: (1) every solvation event makes an `e_aq` at its (already displaced) position; (2) the water-molecule events are processed in event order: an ionisation first tests the recombination with the nearest alive `e_aq` within 10 r_Onsager (`p = 1 - exp(-r_O/d)`, r_O = 0.7116 nm; success: the `e_aq` is removed and the `H2Ovib` channels replace `H3O+ + OH`), then one channel is selected and the products are placed at `event position + mother shift + product displacement`. Tests: chi-square of the channel selection, z-tests of the mean-square displacement against analytic values, exact conservation of H, O and charge on real cascades.
 
-M6 B scoring uses the physical ledger denominator only. `G_s = 100 N_s/E_dep` is reported both as `sum(100 N_s)/sum(E_dep)` and `mean(100 N_s/E_dep)`. Alive totals are distinguished from per-event-type production totals, since recombination removes an electron produced earlier. Product displacement is relative to the parent event; radial RMS is relative to the primary origin; OH--e_aq and OH--H3O+ correlations mean same-decay pair distances. All values describe the 1 ps boundary, before diffusion or reactions.
+M6 B scoring uses the physical ledger denominator only. `G_s = 100 N_s/E_dep` is reported both as `sum(100 N_s)/sum(E_dep)` and `mean(100 N_s/E_dep)`. Alive totals are distinguished from per-event-type production totals, since recombination removes an electron produced earlier. Product displacement is relative to the parent event; radial RMS is relative to the primary origin; OH--e_aq and OH--H3O+ correlations mean same-decay pair distances. Rust values describe the 1 ps boundary before chemical reactions; the existing Geant4 reference includes zero-time reactions (Q25/R17, docs/08).
+
+### D.2.1 Conversion audit and recombination ordering study (2026-10-16)
+
+All 23 channels, physical-state mapping, probabilities, ordered products, released energies, zero lifetimes and displacement selections agree with Geant4 11.4.1; the complete source-backed audit is docs/02 B.7.8. No conversion value or default behavior changed. In particular H2Ovib relaxation has zero energy, unlike excitation relaxation. Exhaustive branch execution and the existing C++ fixture cross-check pass; a two-hole/two-electron test demonstrates one versus two recombinations solely from reversing the competing holes.
+
+Run `cargo test -p dna-sim --test physchem_reference m6_recombination_ordering_ablation -- --ignored --nocapture` to reproduce the real-cascade ablation. Each energy uses histories starting at 0, the existing reference statistics, option2 physics, default Geant4 elastic rotation, seed 20261017, and no diffusion or chemical reactions. Each physical cascade is generated once; five conversions differ only in water-event order, keeping solvated-electron insertion order fixed. Reverse flips all water events; shuffle uses a Fisher-Yates permutation on a separate `(seed 20261018, history, PhysChem)` stream; excitation-first / ionisation-first use stable partitions. Off retains event order and disables recombination. Each conversion restarts `(seed 20261017, history, PhysChem)`; permutation draws cannot advance the simulation stream. This pairs histories and starting streams, **not individual event variates**: changed branches consume different numbers of draws. The diagnostic reports paired recombination-count differences and standard errors; it does not select a physically preferred ordering or impose a new acceptance tolerance.
+
+Recombination fraction below is `100 sum(recombinations) / sum(ionisation events)` (percent, not a mean of per-history ratios):
+
+| Energy; histories | Event | Reverse | Shuffle | Excitation first | Ionisation first | Off |
+|---|---:|---:|---:|---:|---:|---:|
+| 1 keV; 20000 | 24.4957 | 25.4300 | 25.0890 | 25.0199 | 24.1294 | 0 |
+| 10 keV; 2000 | 21.0016 | 21.7900 | 21.4742 | 21.4887 | 20.6775 | 0 |
+| 100 keV; 200 | 19.4499 | 20.2541 | 19.9231 | 19.9914 | 19.2507 | 0 |
+| 900 keV; 20 | 19.0158 | 19.8429 | 19.5049 | 19.5798 | 18.7887 | 0 |
+
+Paired reverse-minus-event recombinations per history are 0.47855 +/- 0.02121, 3.8515 +/- 0.1992, 38.625 +/- 1.864, and 354.65 +/- 15.89 (one standard error) at those energies. These are sensitivity measurements on Rust's sequential algorithm, not corrections or a bound on all possible schedules. The normal test suite also verifies bitwise identical forward and reverse conversions on 1, 2 and 8 threads.
+
+Alive means at 10 keV illustrate the R14 yield effect (per history):
+
+| Order | e_aq | OH | H3Op | H | H2 | Oxy | OHm |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Event | 400.0000 | 497.6120 | 407.6785 | 85.8750 | 23.1500 | 16.7815 | 8.6785 |
+| Reverse | 395.9295 | 496.2025 | 403.6080 | 88.5510 | 23.7605 | 17.3995 | 8.6785 |
+| Shuffle | 397.6285 | 497.0625 | 405.3070 | 87.1910 | 23.6265 | 17.0050 | 8.6785 |
+| Excitation first | 397.4505 | 497.0100 | 405.1290 | 87.5155 | 23.6585 | 17.1365 | 8.6785 |
+| Ionisation first | 401.5320 | 498.5675 | 409.2105 | 84.7635 | 23.1520 | 16.5160 | 8.6785 |
+| Off | 502.3895 | 535.5920 | 510.0680 | 17.1175 | 9.3235 | 0.7810 | 8.6785 |
+
+Candidate percentages in the command's output count holes with a reachable alive electron; off skips this query, so its zero is not a measured absence of candidates. The full comparison report was rerun for 1, 10, 100 and 900 keV and reproduces the existing values in docs/08. The report completes, while the unchanged agreement gate remains failing (e.g. 1 keV H2O2 z = 111.557 in magnitude): reordering cannot create chemical-reaction products absent from every dissociation channel. Geant4's cached-candidate interaction-length/DoIt scheduling is a separate unresolved approximation (docs/02 B.7.8); retain Q21/R14 until a matched physicochemical reference tests it. No Geant4 generator was run and no reference data was changed.
 
 ## D.3 Chemical stage
 Common data: species table (D, charge, reaction radius), reaction list with rate k (M^-1 s^-1 -> nm^3/ps), type (0 totally diffusion-controlled / 1 partially), products; box boundary; end time.

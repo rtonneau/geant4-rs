@@ -268,3 +268,144 @@ fn m6_initial_species_comparison_report() {
         }
     }
 }
+
+/// Q21/R14 diagnostic, not a Geant4 agreement gate. No ordering is asserted to
+/// reproduce the IT scheduler. Physics is transported once per history; all six
+/// conversions restart its PhysChem stream, and only a separate seed shuffles.
+#[test]
+#[ignore = "full-cascade ordering study at the four M6 reference energies"]
+fn m6_recombination_ordering_ablation() {
+    use dna_core::physchem::PhysChemKind;
+    use dna_core::rng::{RngStreams, Stage};
+    use dna_sim::history::{radial_edges_nm, run_history, spectrum_edges_ev};
+
+    const MODES: [&str; 6] = [
+        "event",
+        "reverse",
+        "shuffle",
+        "excitation-first",
+        "ionisation-first",
+        "off",
+    ];
+    let root = repo_data_dir();
+    let table =
+        ProcessTable::option2_electron(&DataDir::new(&root).unwrap(), ElasticRotation::Geant4)
+            .unwrap();
+    let engine = PhysChemEngine::option3().unwrap();
+    let off = engine.clone().with_recombination_enabled(false);
+    let streams = RngStreams::new(20261017);
+    let permutation_streams = RngStreams::new(20261018);
+    let spectra = spectrum_edges_ev();
+    let radial = radial_edges_nm();
+    for (energy, n) in [
+        (1_000.0, 20_000),
+        (10_000.0, 2_000),
+        (100_000.0, 200),
+        (900_000.0, 20),
+    ] {
+        let mut config = RunConfig::new(energy, n);
+        config.master_seed = 20261017;
+        config.record_physchem = true;
+        let mut recombinations = [0u64; 6];
+        let mut candidates = [0u64; 6];
+        let mut totals = [[0u64; 15]; 6];
+        let mut delta = [[0.0f64; 2]; 6];
+        let mut holes = 0u64;
+        for h in 0..n {
+            let history = run_history(&table, &config, &streams, h, &spectra, &radial).unwrap();
+            let events = &history.physchem;
+            let waters: Vec<_> = events
+                .iter()
+                .filter(|e| e.kind != PhysChemKind::Solvation)
+                .cloned()
+                .collect();
+            let mut baseline = None;
+            for (mode, _) in MODES.iter().enumerate() {
+                let mut ordered = waters.clone();
+                match mode {
+                    1 => ordered.reverse(),
+                    2 => {
+                        let mut permutation =
+                            permutation_streams.stream(h, Stage::PhysChem).unwrap();
+                        for i in (1..ordered.len()).rev() {
+                            let j = (permutation.uniform_open01() * (i + 1) as f64) as usize;
+                            ordered.swap(i, j);
+                        }
+                    }
+                    3 => ordered.sort_by_key(|e| e.kind != PhysChemKind::Excitation),
+                    4 => ordered.sort_by_key(|e| e.kind != PhysChemKind::Ionisation),
+                    _ => {}
+                }
+                // Keep electron insertion/tie order fixed: vary only water order.
+                let mut input: Vec<_> = events
+                    .iter()
+                    .filter(|e| e.kind == PhysChemKind::Solvation)
+                    .cloned()
+                    .collect();
+                input.extend(ordered);
+                let selected_engine = if mode == 5 { &off } else { &engine };
+                let mut rng = streams.stream(h, Stage::PhysChem).unwrap();
+                let result = selected_engine.convert_history(&input, &mut rng).unwrap();
+                if h == 0 {
+                    let mut repeat_rng = streams.stream(h, Stage::PhysChem).unwrap();
+                    assert_eq!(
+                        result,
+                        selected_engine
+                            .convert_history(&input, &mut repeat_rng)
+                            .unwrap()
+                    );
+                }
+                assert!(result.species.iter().all(|s| s.time.ps() == 1.0));
+                assert_eq!(result.stats.species_counts[Species::H2O2.index()], 0);
+                if mode == 0 {
+                    holes += result.stats.events[1];
+                    baseline = Some(result.stats.clone());
+                }
+                let baseline = baseline.as_ref().unwrap();
+                assert_eq!(result.stats.events, baseline.events);
+                assert!(result.stats.recombinations <= result.stats.events[1]);
+                let difference =
+                    result.stats.recombinations as f64 - baseline.recombinations as f64;
+                delta[mode][0] += difference;
+                delta[mode][1] += difference * difference;
+                recombinations[mode] += result.stats.recombinations;
+                candidates[mode] += result.stats.holes_with_candidate;
+                for (total, count) in totals[mode].iter_mut().zip(result.stats.species_counts) {
+                    *total += count;
+                }
+            }
+        }
+        assert_eq!(recombinations[5], 0);
+        println!(
+            "\nQ21/R14 {:.0} keV, {n} histories, seed 20261017, shuffle seed 20261018, {holes} holes",
+            energy / 1000.0
+        );
+        println!(
+            "mode rec_percent candidate_percent paired_delta_rec_per_history +/- SE; alive means: e_aq OH H3Op H H2 Oxy OHm"
+        );
+        for (mode, name) in MODES.iter().enumerate() {
+            let mean = delta[mode][0] / n as f64;
+            let se = ((delta[mode][1] - delta[mode][0].powi(2) / n as f64).max(0.0)
+                / (n - 1) as f64
+                / n as f64)
+                .sqrt();
+            print!(
+                "{name:<17} {:8.4} {:8.4} {mean:+.6} +/- {se:.6};",
+                100.0 * recombinations[mode] as f64 / holes as f64,
+                100.0 * candidates[mode] as f64 / holes as f64
+            );
+            for species in [
+                Species::e_aq,
+                Species::OH,
+                Species::H3Op,
+                Species::H,
+                Species::H2,
+                Species::Oxy,
+                Species::OHm,
+            ] {
+                print!(" {:.6}", totals[mode][species.index()] as f64 / n as f64);
+            }
+            println!();
+        }
+    }
+}
