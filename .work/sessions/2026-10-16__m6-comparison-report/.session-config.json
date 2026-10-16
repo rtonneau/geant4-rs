@@ -1,0 +1,62 @@
+{
+  "session_id": "2026-10-16__m6-comparison-report",
+  "feature_name": "m6-comparison-report",
+  "scratch_dir": ".scratch/tests/2026-10-16__m6-comparison-report",
+  "created_at": "2026-10-16T18:35:24.469Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T18:35:24.469Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T18:40:37.902Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T18:40:44.462Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T19:02:30.479Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/m6-comparison-report",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T19:02:30.502Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-document-m6-reference-state.md",
+        "02-plan/tickets/02-add-m6-comparison-report.md"
+      ],
+      "detail": {
+        "tickets": 2
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "test/m6-comparison-report",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T19:02:30.479Z",
+    "pr_url": null
+  }
+}
