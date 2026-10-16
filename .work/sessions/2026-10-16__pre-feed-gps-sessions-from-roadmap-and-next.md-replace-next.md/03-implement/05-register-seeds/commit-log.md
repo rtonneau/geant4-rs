@@ -1,23 +1,23 @@
 # Ticket 05: register-seeds
 
-**Status:** In Progress
+**Status:** ✅ Done
 
 ## Local Test Result
 
-<!-- gps:fill The Verification Step command you ran and its output -->
+scout-merge.js --from docs/gps-backlog.md seeds.json: Seeded 13 idea(s). status.js lists all 13 slugs under 'Scouted ideas not started'.
 
 ## Review Notes
 
-<!-- gps:fill What you checked against the Acceptance Criteria, and anything you changed after review -->
+Entries built programmatically from the 13 backlog headings (slug = heading); problem = goal + requires (+ RUN_REQUESTS rule where C++ is involved). The only committed file is the archived scout report, the record of the registration; seeds.json stays in scratch.
 
 ## Blockers / Challenges
 
-<!-- gps:fill Problems met on the way, or "None" -->
+Ticket 04's ticket-complete failed once (docs/next.md already staged as deleted, pathspec error); committed by hand and recorded with --commit. One EPERM on ticket-start (transient lock), rerun worked.
 
 ## Commits
 
-Filled by ticket-complete.js.
+- a522780 docs: note seed registration in the gps backlog (ticket 05)
 
 ## Time Spent
 
-Filled by ticket-complete.js.
+1m (ticket-start.js to ticket-complete.js)

@@ -158,9 +158,21 @@
         "ticket": "04-drop-next-md",
         "commit": "f60fe91"
       }
+    },
+    {
+      "at": "2026-10-16T17:19:27.601Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-register-seeds/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-register-seeds",
+        "commit": "a522780"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "docs/gps-roadmap-backlog",
     "base_branch": "main",
