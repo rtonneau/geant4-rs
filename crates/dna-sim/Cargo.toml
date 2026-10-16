@@ -10,12 +10,12 @@ publish.workspace = true
 dna-core = { path = "../dna-core" }
 dna-data = { path = "../dna-data" }
 dna-physics = { path = "../dna-physics" }
+dna-chemistry = { path = "../dna-chemistry" }
 rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-dna-chemistry = { path = "../dna-chemistry" }
 approx = { workspace = true }
 toml = { workspace = true }

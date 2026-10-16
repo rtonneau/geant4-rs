@@ -11,6 +11,7 @@
 pub mod config;
 pub mod error;
 pub mod history;
+pub mod physchem_scoring;
 pub mod run;
 pub mod scoring;
 

@@ -47,6 +47,17 @@ pub struct PhysChemStats {
     pub decay_energy_ev: f64,
     /// Number of alive species of each kind at the end of the stage, indexed by [`Species::index`].
     pub species_counts: [u64; 15],
+    /// Products created by excitation, ionisation, attachment and solvation events, before
+    /// electron-hole recombination removes an electron. Indexed `[event_kind][species]`.
+    pub species_produced_by_event: [[u64; 15]; 4],
+    /// Number and sum of squared displacements from the parent event, by product species.
+    /// Solvation is excluded because its event position is already the displaced position.
+    pub displacement_count: [u64; 15],
+    pub displacement_sum_sq_nm2: [f64; 15],
+    /// Same-decay OH--e_aq and OH--H3O+ pair counts, sums and squared sums (nm).
+    pub pair_count: [u64; 2],
+    pub pair_sum_nm: [f64; 2],
+    pub pair_sum_sq_nm2: [f64; 2],
 }
 
 impl PhysChemStats {
@@ -62,6 +73,12 @@ impl PhysChemStats {
             recombinations: 0,
             decay_energy_ev: 0.0,
             species_counts: [0; 15],
+            species_produced_by_event: [[0; 15]; 4],
+            displacement_count: [0; 15],
+            displacement_sum_sq_nm2: [0.0; 15],
+            pair_count: [0; 2],
+            pair_sum_nm: [0.0; 2],
+            pair_sum_sq_nm2: [0.0; 2],
         }
     }
 
@@ -80,6 +97,23 @@ impl PhysChemStats {
         self.decay_energy_ev += other.decay_energy_ev;
         for (a, b) in self.species_counts.iter_mut().zip(&other.species_counts) {
             *a += b;
+        }
+        for (a, b) in self
+            .species_produced_by_event
+            .iter_mut()
+            .flatten()
+            .zip(other.species_produced_by_event.iter().flatten())
+        {
+            *a += b;
+        }
+        for i in 0..15 {
+            self.displacement_count[i] += other.displacement_count[i];
+            self.displacement_sum_sq_nm2[i] += other.displacement_sum_sq_nm2[i];
+        }
+        for i in 0..2 {
+            self.pair_count[i] += other.pair_count[i];
+            self.pair_sum_nm[i] += other.pair_sum_nm[i];
+            self.pair_sum_sq_nm2[i] += other.pair_sum_sq_nm2[i];
         }
     }
 }
@@ -297,6 +331,7 @@ impl PhysChemEngine {
             });
             alive.push(true);
             grid.insert(id, ev.position);
+            stats.species_produced_by_event[3][Species::EAq.index()] += 1;
         }
 
         // 2. the water molecules, in event order
@@ -332,6 +367,29 @@ impl PhysChemEngine {
             let (ci, decay_energy) = self.decay(state, ev.position, rng, &mut scratch);
             stats.channel_counts[si][ci] += 1;
             stats.decay_energy_ev += decay_energy.ev();
+            let event_index = match ev.kind {
+                PhysChemKind::Excitation => 0,
+                PhysChemKind::Ionisation => 1,
+                PhysChemKind::Attachment => 2,
+                PhysChemKind::Solvation => unreachable!(),
+            };
+            for inst in &scratch {
+                let i = inst.species.index();
+                stats.species_produced_by_event[event_index][i] += 1;
+                stats.displacement_count[i] += 1;
+                let displacement = inst.position - ev.position;
+                stats.displacement_sum_sq_nm2[i] += displacement.dot(displacement);
+            }
+            for (pair_index, other) in [Species::EAq, Species::H3Op].into_iter().enumerate() {
+                for oh in scratch.iter().filter(|s| s.species == Species::Oh) {
+                    for partner in scratch.iter().filter(|s| s.species == other) {
+                        let d = (oh.position - partner.position).norm();
+                        stats.pair_count[pair_index] += 1;
+                        stats.pair_sum_nm[pair_index] += d;
+                        stats.pair_sum_sq_nm2[pair_index] += d * d;
+                    }
+                }
+            }
             for inst in scratch.drain(..) {
                 if inst.species == Species::EAq {
                     grid.insert(species.len() as u32, inst.position);
