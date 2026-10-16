@@ -122,6 +122,42 @@
         "ticket": "03-decisions-and-roadmap-pointers",
         "commit": "d85722d"
       }
+    },
+    {
+      "at": "2026-10-16T17:18:27.311Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-drop-next-md.md",
+        "03-implement/04-drop-next-md/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-drop-next-md"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:45.999Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-register-seeds.md",
+        "03-implement/05-register-seeds/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-register-seeds"
+      }
+    },
+    {
+      "at": "2026-10-16T17:19:01.068Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-drop-next-md/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-drop-next-md",
+        "commit": "f60fe91"
+      }
     }
   ],
   "current_phase": "ship",
