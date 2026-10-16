@@ -98,6 +98,30 @@
         "ticket": "02-gps-backlog",
         "commit": "20945a4"
       }
+    },
+    {
+      "at": "2026-10-16T17:18:08.759Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-decisions-and-roadmap-pointers.md",
+        "03-implement/03-decisions-and-roadmap-pointers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-decisions-and-roadmap-pointers"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:26.431Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-decisions-and-roadmap-pointers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-decisions-and-roadmap-pointers",
+        "commit": "d85722d"
+      }
     }
   ],
   "current_phase": "ship",
