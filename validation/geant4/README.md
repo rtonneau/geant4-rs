@@ -223,9 +223,9 @@ cmake --build build -j
 ./build/g4rs_ref physchem /tmp/physchem_smoke.csv 1 1000:2
 ```
 
-**Current generator status:** the source compiles with Geant4 11.4.1/MSVC, but the local smoke run exits with Windows access violation `-1073741819` when chemistry starts; `slow 1000:1` still exits 0. Fix Q24 against the `chem6` action lifecycle and require exit 0 plus non-empty species rows before the production command. Do not commit the empty smoke output.
+**Generator status:** Q24 fixed 2026-10-16 (IRT time-step model, snapshot at the first dt > 0 step, secondaries transported, atomic de-excitation pointer nulled; see `BUILD_NOTES.md` section 5, issues G-K). The production run was done on this machine; the data are in `validation/reference/physchem.csv` and `provenance_m6.toml`. To regenerate:
 
-After that fix, run:
+
 
 ```bash
 ./build/g4rs_ref physchem ../../reference/physchem.csv 20261019 \

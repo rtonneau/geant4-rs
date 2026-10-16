@@ -32,15 +32,10 @@ fn reference_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../validation/reference")
 }
 
+/// The generator writes `G4Molecule::GetName()` (`<definition>^<charge>`, e.g. `H3O^1`, `°OH^0`);
+/// the repository tags are accepted too.
 fn species(name: &str) -> Option<Species> {
-    match name {
-        "OH" | "°OH" => Some(Species::Oh),
-        "OHm" | "OH^-" => Some(Species::Ohm),
-        "H3Op" | "H3O^+" => Some(Species::H3Op),
-        "e_aq" | "e_aq^-" => Some(Species::EAq),
-        "O" | "Oxy" => Some(Species::O),
-        other => Species::from_tag(other),
-    }
+    Species::from_geant4_name(name).or_else(|| Species::from_tag(name))
 }
 
 fn rows() -> Vec<Row> {

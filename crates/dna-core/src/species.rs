@@ -94,6 +94,35 @@ impl Species {
         Species::ALL.into_iter().find(|s| s.tag() == tag)
     }
 
+    /// Species from the name of a Geant4 molecule, `G4Molecule::GetName()` = `<definition name>^<charge>`
+    /// (e.g. `H3O^1`, `°OH^0`, `e_aq^-1`, `HO_2°^0`, `HO_2^-1`, `O^-1`). The definition names are those
+    /// of `G4H3O`, `G4OH`, `G4Electron_aq`, `G4Hydrogen`, `G4H2`, `G4H2O2`, `G4HO2`, `G4Oxygen`,
+    /// `G4O2`, `G4O3` and of the anion definitions created in `G4ChemDissociationChannels_option1.cc`
+    /// (`OH`, `HO_2`, `O`; `O_2` and `O_3` with charge -1). Returns `None` for anything else
+    /// (including `H2O^n`, the water states, which are not species).
+    pub fn from_geant4_name(name: &str) -> Option<Species> {
+        let (definition, charge) = name.rsplit_once('^')?;
+        let charge: i32 = charge.parse().ok()?;
+        match (definition, charge) {
+            ("H3O", 1) => Some(Species::H3Op),
+            ("°OH", 0) => Some(Species::Oh),
+            ("OH", -1) => Some(Species::Ohm),
+            ("e_aq", -1) => Some(Species::EAq),
+            ("H", 0) => Some(Species::H),
+            ("H_2", 0) => Some(Species::H2),
+            ("H2O2", 0) => Some(Species::H2o2),
+            ("HO_2°", 0) => Some(Species::Ho2),
+            ("HO_2", -1) => Some(Species::Ho2m),
+            ("°O", 0) => Some(Species::O),
+            ("O", -1) => Some(Species::Om),
+            ("O_2", 0) => Some(Species::O2),
+            ("O_2", -1) => Some(Species::O2m),
+            ("O_3", 0) => Some(Species::O3),
+            ("O_3", -1) => Some(Species::O3m),
+            _ => None,
+        }
+    }
+
     /// Index in [`Species::ALL`] (dense, for arrays of counts).
     pub const fn index(self) -> usize {
         self as usize
@@ -130,6 +159,36 @@ impl SpeciesInstance {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn geant4_molecule_names_map_to_species() {
+        let cases = [
+            ("H3O^1", Species::H3Op),
+            ("°OH^0", Species::Oh),
+            ("OH^-1", Species::Ohm),
+            ("e_aq^-1", Species::EAq),
+            ("H^0", Species::H),
+            ("H_2^0", Species::H2),
+            ("H2O2^0", Species::H2o2),
+            ("HO_2°^0", Species::Ho2),
+            ("HO_2^-1", Species::Ho2m),
+            ("°O^0", Species::O),
+            ("O^-1", Species::Om),
+            ("O_2^0", Species::O2),
+            ("O_2^-1", Species::O2m),
+            ("O_3^0", Species::O3),
+            ("O_3^-1", Species::O3m),
+        ];
+        for (name, species) in cases {
+            assert_eq!(Species::from_geant4_name(name), Some(species), "{name}");
+        }
+        // all 15 species are reachable, and water states are not species
+        let mapped: std::collections::HashSet<_> = cases.iter().map(|(_, s)| *s).collect();
+        assert_eq!(mapped.len(), Species::ALL.len());
+        assert_eq!(Species::from_geant4_name("H2O^1"), None);
+        assert_eq!(Species::from_geant4_name("H2O^0"), None);
+        assert_eq!(Species::from_geant4_name("H3Op"), None);
+    }
 
     #[test]
     fn tags_are_unique_and_round_trip() {
