@@ -33,7 +33,7 @@ displacement = "none"
 name = "A^1B_1_DissociDecay"
 probability = 0.65
 decay_energy_ev = 0.0
-products = ["OH", "H"]
+products = ["°OH", "H"]
 displacement = "a1b1_dissociation_decay"
 
 [[state]]
@@ -54,21 +54,21 @@ displacement = "none"
 name = "B^1A_1_DissociDecay"
 probability = 0.0325
 decay_energy_ev = 0.0
-products = ["H2", "OH", "OH"]
+products = ["H2", "°OH", "°OH"]
 displacement = "b1a1_dissociation_decay"
 
 [[state.channel]]
 name = "B^1A_1_AutoIoni_Channel"
 probability = 0.5
 decay_energy_ev = 0.0
-products = ["OH", "H3Op", "e_aq"]
+products = ["°OH", "H3Op", "e_aq"]
 displacement = "auto_ionisation"
 
 [[state.channel]]
 name = "A^1B_1_DissociDecay"
 probability = 0.2535
 decay_energy_ev = 0.0
-products = ["H", "OH"]
+products = ["H", "°OH"]
 displacement = "a1b1_dissociation_decay"
 
 [[state.channel]]
@@ -89,7 +89,7 @@ cpp_line = 317
 name = "Exci3rdLayer_AutoIoni_Channel"
 probability = 0.5
 decay_energy_ev = 0.0
-products = ["OH", "H3Op", "e_aq"]
+products = ["°OH", "H3Op", "e_aq"]
 displacement = "auto_ionisation"
 
 [[state.channel]]
@@ -110,7 +110,7 @@ cpp_line = 342
 name = "Exci2ndLayer_AutoIoni_Channel"
 probability = 0.5
 decay_energy_ev = 0.0
-products = ["OH", "H3Op", "e_aq"]
+products = ["°OH", "H3Op", "e_aq"]
 displacement = "auto_ionisation"
 
 [[state.channel]]
@@ -131,7 +131,7 @@ cpp_line = 366
 name = "Exci1stLayer_AutoIoni_Channel"
 probability = 0.5
 decay_energy_ev = 0.0
-products = ["OH", "H3Op", "e_aq"]
+products = ["°OH", "H3Op", "e_aq"]
 displacement = "auto_ionisation"
 
 [[state.channel]]
@@ -152,7 +152,7 @@ cpp_line = 387
 name = "Ioni_Channel"
 probability = 1.0
 decay_energy_ev = 0.0
-products = ["H3Op", "OH"]
+products = ["H3Op", "°OH"]
 displacement = "ionisation_dissociation_decay"
 
 [[state]]
@@ -166,7 +166,7 @@ cpp_line = 392
 name = "Ioni_Channel"
 probability = 1.0
 decay_energy_ev = 0.0
-products = ["H3Op", "OH"]
+products = ["H3Op", "°OH"]
 displacement = "ionisation_dissociation_decay"
 
 [[state]]
@@ -180,7 +180,7 @@ cpp_line = 397
 name = "Ioni_Channel"
 probability = 1.0
 decay_energy_ev = 0.0
-products = ["H3Op", "OH"]
+products = ["H3Op", "°OH"]
 displacement = "ionisation_dissociation_decay"
 
 [[state]]
@@ -194,7 +194,7 @@ cpp_line = 402
 name = "Ioni_Channel"
 probability = 1.0
 decay_energy_ev = 0.0
-products = ["H3Op", "OH"]
+products = ["H3Op", "°OH"]
 displacement = "ionisation_dissociation_decay"
 
 [[state]]
@@ -208,7 +208,7 @@ cpp_line = 407
 name = "Ioni_Channel"
 probability = 1.0
 decay_energy_ev = 0.0
-products = ["H3Op", "OH"]
+products = ["H3Op", "°OH"]
 displacement = "ionisation_dissociation_decay"
 
 [[state]]
@@ -221,7 +221,7 @@ cpp_line = 425
 name = "DissociAttachment_ch1"
 probability = 1.0
 decay_energy_ev = 0.0
-products = ["H2", "OHm", "OH"]
+products = ["H2", "OHm", "°OH"]
 displacement = "dissociative_attachment"
 
 [[state]]
@@ -234,14 +234,14 @@ cpp_line = 462
 name = "H2Ovib_DissociDecay1"
 probability = 0.1365
 decay_energy_ev = 0.0
-products = ["H2", "OH", "OH"]
+products = ["H2", "°OH", "°OH"]
 displacement = "b1a1_dissociation_decay"
 
 [[state.channel]]
 name = "H2Ovib_DissociDecay2"
 probability = 0.3575
 decay_energy_ev = 0.0
-products = ["OH", "H"]
+products = ["°OH", "H"]
 displacement = "a1b1_dissociation_decay"
 
 [[state.channel]]

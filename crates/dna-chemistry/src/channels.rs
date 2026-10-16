@@ -165,7 +165,8 @@ impl ChannelTable {
     }
 
     /// Parse and validate. Checks, per state: probabilities sum to 1 within [`PROBABILITY_SUM_TOLERANCE`];
-    /// every product tag and displacement name is known; a relax channel (no products) uses `none`; elemental
+    /// every product uses an exact Geant4 configuration key and every displacement name is known;
+    /// a relax channel (no products) uses `none`; elemental
     /// balance against the parent molecule (excited H2O, H2O+, H2O-, or the recombined H2O) with 0 or 1
     /// molecule of the medium added (the H3O+ of an ionised molecule is H2O+ plus one water), and charge
     /// conservation; `orbit_vacated == 4 - index` for excitations and ionisations; every index 0..=4 present
@@ -217,7 +218,7 @@ impl ChannelTable {
                     })?;
                 let mut products = Vec::with_capacity(rc.products.len());
                 for t in &rc.products {
-                    products.push(Species::from_tag(t).ok_or_else(|| {
+                    products.push(Species::from_chemistry_name(t).ok_or_else(|| {
                         ChemistryError::invalid(
                             FILE,
                             format!("channel '{}': unknown product '{t}'", rc.name),
@@ -409,18 +410,35 @@ mod tests {
         let bad_sum =
             DEFAULT_DISSOCIATION_TOML.replacen("probability = 0.65", "probability = 0.64", 1);
         assert!(ChannelTable::from_toml(&bad_sum, &sp).is_err());
-        let bad_tag = DEFAULT_DISSOCIATION_TOML.replacen("\"OH\", \"H\"", "\"OH\", \"HH\"", 1);
+        let bad_tag = DEFAULT_DISSOCIATION_TOML.replacen("\"°OH\", \"H\"", "\"°OH\", \"HH\"", 1);
         assert!(ChannelTable::from_toml(&bad_tag, &sp).is_err());
         // an unbalanced channel: replace H by H2 in the A1B1 dissociation
         let unbalanced = DEFAULT_DISSOCIATION_TOML.replacen(
-            "products = [\"OH\", \"H\"]",
-            "products = [\"OH\", \"H2\"]",
+            "products = [\"°OH\", \"H\"]",
+            "products = [\"°OH\", \"H2\"]",
             1,
         );
         assert!(ChannelTable::from_toml(&unbalanced, &sp).is_err());
         let bad_orbit =
             DEFAULT_DISSOCIATION_TOML.replacen("orbit_vacated = 4", "orbit_vacated = 3", 1);
         assert!(ChannelTable::from_toml(&bad_orbit, &sp).is_err());
+    }
+
+    #[test]
+    fn legacy_product_aliases_are_rejected() {
+        let sp = SpeciesTable::option3().unwrap();
+        for (name, alias) in [("°OH", "OH"), ("°OH", "HO2"), ("Oxy", "O")] {
+            let text = DEFAULT_DISSOCIATION_TOML.replacen(
+                &format!("\"{name}\""),
+                &format!("\"{alias}\""),
+                1,
+            );
+            let err = ChannelTable::from_toml(&text, &sp).unwrap_err();
+            assert!(
+                err.to_string()
+                    .contains(&format!("unknown product '{alias}'"))
+            );
+        }
     }
 
     #[test]

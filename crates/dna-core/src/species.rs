@@ -18,23 +18,25 @@ pub enum Species {
     /// Hydronium ion H3O+ (`H3Op`).
     H3Op,
     /// Hydroxyl radical (`°OH`).
-    Oh,
+    OH,
     /// Hydroxide ion OH- (`OHm`).
-    Ohm,
+    OHm,
     /// Hydrated (solvated) electron (`e_aq`).
-    EAq,
+    // Preserve Geant4's configuration spelling at the Rust identifier boundary.
+    #[allow(non_camel_case_types)]
+    e_aq,
     /// Hydrogen atom (`H`).
     H,
     /// Molecular hydrogen (`H2`).
     H2,
     /// Hydrogen peroxide (`H2O2`).
-    H2o2,
+    H2O2,
     /// Hydroperoxyl radical (`HO2°`).
-    Ho2,
+    HO2,
     /// Hydroperoxide anion (`HO2m`).
-    Ho2m,
+    HO2m,
     /// Atomic oxygen O(3P) (`Oxy`).
-    O,
+    Oxy,
     /// Atomic oxygen anion (`Om`).
     Om,
     /// Molecular oxygen (`O2`).
@@ -51,15 +53,15 @@ impl Species {
     /// All species, in the order of `ConstructMolecule`.
     pub const ALL: [Species; 15] = [
         Species::H3Op,
-        Species::Oh,
-        Species::Ohm,
-        Species::EAq,
+        Species::OH,
+        Species::OHm,
+        Species::e_aq,
         Species::H,
         Species::H2,
-        Species::H2o2,
-        Species::Ho2,
-        Species::Ho2m,
-        Species::O,
+        Species::H2O2,
+        Species::HO2,
+        Species::HO2m,
+        Species::Oxy,
         Species::Om,
         Species::O2,
         Species::O2m,
@@ -71,15 +73,15 @@ impl Species {
     pub const fn chemistry_name(self) -> &'static str {
         match self {
             Species::H3Op => "H3Op",
-            Species::Oh => "°OH",
-            Species::Ohm => "OHm",
-            Species::EAq => "e_aq",
+            Species::OH => "°OH",
+            Species::OHm => "OHm",
+            Species::e_aq => "e_aq",
             Species::H => "H",
             Species::H2 => "H2",
-            Species::H2o2 => "H2O2",
-            Species::Ho2 => "HO2°",
-            Species::Ho2m => "HO2m",
-            Species::O => "Oxy",
+            Species::H2O2 => "H2O2",
+            Species::HO2 => "HO2°",
+            Species::HO2m => "HO2m",
+            Species::Oxy => "Oxy",
             Species::Om => "Om",
             Species::O2 => "O2",
             Species::O2m => "O2m",
@@ -90,31 +92,19 @@ impl Species {
 
     /// Parse an exact Geant4 v11.4.1 configuration key.
     pub fn from_chemistry_name(name: &str) -> Option<Species> {
-        Species::ALL.into_iter().find(|s| s.chemistry_name() == name)
+        Species::ALL
+            .into_iter()
+            .find(|s| s.chemistry_name() == name)
     }
 
     /// Parse the former ASCII data-file tags, including `OH` and `HO2`.
     /// Canonical names are also accepted for callers migrating existing input.
     pub fn from_legacy_ascii_tag(tag: &str) -> Option<Species> {
         match tag {
-            "OH" => Some(Species::Oh),
-            "HO2" => Some(Species::Ho2),
+            "OH" => Some(Species::OH),
+            "HO2" => Some(Species::HO2),
             _ => Species::from_chemistry_name(tag),
         }
-    }
-
-    /// Temporary ASCII tag for existing data files and CSV output.
-    pub const fn tag(self) -> &'static str {
-        match self {
-            Species::Oh => "OH",
-            Species::Ho2 => "HO2",
-            _ => self.chemistry_name(),
-        }
-    }
-
-    /// Temporary forwarding API for existing ASCII data files.
-    pub fn from_tag(tag: &str) -> Option<Species> {
-        Species::from_legacy_ascii_tag(tag)
     }
 
     /// Species from the name of a Geant4 molecule, `G4Molecule::GetName()` = `<definition name>^<charge>`
@@ -128,15 +118,15 @@ impl Species {
         let charge: i32 = charge.parse().ok()?;
         match (definition, charge) {
             ("H3O", 1) => Some(Species::H3Op),
-            ("°OH", 0) => Some(Species::Oh),
-            ("OH", -1) => Some(Species::Ohm),
-            ("e_aq", -1) => Some(Species::EAq),
+            ("°OH", 0) => Some(Species::OH),
+            ("OH", -1) => Some(Species::OHm),
+            ("e_aq", -1) => Some(Species::e_aq),
             ("H", 0) => Some(Species::H),
             ("H_2", 0) => Some(Species::H2),
-            ("H2O2", 0) => Some(Species::H2o2),
-            ("HO_2°", 0) => Some(Species::Ho2),
-            ("HO_2", -1) => Some(Species::Ho2m),
-            ("°O", 0) => Some(Species::O),
+            ("H2O2", 0) => Some(Species::H2O2),
+            ("HO_2°", 0) => Some(Species::HO2),
+            ("HO_2", -1) => Some(Species::HO2m),
+            ("°O", 0) => Some(Species::Oxy),
             ("O", -1) => Some(Species::Om),
             ("O_2", 0) => Some(Species::O2),
             ("O_2", -1) => Some(Species::O2m),
@@ -170,7 +160,7 @@ impl SpeciesInstance {
     pub fn csv_row(&self) -> String {
         format!(
             "{},{:?},{:?},{:?},{:?}",
-            self.species.tag(),
+            self.species.chemistry_name(),
             self.position.x,
             self.position.y,
             self.position.z,
@@ -187,15 +177,15 @@ mod tests {
     fn geant4_molecule_names_map_to_species() {
         let cases = [
             ("H3O^1", Species::H3Op),
-            ("°OH^0", Species::Oh),
-            ("OH^-1", Species::Ohm),
-            ("e_aq^-1", Species::EAq),
+            ("°OH^0", Species::OH),
+            ("OH^-1", Species::OHm),
+            ("e_aq^-1", Species::e_aq),
             ("H^0", Species::H),
             ("H_2^0", Species::H2),
-            ("H2O2^0", Species::H2o2),
-            ("HO_2°^0", Species::Ho2),
-            ("HO_2^-1", Species::Ho2m),
-            ("°O^0", Species::O),
+            ("H2O2^0", Species::H2O2),
+            ("HO_2°^0", Species::HO2),
+            ("HO_2^-1", Species::HO2m),
+            ("°O^0", Species::Oxy),
             ("O^-1", Species::Om),
             ("O_2^0", Species::O2),
             ("O_2^-1", Species::O2m),
@@ -214,22 +204,22 @@ mod tests {
     }
 
     #[test]
-    fn tags_are_unique_and_round_trip() {
+    fn chemistry_names_are_unique_and_round_trip() {
         for (i, s) in Species::ALL.iter().enumerate() {
-            assert_eq!(Species::from_tag(s.tag()), Some(*s));
+            assert_eq!(Species::from_chemistry_name(s.chemistry_name()), Some(*s));
             assert_eq!(s.index(), i);
             for t in &Species::ALL[i + 1..] {
-                assert_ne!(s.tag(), t.tag());
+                assert_ne!(s.chemistry_name(), t.chemistry_name());
             }
         }
-        assert_eq!(Species::from_tag("nonsense"), None);
+        assert_eq!(Species::from_chemistry_name("nonsense"), None);
     }
 
     #[test]
     fn exact_chemistry_names_round_trip_in_geant4_order() {
         let names = [
-            "H3Op", "°OH", "OHm", "e_aq", "H", "H2", "H2O2", "HO2°", "HO2m", "Oxy", "Om",
-            "O2", "O2m", "O3", "O3m",
+            "H3Op", "°OH", "OHm", "e_aq", "H", "H2", "H2O2", "HO2°", "HO2m", "Oxy", "Om", "O2",
+            "O2m", "O3", "O3m",
         ];
         for (species, name) in Species::ALL.into_iter().zip(names) {
             assert_eq!(species.chemistry_name().as_bytes(), name.as_bytes());
@@ -240,8 +230,13 @@ mod tests {
     #[test]
     fn canonical_parser_is_strict_and_legacy_parser_accepts_ascii_tags() {
         for species in Species::ALL {
-            assert_eq!(Species::from_legacy_ascii_tag(species.tag()), Some(species));
+            assert_eq!(
+                Species::from_legacy_ascii_tag(species.chemistry_name()),
+                Some(species)
+            );
         }
+        assert_eq!(Species::from_legacy_ascii_tag("OH"), Some(Species::OH));
+        assert_eq!(Species::from_legacy_ascii_tag("HO2"), Some(Species::HO2));
         for alias in ["OH", "HO2"] {
             assert_eq!(Species::from_chemistry_name(alias), None);
         }
@@ -254,7 +249,7 @@ mod tests {
     #[test]
     fn csv_row_matches_the_header() {
         let r = SpeciesInstance {
-            species: Species::EAq,
+            species: Species::e_aq,
             position: Vec3::new(1.0, -2.5, 0.25),
             time: Time::from_ps(1.0),
         };
@@ -263,5 +258,9 @@ mod tests {
             r.csv_row().split(',').count(),
             SPECIES_CSV_HEADER.split(',').count()
         );
+        for species in Species::ALL {
+            let row = SpeciesInstance { species, ..r }.csv_row();
+            assert_eq!(row.split(',').next(), Some(species.chemistry_name()));
+        }
     }
 }

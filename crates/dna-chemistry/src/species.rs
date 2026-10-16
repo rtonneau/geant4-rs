@@ -43,13 +43,13 @@ pub struct SpeciesProps {
 pub const fn atoms(species: Species) -> (i32, i32) {
     match species {
         Species::H3Op => (3, 1),
-        Species::Oh | Species::Ohm => (1, 1),
-        Species::EAq => (0, 0),
+        Species::OH | Species::OHm => (1, 1),
+        Species::e_aq => (0, 0),
         Species::H => (1, 0),
         Species::H2 => (2, 0),
-        Species::H2o2 => (2, 2),
-        Species::Ho2 | Species::Ho2m => (1, 2),
-        Species::O | Species::Om => (0, 1),
+        Species::H2O2 => (2, 2),
+        Species::HO2 | Species::HO2m => (1, 2),
+        Species::Oxy | Species::Om => (0, 1),
         Species::O2 | Species::O2m => (0, 2),
         Species::O3 | Species::O3m => (0, 3),
     }
@@ -67,7 +67,7 @@ impl SpeciesTable {
         Self::from_toml(DEFAULT_SPECIES_TOML)
     }
 
-    /// Parse and validate a table: every species exactly once, positive `D` and radius.
+    /// Parse exact Geant4 configuration keys and validate: every species once, positive `D` and radius.
     pub fn from_toml(text: &str) -> Result<Self, ChemistryError> {
         let raw: RawFile = toml::from_str(text).map_err(|e| ChemistryError::Parse {
             file: FILE,
@@ -75,7 +75,7 @@ impl SpeciesTable {
         })?;
         let mut slots: Vec<Option<SpeciesProps>> = vec![None; Species::ALL.len()];
         for r in raw.species {
-            let species = Species::from_tag(&r.tag).ok_or_else(|| {
+            let species = Species::from_chemistry_name(&r.tag).ok_or_else(|| {
                 ChemistryError::invalid(FILE, format!("unknown species tag '{}'", r.tag))
             })?;
             if r.diffusion_m2_per_s <= 0.0 || r.van_der_waals_radius_nm <= 0.0 {
@@ -104,7 +104,7 @@ impl SpeciesTable {
         let mut props = Vec::with_capacity(slots.len());
         for (s, slot) in Species::ALL.iter().zip(slots) {
             props.push(slot.ok_or_else(|| {
-                ChemistryError::invalid(FILE, format!("species '{}' missing", s.tag()))
+                ChemistryError::invalid(FILE, format!("species '{}' missing", s.chemistry_name()))
             })?);
         }
         Ok(Self { props })
@@ -127,10 +127,10 @@ mod tests {
     fn embedded_table_loads_and_converts_units() {
         let t = SpeciesTable::option3().unwrap();
         // 1 m^2/s = 1e6 nm^2/ps (docs/units.md): e_aq 4.9e-9 m^2/s = 4.9e-3 nm^2/ps.
-        assert!((t.get(Species::EAq).diffusivity.nm2_per_ps() - 4.9e-3).abs() < 1e-15);
-        assert_eq!(t.get(Species::EAq).charge, -1);
+        assert!((t.get(Species::e_aq).diffusivity.nm2_per_ps() - 4.9e-3).abs() < 1e-15);
+        assert_eq!(t.get(Species::e_aq).charge, -1);
         assert_eq!(t.get(Species::H3Op).charge, 1);
-        assert_eq!(t.get(Species::Oh).radius.nm(), 0.22);
+        assert_eq!(t.get(Species::OH).radius.nm(), 0.22);
     }
 
     #[test]
@@ -140,7 +140,7 @@ mod tests {
             SpeciesTable::from_toml(one),
             Err(ChemistryError::Invalid { .. })
         ));
-        let dup = DEFAULT_SPECIES_TOML.replacen("tag = \"OH\"", "tag = \"H\"", 1);
+        let dup = DEFAULT_SPECIES_TOML.replacen("tag = \"°OH\"", "tag = \"H\"", 1);
         assert!(matches!(
             SpeciesTable::from_toml(&dup),
             Err(ChemistryError::Invalid { .. })
@@ -149,5 +149,21 @@ mod tests {
             SpeciesTable::from_toml("not toml ["),
             Err(ChemistryError::Parse { .. })
         ));
+    }
+
+    #[test]
+    fn legacy_species_aliases_are_rejected() {
+        for (name, alias) in [("°OH", "OH"), ("HO2°", "HO2"), ("Oxy", "O")] {
+            let text = DEFAULT_SPECIES_TOML.replacen(
+                &format!("tag = \"{name}\""),
+                &format!("tag = \"{alias}\""),
+                1,
+            );
+            let err = SpeciesTable::from_toml(&text).unwrap_err();
+            assert!(
+                err.to_string()
+                    .contains(&format!("unknown species tag '{alias}'"))
+            );
+        }
     }
 }

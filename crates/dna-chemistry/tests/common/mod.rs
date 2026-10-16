@@ -12,11 +12,6 @@ pub fn fixture(name: &str) -> Value {
     serde_json::from_str(&text).unwrap()
 }
 
-/// Rust tag of a `G4MoleculeTable` key of the fixture ("°OH" -> "OH", "HO2°" -> "HO2").
-pub fn rust_tag(cpp_tag: &str) -> String {
-    cpp_tag.replace('°', "")
-}
-
 /// Regularised upper incomplete gamma `Q(a, x)` (Numerical Recipes `gammq`).
 fn gamma_q(a: f64, x: f64) -> f64 {
     fn ln_gamma(x: f64) -> f64 {

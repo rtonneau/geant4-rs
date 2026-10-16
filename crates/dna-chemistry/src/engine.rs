@@ -325,13 +325,13 @@ impl PhysChemEngine {
             stats.events[3] += 1;
             let id = species.len() as u32;
             species.push(SpeciesInstance {
-                species: Species::EAq,
+                species: Species::e_aq,
                 position: ev.position,
                 time: self.params.birth_time,
             });
             alive.push(true);
             grid.insert(id, ev.position);
-            stats.species_produced_by_event[3][Species::EAq.index()] += 1;
+            stats.species_produced_by_event[3][Species::e_aq.index()] += 1;
         }
 
         // 2. the water molecules, in event order
@@ -380,8 +380,8 @@ impl PhysChemEngine {
                 let displacement = inst.position - ev.position;
                 stats.displacement_sum_sq_nm2[i] += displacement.dot(displacement);
             }
-            for (pair_index, other) in [Species::EAq, Species::H3Op].into_iter().enumerate() {
-                for oh in scratch.iter().filter(|s| s.species == Species::Oh) {
+            for (pair_index, other) in [Species::e_aq, Species::H3Op].into_iter().enumerate() {
+                for oh in scratch.iter().filter(|s| s.species == Species::OH) {
                     for partner in scratch.iter().filter(|s| s.species == other) {
                         let d = (oh.position - partner.position).norm();
                         stats.pair_count[pair_index] += 1;
@@ -391,7 +391,7 @@ impl PhysChemEngine {
                 }
             }
             for inst in scratch.drain(..) {
-                if inst.species == Species::EAq {
+                if inst.species == Species::e_aq {
                     grid.insert(species.len() as u32, inst.position);
                 }
                 species.push(inst);
