@@ -27,4 +27,4 @@ session (path given). Items tagged **[U]** are *unverified* and are explicit aud
 milestone M0/M1. No Geant4 build was run, the `G4EMLOW` dataset is **not** present in the
 reference repository, and no numerical cross-section value has been inspected.
 
-See [next.md](next.md) for the current to-do list (what the human must do) and the draft of the next agent prompt.
+See [gps-backlog.md](gps-backlog.md) for the seeds of the next gps sessions (M6 closure, M7, M8) and `/gps status` for progress; Geant4 runs the human must perform are in `../validation/geant4/RUN_REQUESTS.md`.

@@ -58,3 +58,13 @@
 - **R15 (new, low) Reproduction of Geant4 quirks.** `OH-` gets no displacement in the dissociative attachment (distinct molecule definition); the attachment products `H2 + OH- + OH` balance only with an extra water; the relax channels deposit energy again. All reproduced and documented (docs/02 B.7.6), none corrected.
 - **Q24 (new, M6 gate).** The compact `g4rs_ref physchem` lifecycle is not yet correct: it compiles with Geant4 11.4.1, while a 2 x 1 keV smoke run access-violates when `G4DNAChemistryManager::Run()` starts (exit `-1073741819`); the unchanged physical `slow` mode exits 0. Compare the action/counter/scheduler ownership line-for-line with `chem6` before producing reference data. Do not accept CSVs from a crashing run.
 - **R16 (new, medium) Initial spatial-correlation definition.** M6 reports same-decay OH--e_aq and OH--H3O+ distances. This is reproducible and O(N), but it is not a track-wide pair-correlation function. If M7 validation requires an RDF or nearest-neighbour statistic, pre-register bins/cutoffs and add it as a distinct observable rather than silently changing this one.
+
+## Decisions confirmed 2026-10-16 (gps roadmap session)
+- **Q24 CLOSED.** The `g4rs_ref physchem` crash is fixed (IRT time-step model set explicitly, snapshot at the first scheduler step with `dt > 0`, secondaries transported, atomic de-excitation off); see `validation/geant4/BUILD_NOTES.md` section 5 (issues G-K). Reference data: `validation/reference/physchem.csv`, `provenance_m6.toml`. The **M6 gate is still open**: `1000 eV H2O2: z = 111.6` (docs/08, seed `m6-comparison-report`).
+- **M7 order.** M7 implements option3 reactions first (`docs/gps-backlog.md`).
+- **R16 stays.** The M6 same-decay pair statistic stays distinct from any future RDF/nearest-neighbour observable; such an observable is added separately with pre-registered bins and cutoffs.
+- **Kept unless the M6 reference contradicts them:** Q12 (atomic de-excitation skipped), Q13 (Geant4 elastic rotation default), Q16 (2 eV floor), Q17 (Meesungnoen2002 only).
+- **M6 before M7.** M6 closes before M7 consumes its species and positions (initial conditions); only `m7-option3-reaction-table` is independent.
+- **M8 scope.** The proton 10 MeV acceptance is deferred until M5; M8 seeds cover e- 100 keV and 1 MeV.
+- **Geant4 runs.** Agent sessions write and compile-check C++ but never run it; runs are requested in `validation/geant4/RUN_REQUESTS.md`.
+- No ADR written: none of these is hard to reverse and surprising at once.

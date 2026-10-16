@@ -1,0 +1,216 @@
+{
+  "session_id": "2026-10-16__pre-feed-gps-sessions-from-roadmap-and-next.md-replace-next.md",
+  "feature_name": "Pre-feed gps sessions from roadmap and next.md, replace next.md",
+  "scratch_dir": ".scratch/tests/2026-10-16__pre-feed-gps-sessions-from-roadmap-and-next.md-replace-next.md",
+  "created_at": "2026-10-16T16:51:43.300Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T16:51:43.300Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T17:14:44.784Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T17:16:07.938Z",
+      "event": "auto_started",
+      "phase": "plan-not-started",
+      "detail": {
+        "target": "finish",
+        "steps": "plan → write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-16T17:16:08.031Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T17:16:49.841Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "docs/gps-roadmap-backlog",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T17:16:49.871Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-run-requests-convention.md",
+        "02-plan/tickets/02-gps-backlog.md",
+        "02-plan/tickets/03-decisions-and-roadmap-pointers.md",
+        "02-plan/tickets/04-drop-next-md.md",
+        "02-plan/tickets/05-register-seeds.md"
+      ],
+      "detail": {
+        "tickets": 5
+      }
+    },
+    {
+      "at": "2026-10-16T17:16:54.144Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-run-requests-convention.md",
+        "03-implement/01-run-requests-convention/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-run-requests-convention"
+      }
+    },
+    {
+      "at": "2026-10-16T17:17:25.108Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-gps-backlog.md",
+        "03-implement/02-gps-backlog/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-gps-backlog"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:07.987Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-gps-backlog/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-gps-backlog",
+        "commit": "20945a4"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:08.759Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-decisions-and-roadmap-pointers.md",
+        "03-implement/03-decisions-and-roadmap-pointers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-decisions-and-roadmap-pointers"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:26.431Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-decisions-and-roadmap-pointers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-decisions-and-roadmap-pointers",
+        "commit": "d85722d"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:27.311Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-drop-next-md.md",
+        "03-implement/04-drop-next-md/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-drop-next-md"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:45.999Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-register-seeds.md",
+        "03-implement/05-register-seeds/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-register-seeds"
+      }
+    },
+    {
+      "at": "2026-10-16T17:19:01.068Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-drop-next-md/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-drop-next-md",
+        "commit": "f60fe91"
+      }
+    },
+    {
+      "at": "2026-10-16T17:19:27.601Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-register-seeds/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-register-seeds",
+        "commit": "a522780"
+      }
+    },
+    {
+      "at": "2026-10-16T17:19:36.471Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-16T17:19:42.606Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/12"
+      }
+    },
+    {
+      "at": "2026-10-16T17:19:42.610Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "docs/gps-roadmap-backlog",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T17:16:49.841Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/12"
+  },
+  "ship_mode": "inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-16__pre-feed-gps-sessions-from-roadmap-and-next.md-replace-next.md.md",
+    "written_at": "2026-10-16T17:19:36.460Z"
+  },
+  "finished_at": "2026-10-16T17:19:42.610Z"
+}

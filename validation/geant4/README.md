@@ -8,6 +8,8 @@ without a Geant4 installation and only syntax-checked against stub headers. The 
 `crates/dna-sim/tests/slowing_down_reference.rs` and are `#[ignore]`d until the files listed there exist.
 No Geant4 number has been invented or embedded anywhere in the repository.
 
+**New runs requested by agent sessions** are logged in [RUN_REQUESTS.md](RUN_REQUESTS.md): sessions write and compile-check the C++ but never run it.
+
 ## What the Rust code is compared against
 
 Geant4 **11.4.1** (the reference tree is `rtonneau/geant4`, CMake version 11.4.1, `G4Version.hh`:
