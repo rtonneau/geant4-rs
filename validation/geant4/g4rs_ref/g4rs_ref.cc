@@ -43,6 +43,7 @@
 #include "G4DecayPhysics.hh"
 #include "G4EmCalculator.hh"
 #include "G4EmDNAPhysics_option2.hh"
+#include "G4EmDNAChemistry_option3.hh"
 #include "G4EmParameters.hh"
 #include "G4Electron.hh"
 #include "G4Event.hh"
@@ -58,6 +59,7 @@
 #include "G4Sphere.hh"
 #include "G4Step.hh"
 #include "G4StepPoint.hh"
+#include "G4StackManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Track.hh"
 #include "G4VProcess.hh"
@@ -71,12 +73,21 @@
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "Randomize.hh"
 #include "G4RunManager.hh"
+#include "G4DNAChemistryManager.hh"
+#include "G4ITTrackHolder.hh"
+#include "G4Molecule.hh"
+#include "G4MoleculeCounter.hh"
+#include "G4MoleculeCounterManager.hh"
+#include "G4H2O.hh"
+#include "G4Scheduler.hh"
+#include "G4UserRunAction.hh"
+#include "G4UserTimeStepAction.hh"
 
 namespace {
 
 // ------------------------------------------------------------------ shared state ---------
 
-enum class Mode { Xs, Mfp, Track, Slow };
+enum class Mode { Xs, Mfp, Track, Slow, PhysChem };
 Mode gMode = Mode::Xs;
 G4double gCut = 0.;  // tracking cut (track mode)
 G4double gEnergy = 0.;  // current primary energy
@@ -161,6 +172,47 @@ struct SlowAccum {
   double rad[kRadBins + 2] = {};                 // energy (eV) summed over events, same layout
   void clear() { *this = SlowAccum(); }
 } gSlow;
+
+struct PhysChemAccum {
+  long n_events = 0;
+  std::map<std::string, double> sum_count, sum_count2, sum_r2_nm2;
+  void clear() { *this = PhysChemAccum(); }
+} gPhysChem;
+std::map<std::string, double> gPhysChemEventCount, gPhysChemEventR2;
+bool gChemistryRun = false;
+
+// Initial species list at 1 ps. At the first stage the scheduler holds the undissociated states
+// (H2O^0, H2O^1, e_aq); the dissociation (H2O^1 -> H3O^1 + OH, excitation channels) happens in
+// zero-length steps at t = 1 ps. The first step with a non-zero time step starts after all of them:
+// the main list then is the species list "at 1 ps, before diffusion or reactions". Snapshot it
+// there and stop the scheduler (Q24).
+class InitialSpeciesAction : public G4UserTimeStepAction {
+ public:
+  void StartProcessing() override { fDone = false; }
+  void UserPreTimeStepAction() override
+  {
+    auto* scheduler = G4Scheduler::Instance();
+    if (fDone || scheduler->GetTimeStep() <= 0.) return;
+    fDone = true;
+    gPhysChemEventCount.clear();
+    gPhysChemEventR2.clear();
+    G4TrackManyList* tracks = G4ITTrackHolder::Instance()->GetMainList();
+    if (tracks != nullptr) {
+      for (const G4Track* track : *tracks) {
+        const auto* molecule = GetMolecule(track);
+        if (molecule == nullptr || molecule->GetName() == "H2O") continue;
+        const std::string name = molecule->GetName();
+        ++gPhysChemEventCount[name];
+        const double r = track->GetPosition().mag() / nm;
+        gPhysChemEventR2[name] += r * r;
+      }
+    }
+    scheduler->Stop();
+  }
+
+ private:
+  bool fDone = false;
+};
 
 std::vector<double> gSpecEdges, gRadEdges;
 
@@ -265,9 +317,22 @@ class Physics : public G4VModularPhysicsList {
   Physics()
   {
     SetVerboseLevel(1);
-    RegisterPhysics(new G4EmDNAPhysics_option2());
-    RegisterPhysics(new G4DecayPhysics());
+    fPhysics = new G4EmDNAPhysics_option2();
+    if (gMode == Mode::PhysChem) fChemistry = new G4EmDNAChemistry_option3();
   }
+  ~Physics() override { delete fPhysics; delete fChemistry; }
+  void ConstructParticle() override {
+    fPhysics->ConstructParticle();
+    if (fChemistry) fChemistry->ConstructParticle();
+  }
+  void ConstructProcess() override {
+    AddTransportation();
+    fPhysics->ConstructProcess();
+    if (fChemistry) fChemistry->ConstructProcess();
+  }
+ private:
+  G4VPhysicsConstructor* fPhysics = nullptr;
+  G4VPhysicsConstructor* fChemistry = nullptr;
 };
 
 // ------------------------------------------------------------------ primary --------------
@@ -338,10 +403,20 @@ class Stepping : public G4UserSteppingAction {
 
 class Stacking : public G4UserStackingAction {
  public:
+  void NewStage() override
+  {
+    if (gMode == Mode::PhysChem && !gChemistryRun && stackManager->GetNTotalTrack() == 0) {
+      gChemistryRun = true;
+      G4DNAChemistryManager::Instance()->Run();
+    }
+  }
   G4ClassificationOfNewTrack ClassifyNewTrack(const G4Track* t) override
   {
     if (gMode == Mode::Slow) return SlowClassify(t);
     if (t->GetParentID() == 0) return fUrgent;
+    // physchem follows the whole cascade (as slow mode and the Rust runs): secondaries are
+    // transported until solvation/attachment, and their ionisations/excitations seed the chemistry
+    if (gMode == Mode::PhysChem) return fUrgent;
     // every secondary: record, then kill (geant4-rs M2 records secondaries without transporting)
     if (gMode == Mode::Track) {
       ++gNsec;
@@ -358,11 +433,34 @@ class EventAct : public G4UserEventAction {
     gL = gEdep = gRem = gNsec = gEsec = 0.;
     gEnd = G4ThreeVector();
     if (gMode == Mode::Slow) SlowBeginEvent();
+    if (gMode == Mode::PhysChem) {
+      gChemistryRun = false;
+      gPhysChemEventCount.clear();
+      gPhysChemEventR2.clear();
+    }
   }
   void EndOfEventAction(const G4Event*) override
   {
     if (gMode == Mode::Track) FinishEvent();  // mfp mode finishes inside the stepping action
     if (gMode == Mode::Slow) SlowFinishEvent();
+    if (gMode == Mode::PhysChem) {
+      for (const auto& item : gPhysChemEventCount) {
+        gPhysChem.sum_count[item.first] += item.second;
+        gPhysChem.sum_count2[item.first] += item.second * item.second;
+        gPhysChem.sum_r2_nm2[item.first] += gPhysChemEventR2[item.first];
+      }
+      ++gPhysChem.n_events;
+    }
+  }
+};
+
+class RunAct : public G4UserRunAction {
+ public:
+  void BeginOfRunAction(const G4Run* run) override {
+    if (auto* manager = G4DNAChemistryManager::GetInstanceIfExists()) manager->BeginOfRunAction(run);
+  }
+  void EndOfRunAction(const G4Run* run) override {
+    if (auto* manager = G4DNAChemistryManager::GetInstanceIfExists()) manager->EndOfRunAction(run);
   }
 };
 
@@ -374,6 +472,7 @@ class Actions : public G4VUserActionInitialization {
     SetUserAction(new Stepping);
     SetUserAction(new Stacking);
     SetUserAction(new EventAct);
+    SetUserAction(new RunAct);
   }
 };
 
@@ -524,12 +623,36 @@ void RunSlow(const std::string& prefix, long seed, const std::vector<std::pair<d
   fclose(fr);
 }
 
+void RunPhysChem(const char* out, long seed, const std::vector<std::pair<double, long>>& cases)
+{
+  FILE* f = fopen(out, "w");
+  if (!f) { fprintf(stderr, "cannot open %s\n", out); exit(1); }
+  WriteProvenance(f, "physchem", 0, seed);
+  fprintf(f, "# G4EmDNAChemistry_option3; alive species snapshot at 1 ps (after the zero-time dissociation steps), before diffusion/reactions\n");
+  fprintf(f, "energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2\n");
+  auto* rm = G4RunManager::GetRunManager();
+  for (const auto& c : cases) {
+    gEnergy = c.first * eV;
+    gPhysChem.clear();
+    rm->BeamOn((G4int)c.second);
+    for (const auto& item : gPhysChem.sum_count) {
+      const std::string& species = item.first;
+      fprintf(f, "%.17g,%ld,%s,%.17g,%.17g,%.17g\n", c.first, gPhysChem.n_events,
+              species.c_str(), item.second, gPhysChem.sum_count2[species],
+              gPhysChem.sum_r2_nm2[species]);
+    }
+    fflush(f);
+    fprintf(stderr, "physchem: %.17g eV done (%ld events)\n", c.first, gPhysChem.n_events);
+  }
+  fclose(f);
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
 {
   if (argc < 3) {
-    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...]\n", argv[0]);
+    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...]\n", argv[0]);
     return 1;
   }
   const std::string mode = argv[1];
@@ -545,6 +668,11 @@ int main(int argc, char** argv)
     seed = argc > 3 ? atol(argv[3]) : 1;
     if (argc > 4) slowSpec = argv[4];
     gMode = Mode::Slow;
+  }
+  else if (mode == "physchem") {
+    seed = argc > 3 ? atol(argv[3]) : 1;
+    slowSpec = argc > 4 ? argv[4] : "1000:20000,10000:2000,100000:200,900000:20";
+    gMode = Mode::PhysChem;
   }
   else if (mode == "mfp") gMode = Mode::Mfp;
   else if (mode == "track") {
@@ -564,9 +692,19 @@ int main(int argc, char** argv)
   param->SetAuger(false);
   param->SetAugerCascade(false);
   param->SetPixe(false);
+  // chem6 sets "/process/chem/TimeStepModel IRT" before /run/initialize. The default is Unknown:
+  // no step model is registered and G4Scheduler::Process crashes in G4ITModelManager::Initialize
+  // (Q24). It must be set before the physics list is constructed (ConstructProcess reads it).
+  if (gMode == Mode::PhysChem) param->SetTimeStepModel(G4ChemTimeStepModel::IRT);
 
   G4Random::setTheSeed(seed);
   rm->Initialize();
+  // EndTime must exceed the 1 ps species birth time for StartProcessing to be entered; the user
+  // action records the initial list and calls Stop() before the first chemistry step.
+  if (gMode == Mode::PhysChem) {
+    G4Scheduler::Instance()->SetEndTime(2. * ps);
+    G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
+  }
 
   // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.1): G4EmDNABuilder
   // always registers a G4UAtomicDeexcitation, and Born2/Emfietzoglou call GetAtomicShell() and
@@ -589,6 +727,9 @@ int main(int argc, char** argv)
   }
   else if (gMode == Mode::Slow) {
     RunSlow(out, seed, ParseSpec(slowSpec));
+  }
+  else if (gMode == Mode::PhysChem) {
+    RunPhysChem(out, seed, ParseSpec(slowSpec));
   }
   else {
     RunEvents(out, "track", {200., 1e3, 1e4, 1e5, 9e5}, events, seed);

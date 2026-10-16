@@ -47,3 +47,5 @@ One stream per history, consumed in the order of the event list: solvation event
    auto-ionisation: the same + one triple with sigma_1D = 0.62666 r_mean(1.7 eV) for the `e_aq`; relaxation channels: nothing.
 Consequences: adding a species or a channel, changing the processing order (docs/09 Q21) or the number of draws changes every later number of the history. Geant4 draws differently (`G4RandGauss`, two calls of its recombination sampler); only distributions can be compared.
 
+M6 B does not add random draws. Physics histories are computed in parallel; their event lists are then converted with the per-history `PhysChem` stream and reduced sequentially in ascending history id, batch by batch. `run_physchem_summary` is therefore bitwise independent of thread count and batch scheduling. Production attribution, displacement sums and same-decay pair distances are accumulated while the already-selected channel products are emitted and consume no RNG values.
+

@@ -20,3 +20,13 @@ pub mod species;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
 pub use error::ChemistryError;
+
+/// SHA-256 of the three embedded option3 chemistry input files, in the documented order
+/// species, dissociation channels, physicochemical parameters.
+pub fn option3_data_sha256() -> String {
+    let mut hash = dna_core::sha256::Sha256::new();
+    hash.update(species::DEFAULT_SPECIES_TOML.as_bytes());
+    hash.update(channels::DEFAULT_DISSOCIATION_TOML.as_bytes());
+    hash.update(params::DEFAULT_PHYSCHEM_TOML.as_bytes());
+    dna_core::sha256::hex(&hash.finalize())
+}

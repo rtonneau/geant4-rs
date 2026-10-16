@@ -127,6 +127,30 @@ cargo test --workspace
 
 If commands cannot run, explain why. Never claim tests passed without executing them.
 
+## Geant4 reference data and generators
+
+Reference data in `validation/reference/` is evidence, not a build artefact.
+
+- **Never overwrite or delete** an existing reference file (CSV, `provenance*.toml`) or a mode of an
+  existing generator. A new validation (milestone, observable, seed, energy list) adds **new** files and
+  **new** generator modes or programs; existing modes keep their arguments, physics settings and output
+  format. Change an existing mode only to fix a bug, and then record why in the docs and re-run it.
+- Regenerating an existing file is allowed only when the user asks for it. Write the new run to a scratch
+  directory first and replace the committed file only after the run is complete and checked (all energies
+  present, exit code 0, non-empty rows). Never commit a partial or smoke-test CSV.
+- Every Geant4 code that produces committed CSV data must stay **re-runnable**: its source lives in the
+  repository (`validation/geant4/`), it builds with the documented CMake recipe, it takes output path,
+  seed and statistics on the command line, and it contains no machine paths. Do not keep a generator only
+  in a scratch copy outside the repository.
+- Each data file needs a `provenance*.toml` with the Geant4 version and data-set versions, physics and
+  chemistry constructors, exact command line, seed, date, generator git commit (state if the working tree
+  was dirty), compiler and platform. The command line must reproduce the file.
+- Build and run instructions, and the fixes for problems met, go into `validation/geant4/BUILD_NOTES.md`
+  (keep it under 300 lines and path-independent); arguments, file schemas and acceptance criteria go into
+  `validation/geant4/README.md`. Update both when a generator changes.
+- Do not modify the Geant4 C++ reference repository; generators are separate programs that link an
+  installed Geant4.
+
 ## Documentation
 
 Document:

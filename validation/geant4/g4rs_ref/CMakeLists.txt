@@ -8,3 +8,9 @@ include(${Geant4_USE_FILE})
 
 add_executable(g4rs_ref g4rs_ref.cc)
 target_link_libraries(g4rs_ref ${Geant4_LIBRARIES})
+
+# 900 keV chemistry events overflowed the default 1 MB Windows stack once (exit 0xC00000FD, 2026-10-16,
+# physchem production run); give the main thread 512 MB. No effect on the physics.
+if(MSVC)
+  target_link_options(g4rs_ref PRIVATE /STACK:536870912)
+endif()

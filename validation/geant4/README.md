@@ -208,3 +208,36 @@ platform            = ""
 5. Primaries start at the origin in an infinite medium; the Geant4 world is a 1 m sphere of water, large
    against the 900 keV range (about 4 mm).
 
+---
+
+# M6: initial physicochemical species at 1 ps
+
+The new mode is `physchem <out.csv> <seed> [E_eV:events,...]`. It uses option2 electron physics and `G4EmDNAChemistry_option3`; its intended snapshot is the alive species list at 1 ps, before diffusion or reactions. CSV columns are `energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2`, where the last quantity sums squared distances of every alive molecule from the primary origin.
+
+Build and smoke test first:
+
+```bash
+cd validation/geant4/g4rs_ref
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGeant4_DIR=<geant4-install>/lib/cmake/Geant4
+cmake --build build -j
+./build/g4rs_ref physchem /tmp/physchem_smoke.csv 1 1000:2
+```
+
+**Generator status:** Q24 fixed 2026-10-16 (IRT time-step model, snapshot at the first dt > 0 step, secondaries transported, atomic de-excitation pointer nulled; see `BUILD_NOTES.md` section 5, issues G-K). The production run was done on this machine; the data are in `validation/reference/physchem.csv` and `provenance_m6.toml`. To regenerate:
+
+
+
+```bash
+./build/g4rs_ref physchem ../../reference/physchem.csv 20261019 \
+  1000:20000,10000:2000,100000:200,900000:20
+```
+
+The default is about 1.1e8 physical interactions plus the 1 ps stage. From the M3 timing estimate, expect roughly 20 minutes to 2 hours serial; time the smoke case and extrapolate on the actual machine. Counts may be reduced at high energy if necessary because each row records `n_events`, but keep at least 20 events at 900 keV.
+
+Exactly two files are needed in `validation/reference/`:
+
+- `physchem.csv`, from the successful command above.
+- `provenance_m6.toml`, with `geant4_version`, `geant4_commit`, `g4emlow_version`, `g4emlow_md5`, `physics_constructor = "G4EmDNAPhysics_option2"`, `chemistry_constructor = "G4EmDNAChemistry_option3"`, `scheduler_snapshot_ps = 1.0`, generator commit, date, exact command line, seed, compiler and platform.
+
+Then run `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture`. The ignored test contains the pre-registered count and RMS acceptance criteria. It must remain ignored until both files exist and the generator exits successfully.
+

@@ -9,9 +9,11 @@
 use crate::config::RunConfig;
 use crate::error::SimError;
 use crate::history::{HistoryResult, radial_edges_nm, run_history, spectrum_edges_ev};
+use crate::physchem_scoring::{PhysChemScorer, PhysChemSummary};
 use crate::scoring::{RunSummary, Scorer};
+use dna_chemistry::{PhysChemEngine, option3_data_sha256};
 use dna_core::provenance::Provenance;
-use dna_core::rng::RngStreams;
+use dna_core::rng::{RngStreams, Stage};
 use dna_physics::physchem::{PHYSCHEM_CSV_HEADER, PhysChemEvent};
 use dna_physics::table::{ModelInfo, ProcessTable};
 use rayon::prelude::*;
@@ -149,6 +151,43 @@ pub fn run_summary(table: &ProcessTable, config: &RunConfig) -> Result<RunSummar
     run_summary_with_sink(table, config, None)
 }
 
+/// Run the physical and physicochemical stages and score both in fixed history order.
+///
+/// This is the M6 stage boundary: physics produces events, `engine` consumes them on the
+/// independent `(seed, history, PhysChem)` stream, and the returned species are only scored.
+/// No diffusion or reactions are performed.
+pub fn run_physchem_summary(
+    table: &ProcessTable,
+    engine: &PhysChemEngine,
+    config: &RunConfig,
+) -> Result<(RunSummary, PhysChemSummary), SimError> {
+    config.validate()?;
+    let mut config = config.clone();
+    config.record_physchem = true;
+    let config = &config;
+    let (first, end) = ids(config)?;
+    let streams = RngStreams::new(config.master_seed);
+    let edges = Edges::new();
+    let mut physics = Scorer::new(config.primary_energy_ev);
+    let mut physchem = PhysChemScorer::default();
+    with_pool(config.threads, || -> Result<(), SimError> {
+        let mut start = first;
+        while start < end {
+            let stop = start.saturating_add(config.batch_size as u64).min(end);
+            for result in run_batch(table, config, &streams, &edges, start, stop)? {
+                let deposited = result.outcome.ledger.deposited();
+                let mut rng = streams.stream(result.id, Stage::PhysChem)?;
+                let chemistry = engine.convert_history(&result.physchem, &mut rng)?;
+                physics.add(&result);
+                physchem.add(&chemistry, deposited);
+            }
+            start = stop;
+        }
+        Ok(())
+    })??;
+    Ok((physics.finish(), physchem.finish()))
+}
+
 /// Run and score; if `sink` is given, the physicochemical events of every history are passed to
 /// it in history order (event recording is switched on for the run).
 pub fn run_summary_with_sink(
@@ -193,6 +232,33 @@ pub struct RunOutput {
     pub elastic_rotation: String,
     pub config: RunConfig,
     pub summary: RunSummary,
+}
+
+/// Machine-readable two-stage M6 result.
+#[derive(Debug, Clone, Serialize)]
+pub struct PhysChemRunOutput {
+    pub schema: &'static str,
+    pub provenance: Provenance,
+    /// SHA-256 over the embedded option3 species, channel and parameter TOML files.
+    pub chemistry_data_sha256: String,
+    pub models: Vec<ModelInfo>,
+    pub elastic_rotation: String,
+    pub config: RunConfig,
+    pub summary: RunSummary,
+    pub physchem: PhysChemSummary,
+}
+
+impl PhysChemRunOutput {
+    pub fn to_json_pretty(&self) -> Result<String, SimError> {
+        serde_json::to_string_pretty(self).map_err(|e| SimError::Json(e.to_string()))
+    }
+
+    pub fn write_json(&self, path: &std::path::Path) -> Result<(), SimError> {
+        std::fs::write(path, self.to_json_pretty()?).map_err(|e| SimError::Io {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        })
+    }
 }
 
 impl RunOutput {
@@ -243,5 +309,35 @@ pub fn run_with_sink(
         elastic_rotation: rotation,
         config: config.clone(),
         summary,
+    })
+}
+
+/// Run and score the physical and physicochemical stages, with chemistry-data provenance.
+pub fn run_with_physchem(
+    table: &ProcessTable,
+    engine: &PhysChemEngine,
+    config: &RunConfig,
+    manifest: &dna_core::manifest::Manifest,
+) -> Result<PhysChemRunOutput, SimError> {
+    let (summary, physchem) = run_physchem_summary(table, engine, config)?;
+    let rotation = table
+        .chain(dna_physics::models::ProcessKind::Elastic)
+        .map(|c| c.models())
+        .unwrap_or(&[])
+        .iter()
+        .find_map(|m| match m {
+            dna_physics::models::ElectronModel::Elastic(c) => Some(format!("{:?}", c.rotation())),
+            _ => None,
+        })
+        .unwrap_or_else(|| "n/a".to_owned());
+    Ok(PhysChemRunOutput {
+        schema: "geant4-rs/dna-sim/run/v3",
+        provenance: Provenance::new(manifest, config.master_seed),
+        chemistry_data_sha256: option3_data_sha256(),
+        models: table.describe(),
+        elastic_rotation: rotation,
+        config: config.clone(),
+        summary,
+        physchem,
     })
 }

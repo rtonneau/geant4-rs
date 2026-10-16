@@ -233,3 +233,7 @@ Data transcribed in `data/chemistry/` (provenance and line numbers inside the fi
 7. **Not implemented** (not reachable with option2 events): `Double/Triple/QuadrupleIonisation_DissociationDecay` displacer cases, `H2O(B)/H3Op(B)/OHm(B)`/`NoneM`
    bookkeeping species (chemistry, M7). `ExtendLowEnergyLimit(0.025 eV)` of the Sanche model in `ConstructProcess` (option3 chemistry, `:692`) is unreachable
    with solvation active (E <= 7.4 eV is always solvated, B.7.2).
+
+### B.7.7 M6 reference-run lifecycle reading [V, M6 B]
+
+`chem6/src/StackingAction.cc:58-65` starts chemistry from `NewStage()` only when the urgent physical stack is empty. `RunAction.cc:64-82` forwards begin/end-run notifications to `G4DNAChemistryManager`. `ActionInitialization.cc:71-79` registers a per-event-reset `G4MoleculeCounter`, ignores bulk H2O, and compares times at 1 ps precision. `G4UserTimeStepAction::StartProcessing` is called before chemistry time stepping; the IT track holder exposes the alive molecular tracks and their positions. The compact reference generator attempts the same lifecycle, but its current smoke run access-violates at chemistry start (Q24), so this reading is recorded as incomplete rather than evidence that the generator is correct.
