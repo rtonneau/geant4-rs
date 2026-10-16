@@ -4,7 +4,7 @@
 //! The set is closed and is the list of molecular configurations created by
 //! `G4ChemDissociationChannels_option1::ConstructMolecule`
 //! (`physics_lists/constructors/electromagnetic/src/G4ChemDissociationChannels_option1.cc:54-190`),
-//! which `G4EmDNAChemistry_option3` uses. The tags are the keys of `G4MoleculeTable`. The three
+//! which `G4EmDNAChemistry_option3` uses. The chemistry names are the keys of `G4MoleculeTable`. The three
 //! "bulk" configurations (`H2O(B)`, `H3Op(B)`, `OHm(B)`) and `NoneM` are bookkeeping species of
 //! the reaction network (M7) and are not listed. Diffusion coefficients, charges and radii live in
 //! `data/chemistry/species_option3.toml` (loaded by `dna-chemistry`), not here.
@@ -67,18 +67,17 @@ impl Species {
         Species::O3m,
     ];
 
-    /// Stable ASCII tag used in the data files and the CSV output: the `G4MoleculeTable` key, with
-    /// the non-ASCII degree sign of `°OH` and `HO2°` removed.
-    pub const fn tag(self) -> &'static str {
+    /// Exact `G4MoleculeTable` configuration key used by Geant4 v11.4.1.
+    pub const fn chemistry_name(self) -> &'static str {
         match self {
             Species::H3Op => "H3Op",
-            Species::Oh => "OH",
+            Species::Oh => "°OH",
             Species::Ohm => "OHm",
             Species::EAq => "e_aq",
             Species::H => "H",
             Species::H2 => "H2",
             Species::H2o2 => "H2O2",
-            Species::Ho2 => "HO2",
+            Species::Ho2 => "HO2°",
             Species::Ho2m => "HO2m",
             Species::O => "Oxy",
             Species::Om => "Om",
@@ -89,9 +88,33 @@ impl Species {
         }
     }
 
-    /// Species from its tag.
+    /// Parse an exact Geant4 v11.4.1 configuration key.
+    pub fn from_chemistry_name(name: &str) -> Option<Species> {
+        Species::ALL.into_iter().find(|s| s.chemistry_name() == name)
+    }
+
+    /// Parse the former ASCII data-file tags, including `OH` and `HO2`.
+    /// Canonical names are also accepted for callers migrating existing input.
+    pub fn from_legacy_ascii_tag(tag: &str) -> Option<Species> {
+        match tag {
+            "OH" => Some(Species::Oh),
+            "HO2" => Some(Species::Ho2),
+            _ => Species::from_chemistry_name(tag),
+        }
+    }
+
+    /// Temporary ASCII tag for existing data files and CSV output.
+    pub const fn tag(self) -> &'static str {
+        match self {
+            Species::Oh => "OH",
+            Species::Ho2 => "HO2",
+            _ => self.chemistry_name(),
+        }
+    }
+
+    /// Temporary forwarding API for existing ASCII data files.
     pub fn from_tag(tag: &str) -> Option<Species> {
-        Species::ALL.into_iter().find(|s| s.tag() == tag)
+        Species::from_legacy_ascii_tag(tag)
     }
 
     /// Species from the name of a Geant4 molecule, `G4Molecule::GetName()` = `<definition name>^<charge>`
@@ -200,6 +223,32 @@ mod tests {
             }
         }
         assert_eq!(Species::from_tag("nonsense"), None);
+    }
+
+    #[test]
+    fn exact_chemistry_names_round_trip_in_geant4_order() {
+        let names = [
+            "H3Op", "°OH", "OHm", "e_aq", "H", "H2", "H2O2", "HO2°", "HO2m", "Oxy", "Om",
+            "O2", "O2m", "O3", "O3m",
+        ];
+        for (species, name) in Species::ALL.into_iter().zip(names) {
+            assert_eq!(species.chemistry_name().as_bytes(), name.as_bytes());
+            assert_eq!(Species::from_chemistry_name(name), Some(species));
+        }
+    }
+
+    #[test]
+    fn canonical_parser_is_strict_and_legacy_parser_accepts_ascii_tags() {
+        for species in Species::ALL {
+            assert_eq!(Species::from_legacy_ascii_tag(species.tag()), Some(species));
+        }
+        for alias in ["OH", "HO2"] {
+            assert_eq!(Species::from_chemistry_name(alias), None);
+        }
+        for invalid in ["", "oh", "Ho2", "HO_2°", "°OH^0", "H3Op(B)"] {
+            assert_eq!(Species::from_chemistry_name(invalid), None);
+            assert_eq!(Species::from_legacy_ascii_tag(invalid), None);
+        }
     }
 
     #[test]
