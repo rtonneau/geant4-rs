@@ -74,9 +74,33 @@
         "ticket": "01-document-m6-reference-state",
         "commit": "031a6bc"
       }
+    },
+    {
+      "at": "2026-10-16T19:16:19.888Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-add-m6-comparison-report.md",
+        "03-implement/02-add-m6-comparison-report/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-add-m6-comparison-report"
+      }
+    },
+    {
+      "at": "2026-10-16T19:23:23.370Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/02-add-m6-comparison-report/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-add-m6-comparison-report",
+        "commit": "1dcb896"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "test/m6-comparison-report",
     "base_branch": "main",
