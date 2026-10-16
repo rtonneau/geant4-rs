@@ -1,0 +1,144 @@
+{
+  "session_id": "2026-10-16__m6-comparison-report",
+  "feature_name": "m6-comparison-report",
+  "scratch_dir": ".scratch/tests/2026-10-16__m6-comparison-report",
+  "created_at": "2026-10-16T18:35:24.469Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T18:35:24.469Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T18:40:37.902Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T18:40:44.462Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T19:02:30.479Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/m6-comparison-report",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T19:02:30.502Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-document-m6-reference-state.md",
+        "02-plan/tickets/02-add-m6-comparison-report.md"
+      ],
+      "detail": {
+        "tickets": 2
+      }
+    },
+    {
+      "at": "2026-10-16T19:14:22.236Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-document-m6-reference-state.md",
+        "03-implement/01-document-m6-reference-state/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-document-m6-reference-state"
+      }
+    },
+    {
+      "at": "2026-10-16T19:16:12.406Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-document-m6-reference-state/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-document-m6-reference-state",
+        "commit": "031a6bc"
+      }
+    },
+    {
+      "at": "2026-10-16T19:16:19.888Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-add-m6-comparison-report.md",
+        "03-implement/02-add-m6-comparison-report/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-add-m6-comparison-report"
+      }
+    },
+    {
+      "at": "2026-10-16T19:23:23.370Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/02-add-m6-comparison-report/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-add-m6-comparison-report",
+        "commit": "1dcb896"
+      }
+    },
+    {
+      "at": "2026-10-16T19:25:27.751Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-16T19:27:42.658Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/13"
+      }
+    },
+    {
+      "at": "2026-10-16T19:27:42.660Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "test/m6-comparison-report",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T19:02:30.479Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/13"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-16__m6-comparison-report.md",
+    "written_at": "2026-10-16T19:25:27.744Z"
+  },
+  "finished_at": "2026-10-16T19:27:42.660Z"
+}
