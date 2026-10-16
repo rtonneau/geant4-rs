@@ -14,7 +14,7 @@
 //! * every species is born at 1 ps;
 //! * the species lists are bitwise identical for 1, 2 and 8 threads.
 //!
-//! No yield is asserted: the comparison with Geant4 is part B (docs/next.md).
+//! No yield is asserted: the comparison with Geant4 is part B (docs/gps-backlog.md, seed `m6-comparison-report`).
 
 use dna_chemistry::PhysChemEngine;
 use dna_chemistry::channels::DisplacementKind;
