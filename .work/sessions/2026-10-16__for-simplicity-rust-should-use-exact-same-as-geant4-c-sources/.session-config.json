@@ -1,0 +1,73 @@
+{
+  "session_id": "2026-10-16__for-simplicity-rust-should-use-exact-same-as-geant4-c-sources",
+  "feature_name": "For simplicity, Rust should use exact same as geant4 c++ sources for all species",
+  "scratch_dir": ".scratch/tests/2026-10-16__for-simplicity-rust-should-use-exact-same-as-geant4-c-sources",
+  "created_at": "2026-10-16T07:31:23.895Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T07:31:23.895Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T07:44:37.761Z",
+      "event": "auto_started",
+      "phase": "grill",
+      "detail": {
+        "target": "finish",
+        "steps": "write:grill → plan → write:plan → ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-16T07:47:23.001Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T07:47:29.947Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T07:49:50.240Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "refactor/canonical-chemistry-names",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T07:49:50.263Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-canonical-species-name-api.md",
+        "02-plan/tickets/02-migrate-species-identifiers.md",
+        "02-plan/tickets/03-provenance-and-exact-crosscheck.md"
+      ],
+      "detail": {
+        "tickets": 3
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "refactor/canonical-chemistry-names",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T07:49:50.240Z",
+    "pr_url": null
+  }
+}
