@@ -98,14 +98,47 @@
         "ticket": "02-add-m6-comparison-report",
         "commit": "1dcb896"
       }
+    },
+    {
+      "at": "2026-10-16T19:25:27.751Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-16T19:27:42.658Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/13"
+      }
+    },
+    {
+      "at": "2026-10-16T19:27:42.660Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
     }
   ],
-  "current_phase": "finish-pending",
+  "current_phase": "finished",
   "git": {
     "branch": "test/m6-comparison-report",
     "base_branch": "main",
     "branch_created_at": "2026-10-16T19:02:30.479Z",
-    "pr_url": null
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/13"
   },
-  "ship_mode": "subagent+inline"
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-16__m6-comparison-report.md",
+    "written_at": "2026-10-16T19:25:27.744Z"
+  },
+  "finished_at": "2026-10-16T19:27:42.660Z"
 }
