@@ -74,6 +74,30 @@
       "detail": {
         "ticket": "01-run-requests-convention"
       }
+    },
+    {
+      "at": "2026-10-16T17:17:25.108Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-gps-backlog.md",
+        "03-implement/02-gps-backlog/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-gps-backlog"
+      }
+    },
+    {
+      "at": "2026-10-16T17:18:07.987Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-gps-backlog/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-gps-backlog",
+        "commit": "20945a4"
+      }
     }
   ],
   "current_phase": "ship",
