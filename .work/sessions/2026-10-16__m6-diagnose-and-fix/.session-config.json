@@ -100,6 +100,30 @@
         "ticket": "02-audit-and-correct-physchem-conversion",
         "commit": "859030c"
       }
+    },
+    {
+      "at": "2026-10-16T20:31:53.105Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-audit-cascade-and-scoring-semantics.md",
+        "03-implement/03-audit-cascade-and-scoring-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-audit-cascade-and-scoring-semantics"
+      }
+    },
+    {
+      "at": "2026-10-16T20:39:32.018Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-audit-cascade-and-scoring-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-audit-cascade-and-scoring-semantics",
+        "commit": "baf986c"
+      }
     }
   ],
   "current_phase": "ship",
