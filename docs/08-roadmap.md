@@ -89,6 +89,104 @@ Tests: V8. Acceptance: initial species counts per 100 eV vs Geant4 `chem6` at t 
 - *Geant4 gate failure (first observed).* The reference comparison first fails at exactly `1000 eV H2O2: z = 111.6`. The test stops at its first failed assertion, so this result hides the rest of the comparison; inspect the CSV and diagnostics before drawing conclusions about other energies or observables. The pre-registered count and RMS tolerances above remain unchanged.
 - *Next steps (2026-10-16).* M6 closure is split into the seeds `m6-comparison-report`, `m6-diagnose-and-fix` and `m6-close-gate` in `docs/gps-backlog.md`. The reference data exist (Q24 is closed, see docs/09), but `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture` fails at the first assertion described above; the gate is **open**.
 
+### M6 snapshot audit and full comparison (2026-10-16)
+
+The existing `physchem.csv` is an **after-zero-time-reactions** snapshot at global time 1 ps. It is not the dissociation-only list returned by Rust M6. The first `dt > 0` **pre-step** callback precedes the selected positive-time step, but follows every earlier zero-time step, including contact reactions. The CSV header, `provenance_m6.toml` and generator comment calling it "before diffusion/reactions" are historical labels contradicted by the source audit below; the evidence files and existing generator mode are preserved unchanged. This establishes a comparison-stage mismatch, not a numerical correction or closure of M6.
+
+Sources were read from Geant4 **11.4.1** (`source/global/management/include/G4Version.hh:46,71-73`, version 1141 / `geant4-11-04-patch-01`). Paths and line numbers below are relative to that source tree:
+
+1. `source/processes/electromagnetic/dna/management/src/G4Scheduler.cc`, `Stepping`: calculate the model time at lines 550-552; calculate the medium-process time at 581-584; choose medium processes on ties at 613-626. The pre-callback is at 663, global time advances at 676, medium `DoIt` runs at 681-682, and `ComputeTrackReaction` runs at 694-696 before the post-callback at 700-701. A zero step keeps global time at 1 ps; a later positive-step pre-callback sees its completed changes.
+2. `source/processes/electromagnetic/dna/processes/src/G4DNAMolecularDissociation.cc`: `GetMeanLifeTime` clamps an expired decay to zero at 108-112; `DecayIt` selects a channel at 142-155, displaces products at 165-223 and builds daughter tracks at the mother's global time at 258-268. `source/physics_lists/constructors/electromagnetic/src/G4ChemDissociationChannels_option1.cc:194-465` supplies only H3Op, °OH, OHm, e_aq, H, H2 and Oxy, including the H2Ovib channels after electron-hole recombination. None can produce H2O2, HO2°, Om (O^-), or O2.
+3. `source/processes/electromagnetic/dna/models/src/G4DNAIRTMoleculeEncounterStepper.cc:431-479` waits for the stopped water states, then returns the initialization sentinel or earliest reaction time minus current time. `source/processes/electromagnetic/dna/management/src/G4ITModelProcessor.cc:118-131` initializes IRT and obtains that time; `ComputeTrackReaction:186-197,336-354` calls `FindReaction` on collision steps, kills parents and merges daughters. There is no exclusion of zero-time collisions. Medium-process priority therefore finishes zero-time dissociations before subsequent zero-time chemical collisions.
+4. `source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc`: `Initialize:93-126` samples reaction times; `GetIndependentReactionTime:298-333` explicitly permits zero-time contact reactions (deterministically for type 0 inside the effective radius, probabilistically for type 1). `FindReaction:527-548` applies reactions whose times are <= the current global time, and `MakeReaction:486-508` creates products, samples their reactions and merges them. Thus chemical cascades can occur without elapsed diffusion time; their reaction-site placement can still affect spatial scores.
+5. `source/physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc:89-91` selects option1 dissociation; its reaction table includes °OH + °OH -> H2O2 (255-260), °OH + Oxy -> HO2° (170-174), °OH + OHm -> Om (283-288), and Oxy + Oxy -> O2 (183-187). These demonstrate reaction paths, not measured attribution of individual CSV molecules. Lines 722-741 register water dissociation/recombination and omit Brownian transportation for IRT; lines 754-766 select the IRT model. `validation/geant4/g4rs_ref/g4rs_ref.cc:184-210` snapshots the main list in the pre-callback only when the selected time step is positive.
+
+The focused ignored diagnostic `m6_reference_contains_products_requiring_zero_time_chemistry` independently checks the seven-species union against the loaded decay channels (including recombined water) and confirms the positive reference-only species. H2O2, HO2°, Om and O2 occur at all four energies; rarer HO2m, O2m and O3 also occur in the reference. Product presence alone would not prove callback order; the scheduler/IRT trace above supplies that evidence.
+
+The complete rerun used `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture`, Rust seed **20261017**, and the unchanged Geant4 reference (seed **20261019**, option2 physics / option3 chemistry, IRT, fluo/Auger off). Means and standard errors below are molecules/history; signed z and delta are Rust minus Geant4. N/A radius means zero population. Missing reference rows are represented as zero, as in the diagnostic report. The original gate still fails first at `1000 eV H2O2: z = 111.55722825815035` (its assertion uses absolute z); the report completes all 60 species/energy rows.
+
+**1 keV, 20000 histories**
+
+| Species | Geant4 mean (SE) | Rust mean (SE) | signed z | count delta (%) | RMS nm, Geant4 / Rust |
+|---|---:|---:|---:|---:|---:|
+| H3Op | 4.0105e1 (2.4694e-2) | 4.1022e1 (2.3400e-2) | +26.940 | +2.285 | 34.842 / 34.836 |
+| °OH | 4.9552e1 (3.0288e-2) | 5.1650e1 (2.8274e-2) | +50.625 | +4.233 | 34.930 / 34.906 |
+| OHm | 8.3920e-1 (6.3894e-3) | 9.1225e-1 (6.7342e-3) | +7.869 | +8.705 | 35.197 / 35.151 |
+| e_aq | 4.0201e1 (2.5444e-2) | 4.1109e1 (2.4380e-2) | +25.778 | +2.260 | 38.881 / 38.780 |
+| H | 1.0277e1 (2.4968e-2) | 1.0232e1 (2.4952e-2) | -1.272 | -0.437 | 35.390 / 35.253 |
+| H2 | 2.7784e0 (1.1565e-2) | 2.6898e0 (1.1362e-2) | -5.471 | -3.192 | 35.494 / 35.176 |
+| H2O2 | 6.8935e-1 (6.1793e-3) | 0.0000e0 (0.0000e0) | -111.557 | -100.000 | 35.792 / N/A |
+| HO2° | 2.7885e-1 (3.7169e-3) | 0.0000e0 (0.0000e0) | -75.022 | -100.000 | 36.422 / N/A |
+| HO2m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+| Oxy | 1.4869e0 (8.3235e-3) | 2.0354e0 (9.8624e-3) | +42.498 | +36.884 | 35.166 / 35.243 |
+| Om | 6.4650e-2 (1.8381e-3) | 0.0000e0 (0.0000e0) | -35.172 | -100.000 | 35.286 / N/A |
+| O2 | 5.6900e-2 (1.6713e-3) | 0.0000e0 (0.0000e0) | -34.045 | -100.000 | 36.745 / N/A |
+| O2m | 3.0000e-4 (1.2246e-4) | 0.0000e0 (0.0000e0) | -2.450 | -100.000 | 29.546 / N/A |
+| O3 | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+| O3m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+
+**10 keV, 2000 histories**
+
+| Species | Geant4 mean (SE) | Rust mean (SE) | signed z | count delta (%) | RMS nm, Geant4 / Rust |
+|---|---:|---:|---:|---:|---:|
+| H3Op | 4.0274e2 (4.6188e-1) | 4.0768e2 (4.7997e-1) | +7.420 | +1.227 | 1559.751 / 1545.995 |
+| °OH | 4.8727e2 (5.5305e-1) | 4.9761e2 (5.7102e-1) | +13.005 | +2.122 | 1562.922 / 1549.232 |
+| OHm | 8.3220e0 (6.5397e-2) | 8.6785e0 (6.6455e-2) | +3.824 | +4.284 | 1563.021 / 1551.714 |
+| e_aq | 3.9500e2 (4.5883e-1) | 4.0000e2 (4.7620e-1) | +7.560 | +1.266 | 1560.921 / 1547.136 |
+| H | 8.6085e1 (2.4419e-1) | 8.5875e1 (2.5264e-1) | -0.596 | -0.243 | 1584.043 / 1564.680 |
+| H2 | 2.4123e1 (1.0911e-1) | 2.3150e1 (1.0703e-1) | -6.366 | -4.033 | 1575.650 / 1561.998 |
+| H2O2 | 3.9720e0 (4.4250e-2) | 0.0000e0 (0.0000e0) | -89.762 | -100.000 | 1593.522 / N/A |
+| HO2° | 1.8380e0 (3.0064e-2) | 0.0000e0 (0.0000e0) | -61.137 | -100.000 | 1617.979 / N/A |
+| HO2m | 1.0000e-3 (7.0693e-4) | 0.0000e0 (0.0000e0) | -1.415 | -100.000 | 1683.158 / N/A |
+| Oxy | 1.2961e1 (7.9512e-2) | 1.6782e1 (9.1728e-2) | +31.468 | +29.472 | 1583.439 / 1566.622 |
+| Om | 4.1150e-1 (1.4686e-2) | 0.0000e0 (0.0000e0) | -28.019 | -100.000 | 1585.336 / N/A |
+| O2 | 3.1550e-1 (1.2730e-2) | 0.0000e0 (0.0000e0) | -24.783 | -100.000 | 1610.941 / N/A |
+| O2m | 5.0000e-4 (5.0000e-4) | 0.0000e0 (0.0000e0) | -1.000 | -100.000 | 1561.459 / N/A |
+| O3 | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+| O3m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+
+**100 keV, 200 histories**
+
+| Species | Geant4 mean (SE) | Rust mean (SE) | signed z | count delta (%) | RMS nm, Geant4 / Rust |
+|---|---:|---:|---:|---:|---:|
+| H3Op | 4.0195e3 (5.3236e0) | 4.0802e3 (5.1942e0) | +8.171 | +1.512 | 80848.560 / 81641.134 |
+| °OH | 4.8037e3 (6.1877e0) | 4.9188e3 (6.1281e0) | +13.218 | +2.396 | 80905.883 / 81687.232 |
+| OHm | 8.0840e1 (6.1466e-1) | 8.5210e1 (6.9212e-1) | +4.721 | +5.406 | 81027.811 / 81553.233 |
+| e_aq | 3.9356e3 (5.3110e0) | 3.9960e3 (5.0426e0) | +8.252 | +1.536 | 80853.020 / 81649.863 |
+| H | 7.9136e2 (2.3059e0) | 7.9397e2 (2.4673e0) | +0.773 | +0.330 | 81309.074 / 82059.606 |
+| H2 | 2.2296e2 (1.0587e0) | 2.1806e2 (1.1225e0) | -3.169 | -2.193 | 81210.656 / 81844.095 |
+| H2O2 | 3.4680e1 (4.5830e-1) | 0.0000e0 (0.0000e0) | -75.671 | -100.000 | 82205.105 / N/A |
+| HO2° | 1.5335e1 (2.9632e-1) | 0.0000e0 (0.0000e0) | -51.752 | -100.000 | 81218.249 / N/A |
+| HO2m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+| Oxy | 1.1850e2 (7.5694e-1) | 1.5316e2 (8.8661e-1) | +29.727 | +29.245 | 81399.385 / 82299.285 |
+| Om | 4.0300e0 (1.3944e-1) | 0.0000e0 (0.0000e0) | -28.902 | -100.000 | 79063.427 / N/A |
+| O2 | 2.9400e0 (1.1875e-1) | 0.0000e0 (0.0000e0) | -24.757 | -100.000 | 81579.610 / N/A |
+| O2m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+| O3 | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+| O3m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+
+**900 keV, 20 histories**
+
+| Species | Geant4 mean (SE) | Rust mean (SE) | signed z | count delta (%) | RMS nm, Geant4 / Rust |
+|---|---:|---:|---:|---:|---:|
+| H3Op | 3.6134e4 (5.4737e1) | 3.6595e4 (5.8884e1) | +5.733 | +1.276 | 1848558.173 / 2045077.826 |
+| °OH | 4.3086e4 (5.8528e1) | 4.4017e4 (6.6219e1) | +10.532 | +2.160 | 1849223.894 / 2045154.505 |
+| OHm | 7.3995e2 (6.3302e0) | 7.6315e2 (4.1702e0) | +3.061 | +3.135 | 1847656.663 / 2049540.195 |
+| e_aq | 3.5359e4 (5.3734e1) | 3.5832e4 (5.9910e1) | +5.884 | +1.339 | 1848535.110 / 2045007.440 |
+| H | 6.9565e3 (2.2253e1) | 7.0090e3 (2.8967e1) | +1.439 | +0.755 | 1854213.330 / 2045268.547 |
+| H2 | 1.9922e3 (8.2377e0) | 1.9256e3 (6.8704e0) | -6.204 | -3.341 | 1851068.373 / 2044105.558 |
+| H2O2 | 2.9670e2 (3.0445e0) | 0.0000e0 (0.0000e0) | -97.455 | -100.000 | 1838265.173 / N/A |
+| HO2° | 1.3350e2 (1.9541e0) | 0.0000e0 (0.0000e0) | -68.319 | -100.000 | 1873304.070 / N/A |
+| HO2m | 5.0000e-2 (5.0000e-2) | 0.0000e0 (0.0000e0) | -1.000 | -100.000 | 2519987.879 / N/A |
+| Oxy | 1.0408e3 (8.1714e0) | 1.3374e3 (9.1664e0) | +24.149 | +28.493 | 1853974.184 / 2041638.622 |
+| Om | 3.5650e1 (1.0865e0) | 0.0000e0 (0.0000e0) | -32.813 | -100.000 | 1909806.206 / N/A |
+| O2 | 2.5150e1 (1.1033e0) | 0.0000e0 (0.0000e0) | -22.796 | -100.000 | 1863886.838 / N/A |
+| O2m | 1.0000e-1 (6.8825e-2) | 0.0000e0 (0.0000e0) | -1.453 | -100.000 | 2424983.188 / N/A |
+| O3 | 5.0000e-2 (5.0000e-2) | 0.0000e0 (0.0000e0) | -1.000 | -100.000 | 1185859.632 / N/A |
+| O3m | 0.0000e0 (0.0000e0) | 0.0000e0 (0.0000e0) | N/A | N/A | N/A / N/A |
+
+All seven shared species have RMS differences below 11% (the unchanged limit is 20%). H is consistent in count at all four energies; H3Op, °OH and e_aq have small relative excesses but fail the z criterion; Oxy is 28.5-36.9% high and fails both count criteria. H2 and OHm also have z failures at some energies. Reaction-only populations are exactly zero in Rust M6, so their Rust RMS is undefined. The snapshot mismatch explains why a dissociation-only engine cannot reproduce the full reference, but it does not establish that all remaining count or spatial differences come from that mismatch. The count criteria remain **z <= 4.5 and 15% for non-small means**, and the RMS criterion remains **20%**; M6 stays open until a matching observable is validated.
+
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.
 Tests: V9, V10, unit tests for reaction selection and boundaries. Acceptance: V9 for A+B and A+A over three D/R/k sets; IRT vs SBS agreement on a TDC case within 3 sigma.

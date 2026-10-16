@@ -7,6 +7,10 @@
 //! relative difference <= 20%; no z test is possible because the requested CSV contains sum(r^2)
 //! but not sum[(per-event mean r^2)^2]. No tolerance may be changed after inspecting the CSV
 //! without documenting the failure and evidence in docs/08.
+//!
+//! The committed reference includes zero-time option3 reactions at 1 ps, as established by the
+//! semantic diagnostic below and the scheduler audit in docs/08. Its historical "before reactions"
+//! label does not describe a dissociation-only snapshot. The original gate remains unchanged.
 
 use dna_chemistry::PhysChemEngine;
 use dna_core::species::Species;
@@ -15,7 +19,7 @@ use dna_physics::models::ElasticRotation;
 use dna_physics::table::ProcessTable;
 use dna_sim::config::RunConfig;
 use dna_sim::run::run_physchem_summary;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -54,6 +58,73 @@ fn rows() -> Vec<Row> {
             }
         })
         .collect()
+}
+
+#[test]
+#[ignore = "requires validation/reference/physchem.csv from Geant4 11.4.1"]
+fn m6_reference_contains_products_requiring_zero_time_chemistry() {
+    // Independently enumerated from Geant4 11.4.1, source/physics_lists/constructors/
+    // electromagnetic/src/G4ChemDissociationChannels_option1.cc:194-465. Include H2Ovib:
+    // electron-hole recombination changes the decay state, not the set of possible products.
+    let engine = PhysChemEngine::option3().unwrap();
+    let dissociation_products: BTreeSet<_> = engine
+        .channel_table()
+        .states()
+        .iter()
+        .flat_map(|state| &state.channels)
+        .flat_map(|channel| &channel.products)
+        .copied()
+        .collect();
+    assert_eq!(
+        dissociation_products,
+        BTreeSet::from([
+            Species::H3Op,
+            Species::OH,
+            Species::OHm,
+            Species::e_aq,
+            Species::H,
+            Species::H2,
+            Species::Oxy,
+        ])
+    );
+
+    let reference = rows();
+    let reaction_only: BTreeSet<_> = reference
+        .iter()
+        .filter(|row| row.sum > 0.0 && !dissociation_products.contains(&row.species))
+        .map(|row| row.species)
+        .collect();
+    assert_eq!(
+        reaction_only,
+        BTreeSet::from([
+            Species::H2O2,
+            Species::HO2,
+            Species::HO2m,
+            Species::Om,
+            Species::O2,
+            Species::O2m,
+            Species::O3,
+        ]),
+        "the committed reference is not a dissociation-only species list"
+    );
+    // These four are present at every reference energy; the other reaction products are rare.
+    // Their reaction paths are in G4EmDNAChemistry_option3.cc:170-187,255-287.
+    for energy in [1_000.0, 10_000.0, 100_000.0, 900_000.0] {
+        for species in [Species::H2O2, Species::HO2, Species::Om, Species::O2] {
+            assert!(
+                reference
+                    .iter()
+                    .any(|row| row.energy == energy && row.species == species && row.sum > 0.0),
+                "{energy} eV: missing reaction-only {}",
+                species.chemistry_name()
+            );
+        }
+    }
+    println!(
+        "M6 snapshot diagnostic: seven option1 dissociation products; reference additionally contains \
+         H2O2, HO2°, HO2m, Om (O^-), O2, O2m and O3. Scheduler call order establishes zero-time \
+         chemistry before the first positive-step pre-callback; see docs/08."
+    );
 }
 
 #[test]
