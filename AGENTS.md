@@ -150,6 +150,8 @@ Reference data in `validation/reference/` is evidence, not a build artefact.
   `validation/geant4/README.md`. Update both when a generator changes.
 - Do not modify the Geant4 C++ reference repository; generators are separate programs that link an
   installed Geant4.
+- Agent sessions may write and compile-check new generator code but never run it; each run the user must
+  perform is logged in `validation/geant4/RUN_REQUESTS.md`.
 
 ## Documentation
 
