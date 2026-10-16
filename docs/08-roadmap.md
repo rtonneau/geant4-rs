@@ -87,14 +87,17 @@ Tests: V8. Acceptance: initial species counts per 100 eV vs Geant4 `chem6` at t 
 - *Tests.* Existing V8 channel chi-square, displacement mean-square, channel balance, ledger and atom/charge conservation tests remain green. New independent hand test checks both G estimators and RMS; two-stage summaries are bitwise equal with 1/2/8 threads. `physchem_reference.rs` is ignored until `physchem.csv` and `provenance_m6.toml` exist; its pre-registered count family uses combined z <= 4.5 plus 15% for non-small means, and RMS radius uses 20% (the requested CSV lacks fourth moments for a z test).
 - *Performance.* The added stage/scoring test at 10 keV takes about 0.7 s for the three normal tests together on this machine (90 transported histories plus sensitivity and thread repeats); no optimisation was attempted. Memory remains bounded by the physics batch plus one history's species list; reduction is sequential in history order.
 - *Geant4 gate still open.* The `physchem` generator source compiles against local Geant4 11.4.1/MSVC. A two-event smoke run currently terminates with Windows access violation `-1073741819` when the chemistry manager is started; physical-only `slow` still exits 0. Therefore no M6 CSV is claimed and the lifecycle/action wiring must be repaired before the human reference run. Exact requested files and commands are in `validation/geant4/README.md`.
+- *Next steps (2026-10-16).* M6 closure is split into the seeds `m6-comparison-report`, `m6-diagnose-and-fix` and `m6-close-gate` in `docs/gps-backlog.md`. State on `main`: the reference data exist (Q24 is closed, see docs/09) but `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture` still fails at `1000 eV H2O2: z = 111.6`; the gate is **open**.
 
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.
 Tests: V9, V10, unit tests for reaction selection and boundaries. Acceptance: V9 for A+B and A+A over three D/R/k sets; IRT vs SBS agreement on a TDC case within 3 sigma.
+Seeds (`docs/gps-backlog.md`): `m7-option3-reaction-table`, `m7-diffusion-and-two-body-irt`, `m7-sbs-oracle-and-ode`, `m7-sbs-close-gate`, `m7-multispecies-irt-scheduler`, `m7-scheduler-close-gate`. Consuming M6 species requires M6 closed.
 
 ## M8 G(t) end-to-end
 Scope: orchestration, scoring G(t) with uncertainties, TOML config, CLI `dna run config.toml`, JSON output with metadata.
 Tests: V11, V13. Acceptance: V11 for e- 1 MeV (or 100 keV and 1 MeV) and p 10 MeV against chem6 reference.
+Seeds (`docs/gps-backlog.md`): `m8-gt-scoring-and-chem6-reference`, `m8-gt-close-gate`, `m8-config-and-cli`, `m8-reproducibility-v13`. **Deviation:** the proton 10 MeV acceptance is deferred until M5 exists; the seeds cover e- 100 keV and 1 MeV.
 
 ## M9 Performance
 Profile, benchmark, optimise within scientific equivalence; scaling study threads 1..N; document.
