@@ -158,7 +158,7 @@ fn species_conservation_and_untouched_ledger_on_real_cascades() {
             let n_eaq = r
                 .species
                 .iter()
-                .filter(|s| s.species == Species::EAq)
+                .filter(|s| s.species == Species::e_aq)
                 .count() as i64;
             assert_eq!(
                 n_eaq,
@@ -243,7 +243,7 @@ fn informational_initial_species_per_100_ev_are_printed_not_asserted() {
         if counts[s.index()] > 0 {
             eprintln!(
                 "  {:>5}: {:.3}",
-                s.tag(),
+                s.chemistry_name(),
                 counts[s.index()] as f64 / (e_dep / 100.0)
             );
         }

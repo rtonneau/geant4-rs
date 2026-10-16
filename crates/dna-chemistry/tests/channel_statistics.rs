@@ -82,7 +82,7 @@ fn single_channel_states_are_deterministic_and_the_event_maps_to_the_right_state
             assert_eq!(engine.channel_table().states()[d.state].name, *name);
             assert_eq!(d.channel, 0);
             let tags: Vec<Species> = d.species.iter().map(|s| s.species).collect();
-            assert_eq!(tags, vec![Species::H3Op, Species::Oh]);
+            assert_eq!(tags, vec![Species::H3Op, Species::OH]);
             assert_eq!(d.decay_energy.ev(), 0.0);
             assert!(d.species.iter().all(|s| s.time.ps() == 1.0));
         }
@@ -97,7 +97,7 @@ fn single_channel_states_are_deterministic_and_the_event_maps_to_the_right_state
     let d = engine.decay_event(&att, &mut rng).unwrap();
     assert_eq!(
         d.species.iter().map(|s| s.species).collect::<Vec<_>>(),
-        vec![Species::H2, Species::Ohm, Species::Oh]
+        vec![Species::H2, Species::OHm, Species::OH]
     );
     assert_eq!(
         engine.channel_table().states()[d.state].kind,

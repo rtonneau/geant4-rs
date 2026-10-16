@@ -62,15 +62,22 @@ fn initial_yields_and_spatial_scores_are_physically_sane() {
     let Some(table) = setup() else { return };
     let summary = score(&table, 4, 30);
     for (species, low, high) in [
-        (Species::EAq, 2.0, 6.0),
-        (Species::Oh, 3.0, 8.0),
+        (Species::e_aq, 2.0, 6.0),
+        (Species::OH, 3.0, 8.0),
         (Species::H3Op, 2.0, 6.0),
         (Species::H, 0.2, 2.0),
         (Species::H2, 0.1, 1.5),
     ] {
         let value = g(&summary, species);
-        eprintln!("G({}) = {value:.4} molecules/100 eV", species.tag());
-        assert!((low..=high).contains(&value), "{}: {value}", species.tag());
+        eprintln!(
+            "G({}) = {value:.4} molecules/100 eV",
+            species.chemistry_name()
+        );
+        assert!(
+            (low..=high).contains(&value),
+            "{}: {value}",
+            species.chemistry_name()
+        );
     }
     assert_eq!(summary.time_ps, 1.0);
     assert!(summary.recombinations > 0);

@@ -1,0 +1,179 @@
+{
+  "session_id": "2026-10-16__for-simplicity-rust-should-use-exact-same-as-geant4-c-sources",
+  "feature_name": "For simplicity, Rust should use exact same as geant4 c++ sources for all species",
+  "scratch_dir": ".scratch/tests/2026-10-16__for-simplicity-rust-should-use-exact-same-as-geant4-c-sources",
+  "created_at": "2026-10-16T07:31:23.895Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T07:31:23.895Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T07:44:37.761Z",
+      "event": "auto_started",
+      "phase": "grill",
+      "detail": {
+        "target": "finish",
+        "steps": "write:grill → plan → write:plan → ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-16T07:47:23.001Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T07:47:29.947Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T07:49:50.240Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "refactor/canonical-chemistry-names",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T07:49:50.263Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-canonical-species-name-api.md",
+        "02-plan/tickets/02-migrate-species-identifiers.md",
+        "02-plan/tickets/03-provenance-and-exact-crosscheck.md"
+      ],
+      "detail": {
+        "tickets": 3
+      }
+    },
+    {
+      "at": "2026-10-16T07:57:00.443Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-canonical-species-name-api.md",
+        "03-implement/01-canonical-species-name-api/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-canonical-species-name-api"
+      }
+    },
+    {
+      "at": "2026-10-16T08:00:00.040Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-canonical-species-name-api/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-canonical-species-name-api",
+        "commit": "e385913"
+      }
+    },
+    {
+      "at": "2026-10-16T08:00:08.111Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-migrate-species-identifiers.md",
+        "03-implement/02-migrate-species-identifiers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-migrate-species-identifiers"
+      }
+    },
+    {
+      "at": "2026-10-16T08:06:43.332Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-migrate-species-identifiers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-migrate-species-identifiers",
+        "commit": "eaf0d1c"
+      }
+    },
+    {
+      "at": "2026-10-16T08:06:51.449Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-provenance-and-exact-crosscheck.md",
+        "03-implement/03-provenance-and-exact-crosscheck/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-provenance-and-exact-crosscheck"
+      }
+    },
+    {
+      "at": "2026-10-16T09:21:11.672Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/03-provenance-and-exact-crosscheck/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-provenance-and-exact-crosscheck",
+        "commit": "f314019"
+      }
+    },
+    {
+      "at": "2026-10-16T09:21:39.095Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-10-16T09:21:57.061Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/11"
+      }
+    },
+    {
+      "at": "2026-10-16T09:21:57.065Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "refactor/canonical-chemistry-names",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T07:49:50.240Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/11"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "minor",
+    "floor": "patch",
+    "reason": "Public Species API identifiers and emitted chemistry names changed",
+    "bullets": 1,
+    "path": ".work/changelog/2026-10-16__for-simplicity-rust-should-use-exact-same-as-geant4-c-sources.md",
+    "written_at": "2026-10-16T09:21:39.083Z"
+  },
+  "finished_at": "2026-10-16T09:21:57.065Z"
+}

@@ -58,25 +58,25 @@ onsager = {
 # Combination rules of the displacer cases, per product (see the case blocks of the C++):
 rms = {
     # A1B1: R = 2.4 nm, OH: -1/18 R, H: +17/18 R
-    "A1B1_DissociationDecay": {"OH": 2.4 / 18.0, "H": 2.4 * 17.0 / 18.0, "OH-H separation": 2.4},
+    "A1B1_DissociationDecay": {"°OH": 2.4 / 18.0, "H": 2.4 * 17.0 / 18.0, "°OH-H separation": 2.4},
     # B1A1: R = 0.8, H2: -16/18 R; each OH: 2/18 R + (+-0.5)*R_OH(1.1)  (independent Gaussians)
     "B1A1_DissociationDecay": {
         "H2": 0.8 * 16.0 / 18.0,
-        "OH": math.sqrt((0.8 * 2.0 / 18.0) ** 2 + (0.5 * 1.1) ** 2),
+        "°OH": math.sqrt((0.8 * 2.0 / 18.0) ** 2 + (0.5 * 1.1) ** 2),
     },
     # B1A1 2: O: 0; each H: +-0.5 * R(1.6)
-    "B1A1_DissociationDecay2": {"O": 0.0, "H": 0.5 * 1.6},
+    "B1A1_DissociationDecay2": {"Oxy": 0.0, "H": 0.5 * 1.6},
     # Ionisation: one of (H3O+, OH) displaced by R = 0.8 (prob 1/2 each), plus the common mother shift 2.0
     "Ionisation_DissociationDecay": {
-        "H3Op_or_OH_each_product_mean_square": (0.5 * 0.8**2) + 2.0**2,
+        "H3Op_or_°OH_each_product_mean_square": (0.5 * 0.8**2) + 2.0**2,
         "separation_mean_square": 0.8**2,
     },
     # AutoIonisation: OH or H3O+ displaced 0.8 (1/2 each), e_aq by the Meesungnoen penetration at 1.7 eV; common shift 2.0
-    "AutoIonisation": {"mother_shift_rms": 2.0, "OH_or_H3Op_extra_rms": 0.8},
+    "AutoIonisation": {"mother_shift_rms": 2.0, "°OH_or_H3Op_extra_rms": 0.8},
     # Dissociative attachment: R = 0.8; H2: -16/18 R; OH: 2/18 R + 0.5 R(1.1); OHm: 0 (different G4MoleculeDefinition)
     "DissociativeAttachment": {
         "H2": 0.8 * 16.0 / 18.0,
-        "OH": math.sqrt((0.8 * 2.0 / 18.0) ** 2 + (0.5 * 1.1) ** 2),
+        "°OH": math.sqrt((0.8 * 2.0 / 18.0) ** 2 + (0.5 * 1.1) ** 2),
         "OHm": 0.0,
     },
 }
@@ -115,22 +115,22 @@ penetration = {"ke_ev": ke, "r_mean_nm": r_mean, "sigma_1d_nm": sigma1d, "mean_s
 # ---- expected mean square |d|^2 (nm^2) of each product position relative to the event, per channel kind ---------------
 # (hand derivation; independent Gaussians add in quadrature; R = 3-D RMS of radialDistributionOfProducts)
 ms = {}
-ms["a1b1_dissociation_decay"] = {"OH": (2.4 / 18) ** 2, "H": (2.4 * 17 / 18) ** 2}
+ms["a1b1_dissociation_decay"] = {"°OH": (2.4 / 18) ** 2, "H": (2.4 * 17 / 18) ** 2}
 oh_b1a1 = (0.8 * 2 / 18) ** 2 + 0.25 * 1.1**2  # O-atom recoil + (+-0.5) of an independent 1.1 nm vector
-ms["b1a1_dissociation_decay"] = {"H2": (0.8 * 16 / 18) ** 2, "OH": oh_b1a1}
+ms["b1a1_dissociation_decay"] = {"H2": (0.8 * 16 / 18) ** 2, "°OH": oh_b1a1}
 ms["b1a1_dissociation_decay2"] = {"Oxy": 0.0, "H": 0.25 * 1.6**2}
 mother = 2.0**2
 extra = 0.5 * 0.8**2  # displaced by 0.8 nm in half of the cases
-ms["ionisation_dissociation_decay"] = {"H3Op": mother + extra, "OH": mother + extra}
-ms["auto_ionisation"] = {"OH": mother + extra, "H3Op": mother + extra, "e_aq": mother + penetration["mean_square_nm2"]}
-ms["dissociative_attachment"] = {"H2": (0.8 * 16 / 18) ** 2, "OHm": 0.0, "OH": oh_b1a1}
+ms["ionisation_dissociation_decay"] = {"H3Op": mother + extra, "°OH": mother + extra}
+ms["auto_ionisation"] = {"°OH": mother + extra, "H3Op": mother + extra, "e_aq": mother + penetration["mean_square_nm2"]}
+ms["dissociative_attachment"] = {"H2": (0.8 * 16 / 18) ** 2, "OHm": 0.0, "°OH": oh_b1a1}
 # separations between products (mean square of the difference vector)
 sep = {
-    "a1b1_dissociation_decay/OH-H": 2.4**2,
-    "ionisation_dissociation_decay/H3Op-OH": 0.8**2,
-    "auto_ionisation/OH-H3Op": 2 * extra,  # one of the two displaced by 0.8 nm, the common shift cancels... see below
+    "a1b1_dissociation_decay/°OH-H": 2.4**2,
+    "ionisation_dissociation_decay/H3Op-°OH": 0.8**2,
+    "auto_ionisation/°OH-H3Op": 2 * extra,  # one of the two displaced by 0.8 nm, the common shift cancels... see below
 }
 # OH-H3O+ in the auto-ionisation: displaced one has |d|^2 = 0.8^2 w.p. 1; the other 0 => separation ms = 0.8^2
-sep["auto_ionisation/OH-H3Op"] = 0.8**2
+sep["auto_ionisation/°OH-H3Op"] = 0.8**2
 
 print(json.dumps({"onsager": onsager, "penetration": penetration, "expected_mean_square_nm2": ms, "expected_separation_mean_square_nm2": sep, "nominal_rms_nm": rms, "channel_balance": balance}, indent=1, sort_keys=True))

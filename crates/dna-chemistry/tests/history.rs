@@ -43,7 +43,7 @@ fn solvation_creates_an_e_aq_at_the_event_position_without_random_numbers() {
         .unwrap();
     assert_eq!(rng.consumed(), 0);
     assert_eq!(r.species.len(), 1);
-    assert_eq!(r.species[0].species, Species::EAq);
+    assert_eq!(r.species[0].species, Species::e_aq);
     assert_eq!(r.species[0].position, Vec3::new(1.5, -2.0, 0.25));
     assert_eq!(r.species[0].time.ps(), 1.0);
     assert_eq!(r.stats.events, [0, 0, 0, 1]);
@@ -60,7 +60,7 @@ fn draw_counts_per_event_follow_the_documented_order() {
         .convert_history(&[ev(PhysChemKind::Excitation, 0, ORIGIN)], &mut rng)
         .unwrap();
     assert_eq!(rng.consumed(), 5);
-    assert_eq!(tags(&r.species), vec![Species::Oh, Species::H]);
+    assert_eq!(tags(&r.species), vec![Species::OH, Species::H]);
     // the same level, u = 0.2 -> relaxation: one draw, no species, 8.22 eV booked by the chemistry-stage decay
     let mut rng = ScriptedRng::new(&[0.2]);
     let r = engine
@@ -75,7 +75,7 @@ fn draw_counts_per_event_follow_the_documented_order() {
         .convert_history(&[ev(PhysChemKind::Ionisation, 2, ORIGIN)], &mut rng)
         .unwrap();
     assert_eq!(rng.consumed(), 11);
-    assert_eq!(tags(&r.species), vec![Species::H3Op, Species::Oh]);
+    assert_eq!(tags(&r.species), vec![Species::H3Op, Species::OH]);
     // attachment: channel u + triple(0.8) + triple(1.1) for the single OH = 1 + 8
     let mut rng = ScriptedRng::new(&[0.5; 9]);
     let r = engine
@@ -84,7 +84,7 @@ fn draw_counts_per_event_follow_the_documented_order() {
     assert_eq!(rng.consumed(), 9);
     assert_eq!(
         tags(&r.species),
-        vec![Species::H2, Species::Ohm, Species::Oh]
+        vec![Species::H2, Species::OHm, Species::OH]
     );
 }
 
@@ -101,14 +101,14 @@ fn recombination_decision_follows_the_onsager_probability() {
     assert_eq!(rng.consumed(), 6); // u_rec + channel + triple(2.4)
     assert_eq!(
         tags(&r.species),
-        vec![Species::Oh, Species::H],
+        vec![Species::OH, Species::H],
         "the e_aq is consumed"
     );
     assert_eq!(r.stats.recombinations, 1);
     assert_eq!(r.stats.holes_with_candidate, 1);
     let ovib = engine.channel_table().recombined_index();
     assert_eq!(r.stats.channel_counts[ovib], vec![0, 1, 0, 0]);
-    assert_eq!(r.stats.species_counts[Species::EAq.index()], 0);
+    assert_eq!(r.stats.species_counts[Species::e_aq.index()], 0);
 
     // u_rec = 0.52 > p: no recombination, normal Ioni5 decay (1 + 1 + 9 draws)
     let mut rng = ScriptedRng::new(&[0.52, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
@@ -116,7 +116,7 @@ fn recombination_decision_follows_the_onsager_probability() {
     assert_eq!(rng.consumed(), 11);
     assert_eq!(
         tags(&r.species),
-        vec![Species::EAq, Species::H3Op, Species::Oh]
+        vec![Species::e_aq, Species::H3Op, Species::OH]
     );
     assert_eq!(r.stats.recombinations, 0);
     assert_eq!(r.stats.holes_with_candidate, 1);
@@ -142,7 +142,7 @@ fn the_nearest_alive_electron_is_consumed_first() {
     let eaq: Vec<&SpeciesInstance> = r
         .species
         .iter()
-        .filter(|s| s.species == Species::EAq)
+        .filter(|s| s.species == Species::e_aq)
         .collect();
     assert_eq!(eaq.len(), 1);
     assert_eq!(
@@ -159,7 +159,7 @@ fn the_nearest_alive_electron_is_consumed_first() {
     let mut rng = ScriptedRng::new(&script);
     let r = engine.convert_history(&events, &mut rng).unwrap();
     assert_eq!(r.stats.recombinations, 2);
-    assert!(r.species.iter().all(|s| s.species != Species::EAq));
+    assert!(r.species.iter().all(|s| s.species != Species::e_aq));
 }
 
 #[test]
@@ -211,13 +211,16 @@ fn the_recombination_switch_changes_only_the_decay_state_that_is_scanned() {
     let rb = off.convert_history(&events, &mut b).unwrap();
     // on: recombined, H2Ovib cumulative 0.1365, 0.494, 0.65, 1.0 -> u = 0.5 selects O + 2 H (two triples): 1 + 1 + 8 draws
     assert_eq!(ra.stats.recombinations, 1);
-    assert_eq!(tags(&ra.species), vec![Species::O, Species::H, Species::H]);
+    assert_eq!(
+        tags(&ra.species),
+        vec![Species::Oxy, Species::H, Species::H]
+    );
     assert_eq!(a.consumed(), 10);
     // off: Ioni5, H3O+ + OH: 1 + 1 + 9 draws, and the solvated electron survives
     assert_eq!(rb.stats.recombinations, 0);
     assert_eq!(
         tags(&rb.species),
-        vec![Species::EAq, Species::H3Op, Species::Oh]
+        vec![Species::e_aq, Species::H3Op, Species::OH]
     );
     assert_eq!(b.consumed(), 11);
 }
@@ -246,7 +249,7 @@ fn an_auto_ionisation_electron_is_a_candidate_for_later_holes() {
     let eaq = first
         .species
         .iter()
-        .find(|s| s.species == Species::EAq)
+        .find(|s| s.species == Species::e_aq)
         .expect("auto-ionisation makes an e_aq");
     // a hole placed exactly on that electron recombines for any u_rec < 1 (d == 0): the electron was available
     let events = [
@@ -264,7 +267,7 @@ fn an_auto_ionisation_electron_is_a_candidate_for_later_holes() {
         .unwrap();
     assert_eq!(r.stats.recombinations, 1);
     assert_eq!(
-        r.stats.species_counts[Species::EAq.index()],
+        r.stats.species_counts[Species::e_aq.index()],
         0,
         "the auto-ionisation electron was consumed"
     );
@@ -283,12 +286,12 @@ fn species_are_born_at_one_picosecond_and_creation_order_is_solvation_first() {
     let r = engine.convert_history(&events, &mut rng).unwrap();
     assert_eq!(
         r.species[0].species,
-        Species::EAq,
+        Species::e_aq,
         "solvated electrons exist when the stage starts"
     );
     assert_eq!(
         tags(&r.species),
-        vec![Species::EAq, Species::Oh, Species::H]
+        vec![Species::e_aq, Species::OH, Species::H]
     );
     assert!(r.species.iter().all(|s| s.time.ps() == 1.0));
 }

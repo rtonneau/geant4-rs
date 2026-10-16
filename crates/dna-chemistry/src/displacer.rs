@@ -75,7 +75,7 @@ pub fn displacements<R: Rng + ?Sized>(
             let axis = radial_distribution(A1B1_RMS_NM, rng);
             for (d, s) in out.iter_mut().zip(products) {
                 match s {
-                    Species::Oh => *d = axis * (-1.0 / 18.0),
+                    Species::OH => *d = axis * (-1.0 / 18.0),
                     Species::H => *d = axis * (17.0 / 18.0),
                     _ => {}
                 }
@@ -87,7 +87,7 @@ pub fn displacements<R: Rng + ?Sized>(
             for (d, s) in out.iter_mut().zip(products) {
                 match s {
                     Species::H2 => *d = axis * (-16.0 / 18.0),
-                    Species::Oh => {
+                    Species::OH => {
                         let oxygen = axis * (2.0 / 18.0);
                         let pair = radial_distribution(OH_PAIR_RMS_NM, rng);
                         let pair = if n_oh == 0 { pair * 0.5 } else { pair * -0.5 };
@@ -118,13 +118,13 @@ pub fn displacements<R: Rng + ?Sized>(
             for (d, s) in out.iter_mut().zip(products) {
                 let rms = match s {
                     Species::H3Op => h3o_rms,
-                    Species::Oh => oh_rms,
+                    Species::OH => oh_rms,
                     _ => 0.0,
                 };
                 if rms != 0.0 {
                     *d = radial_distribution(rms, rng);
                 }
-                if kind == DisplacementKind::AutoIonisation && *s == Species::EAq {
+                if kind == DisplacementKind::AutoIonisation && *s == Species::e_aq {
                     *d = gaussian_penetration(electron_r_mean_nm, rng);
                 }
             }
@@ -161,7 +161,7 @@ mod tests {
         let mut rng = ScriptedRng::new(&[0.3; 8]);
         let d = displacements(
             DisplacementKind::DissociativeAttachment,
-            &[Species::H2, Species::Ohm, Species::Oh],
+            &[Species::H2, Species::OHm, Species::OH],
             1.0,
             &mut rng,
         );
@@ -177,7 +177,7 @@ mod tests {
         let mut rng = ScriptedRng::new(&[0.2, 0.3, 0.4, 0.5, 0.6, 0.35, 0.45, 0.55, 0.65]);
         let d = displacements(
             DisplacementKind::IonisationDissociation,
-            &[Species::H3Op, Species::Oh],
+            &[Species::H3Op, Species::OH],
             1.0,
             &mut rng,
         );
@@ -195,7 +195,7 @@ mod tests {
         let mut rng = ScriptedRng::new(&[0.5, 0.3, 0.4, 0.5, 0.6, 0.35, 0.45, 0.55, 0.65]);
         let d = displacements(
             DisplacementKind::IonisationDissociation,
-            &[Species::H3Op, Species::Oh],
+            &[Species::H3Op, Species::OH],
             1.0,
             &mut rng,
         );

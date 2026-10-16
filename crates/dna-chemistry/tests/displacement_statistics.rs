@@ -69,13 +69,13 @@ fn mean_square_displacements_match_the_hand_values() {
     // A^1B_1 type: OH, H and their separation (3 tests)
     let a1b1 = sample(
         DisplacementKind::A1b1Dissociation,
-        &[Species::Oh, Species::H],
+        &[Species::OH, Species::H],
         1,
     );
     check(
         "A1B1 OH",
         &a1b1.iter().map(|d| sq(d[0])).collect::<Vec<_>>(),
-        ms("a1b1_dissociation_decay", "OH"),
+        ms("a1b1_dissociation_decay", "°OH"),
     );
     check(
         "A1B1 H",
@@ -85,13 +85,13 @@ fn mean_square_displacements_match_the_hand_values() {
     check(
         "A1B1 OH-H separation",
         &a1b1.iter().map(|d| sq(d[1] - d[0])).collect::<Vec<_>>(),
-        sep("a1b1_dissociation_decay/OH-H"),
+        sep("a1b1_dissociation_decay/°OH-H"),
     );
 
     // B1A1: H2 + 2 OH (3 tests)
     let b1a1 = sample(
         DisplacementKind::B1a1Dissociation,
-        &[Species::H2, Species::Oh, Species::Oh],
+        &[Species::H2, Species::OH, Species::OH],
         2,
     );
     check(
@@ -102,18 +102,18 @@ fn mean_square_displacements_match_the_hand_values() {
     check(
         "B1A1 OH(1)",
         &b1a1.iter().map(|d| sq(d[1])).collect::<Vec<_>>(),
-        ms("b1a1_dissociation_decay", "OH"),
+        ms("b1a1_dissociation_decay", "°OH"),
     );
     check(
         "B1A1 OH(2)",
         &b1a1.iter().map(|d| sq(d[2])).collect::<Vec<_>>(),
-        ms("b1a1_dissociation_decay", "OH"),
+        ms("b1a1_dissociation_decay", "°OH"),
     );
 
     // B1A1 2: O + 2 H (2 tests + exact zero)
     let b2 = sample(
         DisplacementKind::B1a1Dissociation2,
-        &[Species::O, Species::H, Species::H],
+        &[Species::Oxy, Species::H, Species::H],
         3,
     );
     assert!(
@@ -134,7 +134,7 @@ fn mean_square_displacements_match_the_hand_values() {
     // Ionisation: H3O+ + OH and their separation (3 tests)
     let ion = sample(
         DisplacementKind::IonisationDissociation,
-        &[Species::H3Op, Species::Oh],
+        &[Species::H3Op, Species::OH],
         4,
     );
     check(
@@ -145,24 +145,24 @@ fn mean_square_displacements_match_the_hand_values() {
     check(
         "Ioni OH",
         &ion.iter().map(|d| sq(d[1])).collect::<Vec<_>>(),
-        ms("ionisation_dissociation_decay", "OH"),
+        ms("ionisation_dissociation_decay", "°OH"),
     );
     check(
         "Ioni H3O+-OH separation",
         &ion.iter().map(|d| sq(d[0] - d[1])).collect::<Vec<_>>(),
-        sep("ionisation_dissociation_decay/H3Op-OH"),
+        sep("ionisation_dissociation_decay/H3Op-°OH"),
     );
 
     // Auto-ionisation: OH, H3O+, e_aq and the OH-H3O+ separation (4 tests)
     let auto = sample(
         DisplacementKind::AutoIonisation,
-        &[Species::Oh, Species::H3Op, Species::EAq],
+        &[Species::OH, Species::H3Op, Species::e_aq],
         5,
     );
     check(
         "Auto OH",
         &auto.iter().map(|d| sq(d[0])).collect::<Vec<_>>(),
-        ms("auto_ionisation", "OH"),
+        ms("auto_ionisation", "°OH"),
     );
     check(
         "Auto H3O+",
@@ -177,13 +177,13 @@ fn mean_square_displacements_match_the_hand_values() {
     check(
         "Auto OH-H3O+ separation",
         &auto.iter().map(|d| sq(d[0] - d[1])).collect::<Vec<_>>(),
-        sep("auto_ionisation/OH-H3Op"),
+        sep("auto_ionisation/°OH-H3Op"),
     );
 
     // Dissociative attachment: H2, OH-, OH (2 tests + exact zero)
     let att = sample(
         DisplacementKind::DissociativeAttachment,
-        &[Species::H2, Species::Ohm, Species::Oh],
+        &[Species::H2, Species::OHm, Species::OH],
         6,
     );
     assert!(
@@ -198,7 +198,7 @@ fn mean_square_displacements_match_the_hand_values() {
     check(
         "Attach OH",
         &att.iter().map(|d| sq(d[2])).collect::<Vec<_>>(),
-        ms("dissociative_attachment", "OH"),
+        ms("dissociative_attachment", "°OH"),
     );
 
     // isotropy of the hydrogen atom of A1B1: each component carries a third of the mean square (3 tests)

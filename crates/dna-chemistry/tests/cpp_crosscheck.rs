@@ -8,7 +8,7 @@
 
 mod common;
 
-use common::{fixture, rust_tag};
+use common::{CPP_BOOKKEEPING_KEYS, CPP_SPECIES_KEYS, fixture};
 use dna_chemistry::channels::{ChannelTable, StateKind};
 use dna_chemistry::displacer::{self, autoionisation_r_mean_nm};
 use dna_chemistry::params::PhysChemParams;
@@ -25,11 +25,14 @@ fn species_table_equals_the_extraction() {
     let table = SpeciesTable::option3().unwrap();
     let fx = x["species"].as_object().unwrap();
     assert_eq!(fx.len(), 15, "the extraction lists 15 species");
-    for (cpp_tag, v) in fx {
-        let tag = rust_tag(cpp_tag);
-        let species =
-            Species::from_tag(&tag).unwrap_or_else(|| panic!("no Rust species for {cpp_tag}"));
-        let p = table.get(species);
+    assert_eq!(Species::ALL.len(), CPP_SPECIES_KEYS.len());
+    for (species, &tag) in Species::ALL.iter().zip(&CPP_SPECIES_KEYS) {
+        assert_eq!(species.chemistry_name(), tag, "canonical key/order");
+        assert_eq!(Species::from_chemistry_name(tag), Some(*species));
+        let v = fx
+            .get(tag)
+            .unwrap_or_else(|| panic!("C++ key {tag} missing"));
+        let p = table.get(*species);
         // Geant4 m^2/s -> nm^2/ps: x 1e6
         let d = v["diffusion_m2_s"].as_f64().unwrap() * 1.0e6;
         assert!(
@@ -47,6 +50,17 @@ fn species_table_equals_the_extraction() {
             v["vdw_radius_nm"].as_f64().unwrap(),
             "{tag}: radius"
         );
+    }
+    for tag in CPP_BOOKKEEPING_KEYS {
+        assert!(!fx.contains_key(tag), "{tag} is bookkeeping, not Species");
+        assert_eq!(Species::from_chemistry_name(tag), None);
+    }
+    for alias in ["OH", "HO2"] {
+        assert!(
+            !fx.contains_key(alias),
+            "{alias} is not a C++ configuration key"
+        );
+        assert_eq!(Species::from_chemistry_name(alias), None);
     }
 }
 
@@ -118,13 +132,13 @@ fn channel_table_equals_the_extraction() {
                     rc.decay_energy.ev()
                 );
             }
-            let prods: Vec<String> = fc["products"]
+            let prods: Vec<&str> = fc["products"]
                 .as_array()
                 .unwrap()
                 .iter()
-                .map(|p| rust_tag(p.as_str().unwrap()))
+                .map(|p| p.as_str().unwrap())
                 .collect();
-            let ours: Vec<String> = rc.products.iter().map(|s| s.tag().to_owned()).collect();
+            let ours: Vec<&str> = rc.products.iter().map(|s| s.chemistry_name()).collect();
             assert_eq!(prods, ours, "{}: products", rc.name);
             match (fc["displacement"].as_str(), rc.displacement.cpp_case()) {
                 (Some("NoDisplacement"), None) | (None, None) => {}

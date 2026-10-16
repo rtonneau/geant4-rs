@@ -14,7 +14,7 @@ van_der_waals_radius_nm = 0.25    # CH:92
 reachable_from_physchem = true
 
 [[species]]
-tag = "OH"                        # G4MoleculeTable key "°OH"
+tag = "°OH"
 diffusion_m2_per_s = 2.2e-9       # CH:95 (overrides TY G4OH.cc:69 = 2.8e-9)
 charge = 0                        # TY G4OH.cc:69
 van_der_waals_radius_nm = 0.22    # CH:96
@@ -56,7 +56,7 @@ van_der_waals_radius_nm = 0.21    # CH:119
 reachable_from_physchem = false
 
 [[species]]
-tag = "HO2"                       # G4MoleculeTable key "HO2°"
+tag = "HO2°"
 diffusion_m2_per_s = 2.3e-9       # TY G4HO2.cc:71
 charge = 0                        # TY G4HO2.cc:71
 van_der_waals_radius_nm = 0.21    # CH:124

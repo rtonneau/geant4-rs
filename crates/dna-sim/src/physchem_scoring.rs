@@ -223,7 +223,7 @@ impl PhysChemScorer {
             .map(|s| {
                 let i = s.index();
                 SpeciesYield {
-                    species: s.tag(),
+                    species: s.chemistry_name(),
                     alive_total: self.alive_total[i],
                     alive_per_history: self.alive[i].summary(),
                     produced_by_event: self.produced.map(|row| row[i]),
@@ -239,7 +239,7 @@ impl PhysChemScorer {
                 }
             })
             .collect();
-        let pair_distances = ["OH-e_aq", "OH-H3Op"]
+        let pair_distances = ["°OH-e_aq", "°OH-H3Op"]
             .into_iter()
             .enumerate()
             .map(|(i, pair)| PairDistance {
@@ -274,14 +274,14 @@ mod tests {
 
     fn history(n_oh: u64, produced_exc: u64, radii: &[f64]) -> HistoryChemistry {
         let mut counts = [0; 15];
-        counts[Species::Oh.index()] = n_oh;
+        counts[Species::OH.index()] = n_oh;
         let mut produced = [[0; 15]; 4];
-        produced[0][Species::Oh.index()] = produced_exc;
+        produced[0][Species::OH.index()] = produced_exc;
         HistoryChemistry {
             species: radii
                 .iter()
                 .map(|&r| SpeciesInstance {
-                    species: Species::Oh,
+                    species: Species::OH,
                     position: Vec3::new(r, 0.0, 0.0),
                     time: Time::from_ps(1.0),
                 })
@@ -312,7 +312,15 @@ mod tests {
         scorer.add(&history(1, 1, &[1.0]), 100.0);
         scorer.add(&history(3, 3, &[3.0, 4.0, 0.0]), 200.0);
         let summary = scorer.finish();
-        let oh = &summary.species[Species::Oh.index()];
+        for (score, species) in summary.species.iter().zip(Species::ALL) {
+            assert_eq!(
+                score.species.as_bytes(),
+                species.chemistry_name().as_bytes()
+            );
+        }
+        assert_eq!(summary.pair_distances[0].pair, "°OH-e_aq");
+        assert_eq!(summary.pair_distances[1].pair, "°OH-H3Op");
+        let oh = &summary.species[Species::OH.index()];
         assert!((oh.g_ratio_of_totals.unwrap().value - 4.0 / 3.0).abs() < 1e-14);
         assert!((oh.g_mean_of_event_ratios.value - 1.25).abs() < 1e-14);
         assert!((oh.g_by_event_ratio_of_totals[0].unwrap().value - 4.0 / 3.0).abs() < 1e-14);

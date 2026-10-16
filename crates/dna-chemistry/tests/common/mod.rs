@@ -4,17 +4,21 @@
 use serde_json::Value;
 use std::path::PathBuf;
 
+/// Geant4 11.4.1 `G4MoleculeTable` keys represented by `Species`, in C++ creation order.
+pub const CPP_SPECIES_KEYS: [&str; 15] = [
+    "H3Op", "°OH", "OHm", "e_aq", "H", "H2", "H2O2", "HO2°", "HO2m", "Oxy", "Om", "O2", "O2m",
+    "O3", "O3m",
+];
+
+/// These C++ configurations serve chemistry bookkeeping and are outside `Species`.
+pub const CPP_BOOKKEEPING_KEYS: [&str; 4] = ["H2O(B)", "H3Op(B)", "OHm(B)", "NoneM"];
+
 pub fn fixture(name: &str) -> Value {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures")
         .join(name);
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     serde_json::from_str(&text).unwrap()
-}
-
-/// Rust tag of a `G4MoleculeTable` key of the fixture ("°OH" -> "OH", "HO2°" -> "HO2").
-pub fn rust_tag(cpp_tag: &str) -> String {
-    cpp_tag.replace('°', "")
 }
 
 /// Regularised upper incomplete gamma `Q(a, x)` (Numerical Recipes `gammq`).

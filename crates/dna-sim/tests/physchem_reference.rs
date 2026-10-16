@@ -33,9 +33,9 @@ fn reference_dir() -> PathBuf {
 }
 
 /// The generator writes `G4Molecule::GetName()` (`<definition>^<charge>`, e.g. `H3O^1`, `°OH^0`);
-/// the repository tags are accepted too.
+/// exact Geant4 configuration keys are accepted too.
 fn species(name: &str) -> Option<Species> {
-    Species::from_geant4_name(name).or_else(|| Species::from_tag(name))
+    Species::from_geant4_name(name).or_else(|| Species::from_chemistry_name(name))
 }
 
 fn rows() -> Vec<Row> {
@@ -90,14 +90,14 @@ fn m6_initial_species_counts_and_rms_match_geant4() {
             assert!(
                 se == 0.0 || delta / se <= 4.5,
                 "{energy} {}: z={}",
-                g4.species.tag(),
+                g4.species.chemistry_name(),
                 delta / se
             );
             if g4_mean > 0.1 && ours.alive_per_history.value > 0.1 {
                 assert!(
                     delta / g4_mean <= 0.15,
                     "{energy} {} count",
-                    g4.species.tag()
+                    g4.species.chemistry_name()
                 );
             }
             if g4.sum > 0.0 {
@@ -106,7 +106,7 @@ fn m6_initial_species_counts_and_rms_match_geant4() {
                 assert!(
                     (rust_rms - g4_rms).abs() / g4_rms <= 0.20,
                     "{energy} {} RMS",
-                    g4.species.tag()
+                    g4.species.chemistry_name()
                 );
             }
         }
