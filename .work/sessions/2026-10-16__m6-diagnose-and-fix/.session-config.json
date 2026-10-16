@@ -1,0 +1,64 @@
+{
+  "session_id": "2026-10-16__m6-diagnose-and-fix",
+  "feature_name": "m6-diagnose-and-fix",
+  "scratch_dir": ".scratch/tests/2026-10-16__m6-diagnose-and-fix",
+  "created_at": "2026-10-16T19:53:49.341Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T19:53:49.341Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T19:55:43.974Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T19:55:49.108Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T20:00:00.651Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "fix/m6-diagnose-and-fix",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T20:00:00.676Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-establish-snapshot-semantics.md",
+        "02-plan/tickets/02-audit-and-correct-physchem-conversion.md",
+        "02-plan/tickets/03-audit-cascade-and-scoring-semantics.md",
+        "02-plan/tickets/04-resolve-m6-gate-or-request-diagnostics.md"
+      ],
+      "detail": {
+        "tickets": 4
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "fix/m6-diagnose-and-fix",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T20:00:00.651Z",
+    "pr_url": null
+  }
+}
