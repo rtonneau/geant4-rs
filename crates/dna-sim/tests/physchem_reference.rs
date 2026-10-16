@@ -112,3 +112,88 @@ fn m6_initial_species_counts_and_rms_match_geant4() {
         }
     }
 }
+
+fn report_metric(value: Option<f64>, signed: bool) -> String {
+    match value {
+        Some(value) if signed => format!("{value:+.3}"),
+        Some(value) => format!("{value:.3}"),
+        None => "N/A".to_owned(),
+    }
+}
+
+#[test]
+#[ignore = "requires validation/reference/physchem.csv and provenance_m6.toml from Geant4 11.4.1"]
+fn m6_initial_species_comparison_report() {
+    let reference = rows();
+    let root = repo_data_dir();
+    let table =
+        ProcessTable::option2_electron(&DataDir::new(&root).unwrap(), ElasticRotation::Geant4)
+            .unwrap();
+    let engine = PhysChemEngine::option3().unwrap();
+
+    for energy in [1_000.0, 10_000.0, 100_000.0, 900_000.0] {
+        let energy_rows: Vec<&Row> = reference
+            .iter()
+            .filter(|row| row.energy == energy)
+            .collect();
+        let n = energy_rows
+            .first()
+            .unwrap_or_else(|| panic!("no Geant4 rows for {energy} eV"))
+            .n;
+        let mut config = RunConfig::new(energy, n);
+        config.master_seed = 20261017;
+        let rust = run_physchem_summary(&table, &engine, &config).unwrap().1;
+
+        println!("\n{:.0} keV ({} histories)", energy / 1_000.0, n);
+        println!(
+            "{:<8} {:>27} {:>27} {:>9} {:>12} {:>12} {:>12}",
+            "Species",
+            "Geant4 mean +/- SE",
+            "Rust mean +/- SE",
+            "z",
+            "Rel diff (%)",
+            "G4 RMS (nm)",
+            "Rust RMS (nm)"
+        );
+        for species in Species::ALL {
+            let g4 = energy_rows
+                .iter()
+                .find(|row| row.species == species)
+                .copied();
+            let (g4_mean, g4_se, g4_rms) = if let Some(row) = g4 {
+                let mean = row.sum / row.n as f64;
+                let se = if row.n > 1 {
+                    ((row.sum2 - row.sum * row.sum / row.n as f64).max(0.0)
+                        / (row.n - 1) as f64
+                        / row.n as f64)
+                        .sqrt()
+                } else {
+                    0.0
+                };
+                let rms = (row.sum > 0.0).then(|| (row.sum_r2 / row.sum).sqrt());
+                (mean, se, rms)
+            } else {
+                (0.0, 0.0, None)
+            };
+            let ours = &rust.species[species.index()];
+            let rust_mean = ours.alive_per_history.value;
+            let rust_se = ours.alive_per_history.std_err;
+            let combined_se = g4_se.hypot(rust_se);
+            let z = (combined_se > 0.0).then(|| (rust_mean - g4_mean) / combined_se);
+            let relative_percent =
+                (g4_mean != 0.0).then(|| 100.0 * (rust_mean - g4_mean) / g4_mean);
+            println!(
+                "{:<8} {:>11.4e} +/- {:>11.4e} {:>11.4e} +/- {:>11.4e} {:>9} {:>12} {:>12} {:>12}",
+                species.chemistry_name(),
+                g4_mean,
+                g4_se,
+                rust_mean,
+                rust_se,
+                report_metric(z, true),
+                report_metric(relative_percent, true),
+                report_metric(g4_rms, false),
+                report_metric(ours.rms_radius_nm, false),
+            );
+        }
+    }
+}
