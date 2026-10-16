@@ -109,9 +109,33 @@
         "ticket": "02-migrate-species-identifiers",
         "commit": "eaf0d1c"
       }
+    },
+    {
+      "at": "2026-10-16T08:06:51.449Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-provenance-and-exact-crosscheck.md",
+        "03-implement/03-provenance-and-exact-crosscheck/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-provenance-and-exact-crosscheck"
+      }
+    },
+    {
+      "at": "2026-10-16T09:21:11.672Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/03-provenance-and-exact-crosscheck/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-provenance-and-exact-crosscheck",
+        "commit": "f314019"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "refactor/canonical-chemistry-names",
     "base_branch": "main",

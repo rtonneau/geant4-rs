@@ -20,5 +20,5 @@ _Avoid_: the other words people use for it
 ## Language
 
 **Chemistry species name**:
-The byte-for-byte `G4MoleculeTable` configuration key used by Geant4 11.4.1, including spelling, case, punctuation, and symbols such as `°OH` and `e_aq`. The same name is canonical in the Rust API, data files, serialization, and user-visible output.
-_Avoid_: Rust-cased aliases such as `Oh` or `EAq`; ASCII substitutions such as `OH` or `HO2`
+The byte-for-byte `G4MoleculeTable` configuration key used by Geant4 11.4.1, including spelling, case, punctuation, and symbols such as `°OH`, `HO2°`, and `e_aq`. The same name is canonical in data, serialization, and user-visible output, exposed by `Species::chemistry_name()` in Rust. `Species::OH` and `Species::HO2` are legal identifiers at the Rust syntax boundary. The four bookkeeping configurations `H2O(B)`, `H3Op(B)`, `OHm(B)`, and `NoneM` are outside `Species`.
+_Avoid_: treating the legacy ASCII input spellings `OH` or `HO2` as canonical keys
