@@ -24,3 +24,5 @@ M3 outputs: radial deposit profile in nm (edges 0.1 nm - 10 mm, 5 bins per decad
 
 M6 A: species diffusion coefficients are read in Geant4's m^2/s and stored in nm^2/ps (x 1e6); radii in nm; the physicochemical species list carries positions in nm and the birth time in ps (1 ps); `Species` CSV (`species,x_nm,y_nm,z_nm,time_ps`). The Onsager radius is computed in nm from SI constants (CLHEP values of the reference tree, docs/02 B.7.6 item 5).
 
+The CSV `species` field is a Geant4 configuration key, not a unit-bearing Rust enum identifier: for example, `°OH` and `HO2°` are emitted although their Rust identifiers are `Species::OH` and `Species::HO2`. The four `(B)`/`NoneM` bookkeeping configurations are not `Species` values.
+

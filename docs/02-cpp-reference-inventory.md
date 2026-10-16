@@ -70,7 +70,7 @@ Extrapolation/boundary behaviour of `G4DNACrossSectionDataSet`: see B.7.1 [V].
 | Scavengers/IT infrastructure | `G4DNAScavengerMaterial`, `G4Scheduler`, `G4ITTrackHolder`, KD-tree, octree [U] | not in M1-M9 |
 | Mesoscopic/IRT-syn | `G4DNAEventScheduler`, `G4DNAUpdateSystemModel`, `G4DNAGillespieDirectMethod`; example `UHDR` [U] | later |
 
-Species diffusion coefficients in `D/molecules/types/src` [V]: e_aq 4.9e-9, OH 2.8e-9, H 7e-9, H2 5e-9, H2O2 1.4e-9, H3O+ 9e-9, HO2 2.3e-9, O2 2.4e-9 m^2/s;
+Species diffusion coefficients in `D/molecules/types/src` [V]: e_aq 4.9e-9, °OH 2.8e-9, H 7e-9, H2 5e-9, H2O2 1.4e-9, H3O+ 9e-9, HO2° 2.3e-9, O2 2.4e-9 m^2/s;
 e_aq radius 0.23 nm ("K.D. Jordan, Science 306 p.618"). Others [U].
 Rate constants in option3 are `x * (1e-3 m3 / (mole s))` = M^-1 s^-1 (e.g. `H+H` 0.503e10, `e_aq+H` 2.50e10, `OH+OH` 0.55e10, `e_aq+OH` 2.95e10, `H3O+ + OH-` 1.13e11).
 Complete verified table to be transcribed in M7 with a script that diffs against the C++ source.
@@ -226,12 +226,15 @@ Data transcribed in `data/chemistry/` (provenance and line numbers inside the fi
    (`materials/include/G4Material.hh:114`; cc:225) and `rho = 1 g/cm3` (`G4NistMaterialBuilder.cc:712`): `eps = 80.0998`, `r_Onsager = 0.71164 nm`
    with the CLHEP constants of the tree (`k_Boltzmann = 8.617333e-11 MeV/K`, `mu0 = 4 pi 1e-7`, `externals/clhep/.../PhysicalConstants.h:90, 116`).
    The chemistry itself uses 298 K (`G4MolecularConfiguration.cc:53`, docs/09 Q23).
-6. **Species data** (`CH:54-190`): option3 overrides the diffusion coefficients of the molecule definitions for `H3Op` (9.46e-9 m2/s), `OH` (2.2e-9),
+6. **Species data** (`CH:54-190`): option3 overrides the diffusion coefficients of the molecule definitions for `H3Op` (9.46e-9 m2/s), `°OH` (2.2e-9),
    `H2` (4.8e-9), `H2O2` (2.3e-9) and creates `OHm`, `HO2m`, `Om`, `O2m`, `O3m` with their own values; every species gets a van der Waals radius
    (0.14-0.50 nm). Temperature scaling of `D` (`ScaleAllDiffusionCoefficientsOnWater`, `G4MolecularConfiguration.cc:1430-1433`) happens only inside
    `SetGlobalTemperature` (`:1463`), which neither the chemistry constructors nor `chem6` call (grep of `source` and `chem6`; it is reachable through a UI command, `G4DNAChemistryManager.cc:261`): the table is the 298 K one.
+   The exact `G4MoleculeTable` key for the hydroxyl radical is `°OH`, and for the hydroperoxyl radical it is `HO2°`
+   (`CH:94,123`). The Rust identifiers `Species::OH` and `Species::HO2` reflect Rust's identifier syntax;
+   `chemistry_name()` and the chemistry TOML retain the C++ keys. ASCII `OH` and `HO2` are legacy input spellings only.
 7. **Not implemented** (not reachable with option2 events): `Double/Triple/QuadrupleIonisation_DissociationDecay` displacer cases, `H2O(B)/H3Op(B)/OHm(B)`/`NoneM`
-   bookkeeping species (chemistry, M7). `ExtendLowEnergyLimit(0.025 eV)` of the Sanche model in `ConstructProcess` (option3 chemistry, `:692`) is unreachable
+   bookkeeping configurations (chemistry, M7), which are outside the 15-member Rust `Species` set. `ExtendLowEnergyLimit(0.025 eV)` of the Sanche model in `ConstructProcess` (option3 chemistry, `:692`) is unreachable
    with solvation active (E <= 7.4 eV is always solvated, B.7.2).
 
 ### B.7.7 M6 reference-run lifecycle reading [V, M6 B]

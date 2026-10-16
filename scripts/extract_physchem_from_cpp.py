@@ -71,12 +71,13 @@ for m in re.finditer(
     }
 
 species = {}
+BOOKKEEPING_CONFIGURATIONS = {"H2O(B)", "H3Op(B)", "OHm(B)", "NoneM"}
 for m in re.finditer(
     r'(?:G4MolecularConfiguration\*\s+(\w+)\s*=\s*)?\s*molTable->CreateConfiguration\(\s*"([^"]+)"\s*,\s*(\w+)(?:::Definition\(\))?\s*(?:,\s*(-?\d+)\s*,\s*([\d.eE+-]+)\s*\*\s*\(m2 / s\))?\s*\)',
     cm,
 ):
     var, tag, d, charge, diff = m.groups()
-    if tag.endswith("(B)") or tag == "NoneM":
+    if tag in BOOKKEEPING_CONFIGURATIONS:
         continue
     base = defs.get(d) or inline_defs.get(d)
     if base is None:
@@ -99,6 +100,10 @@ for var, v in re.findall(r"(\w+)->SetVanDerVaalsRadius\(([\d.]+)\s*\*\s*nm\)", c
 for tag, v in species.items():
     if v["vdw_radius_nm"] is None:
         raise SystemExit(f"no van der Waals radius for {tag}")
+if len(species) != 15:
+    raise SystemExit(f"expected 15 chemical species configurations, found {len(species)}")
+if BOOKKEEPING_CONFIGURATIONS.intersection(species):
+    raise SystemExit("bookkeeping configurations entered the chemical species table")
 
 # ---------------------------------------------------------------- ConstructDissociationChannels
 dc = src[src.index("ConstructDissociationChannels()"):]
