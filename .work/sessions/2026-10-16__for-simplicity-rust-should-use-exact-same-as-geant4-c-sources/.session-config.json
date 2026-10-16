@@ -85,6 +85,30 @@
         "ticket": "01-canonical-species-name-api",
         "commit": "e385913"
       }
+    },
+    {
+      "at": "2026-10-16T08:00:08.111Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-migrate-species-identifiers.md",
+        "03-implement/02-migrate-species-identifiers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-migrate-species-identifiers"
+      }
+    },
+    {
+      "at": "2026-10-16T08:06:43.332Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-migrate-species-identifiers/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-migrate-species-identifiers",
+        "commit": "eaf0d1c"
+      }
     }
   ],
   "current_phase": "ship",
