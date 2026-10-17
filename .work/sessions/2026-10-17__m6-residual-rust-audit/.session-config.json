@@ -52,6 +52,40 @@
       "detail": {
         "tickets": 4
       }
+    },
+    {
+      "at": "2026-10-17T10:32:54.347Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-17T10:32:59.570Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-audit-relations-harness.md",
+        "03-implement/01-audit-relations-harness/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-relations-harness"
+      }
+    },
+    {
+      "at": "2026-10-17T10:48:06.204Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-audit-relations-harness/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-relations-harness",
+        "commit": "b30beb5"
+      }
     }
   ],
   "current_phase": "ship",
@@ -60,5 +94,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-17T10:05:29.479Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent+inline"
 }
