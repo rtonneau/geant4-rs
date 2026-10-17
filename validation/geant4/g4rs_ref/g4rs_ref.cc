@@ -30,6 +30,10 @@
 //                                         histograms by generation) and <out_prefix>_radial.csv
 //                                         (energy deposited per radial shell). Same physics
 //                                         settings as the other modes (option2, fluo/Auger off).
+//   physchem_prechem <out.csv> <seed> <E_eV:events,...>
+//                                         M6 diagnostic: snapshot after all water decays, in the
+//                                         zero-step post-callback before IRT initialization.
+//                                         Existing physchem mode and its output are unchanged.
 
 #include <algorithm>
 #include <cmath>
@@ -37,6 +41,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -87,8 +92,9 @@ namespace {
 
 // ------------------------------------------------------------------ shared state ---------
 
-enum class Mode { Xs, Mfp, Track, Slow, PhysChem };
+enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem };
 Mode gMode = Mode::Xs;
+bool IsChemistryMode() { return gMode == Mode::PhysChem || gMode == Mode::PreChem; }
 G4double gCut = 0.;  // tracking cut (track mode)
 G4double gEnergy = 0.;  // current primary energy
 
@@ -180,6 +186,56 @@ struct PhysChemAccum {
 } gPhysChem;
 std::map<std::string, double> gPhysChemEventCount, gPhysChemEventR2;
 bool gChemistryRun = false;
+bool gPreChemCaptured = false;
+
+[[noreturn]] void PreChemFailure(const char* message)
+{
+  fprintf(stderr, "physchem_prechem: %s; output is incomplete, do not commit it\n", message);
+  exit(1);
+}
+
+// Geant4 11.4.1: G4ITStepProcessor2.cc:110-185 merges decay daughters and removes
+// killed parents before G4Scheduler.cc:700-701 calls the post action. While stopped
+// water states remain, G4DNAIRTMoleculeEncounterStepper.cc:431-467 defers IRT
+// initialization. Stop on the final water-decay zero step, before the next call to
+// CalculateMinTimeStep initializes IRT (G4ITModelProcessor.cc:118-131).
+class PreChemSpeciesAction : public G4UserTimeStepAction {
+ public:
+  void UserPreTimeStepAction() override
+  {
+    if (!gPreChemCaptured && G4Scheduler::Instance()->GetTimeStep() > 0.)
+      PreChemFailure("positive time step selected before the water-decay snapshot");
+  }
+  void UserReactionAction(const G4Track&, const G4Track&,
+                          const std::vector<G4Track*>*) override
+  {
+    PreChemFailure("an inter-molecular chemical reaction preceded the snapshot");
+  }
+  void UserPostTimeStepAction() override
+  {
+    if (gPreChemCaptured) return;
+    auto* scheduler = G4Scheduler::Instance();
+    auto* tracks = G4ITTrackHolder::Instance()->GetMainList();
+    if (!tracks) PreChemFailure("missing main track list");
+    for (const G4Track* track : *tracks) {
+      if (track->GetDefinition() == G4H2O::Definition()) return;
+    }
+    if (scheduler->GetTimeStep() != 0. ||
+        std::abs(scheduler->GetGlobalTime() - ps) > 1e-12 * ps)
+      PreChemFailure("water decays did not complete at global 1 ps on a zero step");
+    for (const G4Track* track : *tracks) {
+      const auto* molecule = GetMolecule(track);
+      if (!molecule || track->GetTrackStatus() != fAlive ||
+          std::abs(track->GetGlobalTime() - ps) > 1e-12 * ps)
+        PreChemFailure("snapshot contains a non-alive/non-molecular track or a non-1-ps birth");
+      const std::string name = molecule->GetName();
+      ++gPhysChemEventCount[name];
+      gPhysChemEventR2[name] += track->GetPosition().mag2() / (nm * nm);
+    }
+    gPreChemCaptured = true;
+    scheduler->Stop();
+  }
+};
 
 // Initial species list at 1 ps. At the first stage the scheduler holds the undissociated states
 // (H2O^0, H2O^1, e_aq); the dissociation (H2O^1 -> H3O^1 + OH, excitation channels) happens in
@@ -318,7 +374,7 @@ class Physics : public G4VModularPhysicsList {
   {
     SetVerboseLevel(1);
     fPhysics = new G4EmDNAPhysics_option2();
-    if (gMode == Mode::PhysChem) fChemistry = new G4EmDNAChemistry_option3();
+    if (IsChemistryMode()) fChemistry = new G4EmDNAChemistry_option3();
   }
   ~Physics() override { delete fPhysics; delete fChemistry; }
   void ConstructParticle() override {
@@ -405,7 +461,7 @@ class Stacking : public G4UserStackingAction {
  public:
   void NewStage() override
   {
-    if (gMode == Mode::PhysChem && !gChemistryRun && stackManager->GetNTotalTrack() == 0) {
+    if (IsChemistryMode() && !gChemistryRun && stackManager->GetNTotalTrack() == 0) {
       gChemistryRun = true;
       G4DNAChemistryManager::Instance()->Run();
     }
@@ -416,7 +472,7 @@ class Stacking : public G4UserStackingAction {
     if (t->GetParentID() == 0) return fUrgent;
     // physchem follows the whole cascade (as slow mode and the Rust runs): secondaries are
     // transported until solvation/attachment, and their ionisations/excitations seed the chemistry
-    if (gMode == Mode::PhysChem) return fUrgent;
+    if (IsChemistryMode()) return fUrgent;
     // every secondary: record, then kill (geant4-rs M2 records secondaries without transporting)
     if (gMode == Mode::Track) {
       ++gNsec;
@@ -433,8 +489,9 @@ class EventAct : public G4UserEventAction {
     gL = gEdep = gRem = gNsec = gEsec = 0.;
     gEnd = G4ThreeVector();
     if (gMode == Mode::Slow) SlowBeginEvent();
-    if (gMode == Mode::PhysChem) {
+    if (IsChemistryMode()) {
       gChemistryRun = false;
+      gPreChemCaptured = false;
       gPhysChemEventCount.clear();
       gPhysChemEventR2.clear();
     }
@@ -443,7 +500,9 @@ class EventAct : public G4UserEventAction {
   {
     if (gMode == Mode::Track) FinishEvent();  // mfp mode finishes inside the stepping action
     if (gMode == Mode::Slow) SlowFinishEvent();
-    if (gMode == Mode::PhysChem) {
+    if (IsChemistryMode()) {
+      if (gMode == Mode::PreChem && !gPreChemCaptured)
+        PreChemFailure("event ended without a verified snapshot");
       for (const auto& item : gPhysChemEventCount) {
         gPhysChem.sum_count[item.first] += item.second;
         gPhysChem.sum_count2[item.first] += item.second * item.second;
@@ -647,12 +706,37 @@ void RunPhysChem(const char* out, long seed, const std::vector<std::pair<double,
   fclose(f);
 }
 
+void RunPreChem(const char* out, long seed, const std::vector<std::pair<double, long>>& cases)
+{
+  // Exclusive creation: a diagnostic must never replace historical reference evidence.
+  FILE* f = fopen(out, "wx");
+  if (!f) PreChemFailure("cannot create output (it may already exist)");
+  WriteProvenance(f, "physchem_prechem", 0, seed);
+  fprintf(f, "# G4EmDNAChemistry_option3; IRT selected; no reaction table or process changes\n");
+  fprintf(f, "# snapshot_boundary: after_dissociation_before_irt; global_time_ps: 1; chemical_reactions: 0\n");
+  fprintf(f, "energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2\n");
+  for (const auto& c : cases) {
+    gEnergy = c.first * eV;
+    gPhysChem.clear();
+    G4RunManager::GetRunManager()->BeamOn((G4int)c.second);
+    if (gPhysChem.n_events != c.second) PreChemFailure("incomplete event count");
+    for (const auto& item : gPhysChem.sum_count) {
+      fprintf(f, "%.17g,%ld,%s,%.17g,%.17g,%.17g\n", c.first, gPhysChem.n_events,
+              item.first.c_str(), item.second, gPhysChem.sum_count2[item.first],
+              gPhysChem.sum_r2_nm2[item.first]);
+    }
+    if (fflush(f) != 0) PreChemFailure("failed to flush output");
+    fprintf(stderr, "physchem_prechem: %.17g eV done (%ld events)\n", c.first, gPhysChem.n_events);
+  }
+  if (fclose(f) != 0) PreChemFailure("failed to close output");
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
 {
   if (argc < 3) {
-    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...]\n", argv[0]);
+    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...>\n", argv[0]);
     return 1;
   }
   const std::string mode = argv[1];
@@ -673,6 +757,19 @@ int main(int argc, char** argv)
     seed = argc > 3 ? atol(argv[3]) : 1;
     slowSpec = argc > 4 ? argv[4] : "1000:20000,10000:2000,100000:200,900000:20";
     gMode = Mode::PhysChem;
+  }
+  else if (mode == "physchem_prechem") {
+    if (argc != 5) PreChemFailure("expected output path, seed and energy:events list");
+    seed = atol(argv[3]);
+    slowSpec = argv[4];
+    const auto cases = ParseSpec(slowSpec);
+    if (seed <= 0 || cases.empty()) PreChemFailure("seed/statistics must be positive");
+    for (const auto& c : cases) {
+      if (!std::isfinite(c.first) || c.first < 2. || c.first >= 1e6 || c.second <= 0 ||
+          c.second > std::numeric_limits<G4int>::max())
+        PreChemFailure("requires 2 <= energy_eV < 1e6 and positive G4int event counts");
+    }
+    gMode = Mode::PreChem;
   }
   else if (mode == "mfp") gMode = Mode::Mfp;
   else if (mode == "track") {
@@ -695,15 +792,16 @@ int main(int argc, char** argv)
   // chem6 sets "/process/chem/TimeStepModel IRT" before /run/initialize. The default is Unknown:
   // no step model is registered and G4Scheduler::Process crashes in G4ITModelManager::Initialize
   // (Q24). It must be set before the physics list is constructed (ConstructProcess reads it).
-  if (gMode == Mode::PhysChem) param->SetTimeStepModel(G4ChemTimeStepModel::IRT);
+  if (IsChemistryMode()) param->SetTimeStepModel(G4ChemTimeStepModel::IRT);
 
   G4Random::setTheSeed(seed);
   rm->Initialize();
   // EndTime must exceed the 1 ps species birth time for StartProcessing to be entered; the user
   // action records the initial list and calls Stop() before the first chemistry step.
-  if (gMode == Mode::PhysChem) {
+  if (IsChemistryMode()) {
     G4Scheduler::Instance()->SetEndTime(2. * ps);
-    G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
+    if (gMode == Mode::PreChem) G4Scheduler::Instance()->SetUserAction(new PreChemSpeciesAction());
+    else G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
   }
 
   // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.1): G4EmDNABuilder
@@ -730,6 +828,9 @@ int main(int argc, char** argv)
   }
   else if (gMode == Mode::PhysChem) {
     RunPhysChem(out, seed, ParseSpec(slowSpec));
+  }
+  else if (gMode == Mode::PreChem) {
+    RunPreChem(out, seed, ParseSpec(slowSpec));
   }
   else {
     RunEvents(out, "track", {200., 1e3, 1e4, 1e5, 9e5}, events, seed);

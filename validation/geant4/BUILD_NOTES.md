@@ -145,3 +145,42 @@ and `SymFromAddr` and prints each frame to stderr. Geant4 DLL export names are e
 failing component (this found issue H in one run). A stack overflow (K) needs a vectored handler plus
 `SetThreadStackGuarantee`. Watch for `\n` inside C++ string literals when generating code through a
 script: it silently becomes a real newline and breaks compilation (`C2001`); prefer the Edit tool.
+
+## 7. RR-001: M6 pre-IRT snapshot (2026-10-17, user-run only)
+
+`physchem_prechem` is additive; do not change or rerun the existing `physchem` mode to obtain these data.
+Its new post-zero-step hook captures after all water decays and before IRT initialization (README).
+The mode has been **compiled and linked, not run**. Agent sessions never run even its smoke test.
+
+Build with section 2's recipe, replacing `-B build-msvc` and the build argument with the repository-root
+scratch directory `.scratch/tests/2026-10-16__m6-diagnose-and-fix/g4-prechem-build` (use the appropriate
+relative path from the working directory). This was verified with MSVC 19.50.35729, Ninja,
+RelWithDebInfo and installed Geant4 11.4.1. No generator or CMake source contains machine paths.
+The first compile succeeded but the sandbox rejected the vcpkg PowerShell post-link dependency copy
+("The system cannot execute the specified program"); repeating `cmake --build` with host permission
+completed the link. This is a build-environment issue, not a Geant4 runtime failure.
+
+For the **project lead**, after setting section 3's runtime environment, from `validation/geant4/g4rs_ref`:
+
+```powershell
+$m6Exe = '../../../.scratch/tests/2026-10-16__m6-diagnose-and-fix/g4-prechem-build/g4rs_ref.exe'
+& $m6Exe physchem_prechem "$env:TEMP/physchem_prechem_smoke_20261017.csv" 1 1000:200 *> "$env:TEMP/physchem_prechem_smoke_20261017.log"
+if ($LASTEXITCODE -ne 0) { throw 'prechem smoke failed; keep the log, do not commit its CSV' }
+```
+
+The smoke output must be a **new** path (the mode refuses overwrite), with nonempty species rows and
+`n_events=200`. Runtime guards require a zero step at global 1 ps, no preceding chemical reaction,
+no remaining water, only alive 1 ps molecules and a snapshot for every event. If a guard fires, retain
+the log for diagnosis; do not disable the guard or commit partial output.
+
+For production, put the executable's build directory on PATH, then use the exact RR-001 command:
+
+```powershell
+$env:PATH = "$(Split-Path -Parent (Resolve-Path -LiteralPath $m6Exe));$env:PATH"
+g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20 *> "$env:TEMP/physchem_prechem_production.log"
+if ($LASTEXITCODE -ne 0) { throw 'prechem production failed; do not commit partial output' }
+```
+
+Check four completion lines, all four requested energies and counts, 28 nonempty data rows, and the
+pre-IRT marker before committing the **new** CSV and `provenance_m6_prechem.toml` (README's fields).
+Do not overwrite any historical CSV/provenance. Then run only the paired ignored test named in RR-001.

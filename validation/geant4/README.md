@@ -214,7 +214,7 @@ platform            = ""
 
 # M6: initial physicochemical species at 1 ps
 
-The new mode is `physchem <out.csv> <seed> [E_eV:events,...]`. It uses option2 electron physics and `G4EmDNAChemistry_option3`; its intended snapshot is the alive species list at 1 ps, before diffusion or reactions. CSV columns are `energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2`, where the last quantity sums squared distances of every alive molecule from the primary origin.
+The original mode is `physchem <out.csv> <seed> [E_eV:events,...]`. It uses option2 electron physics and `G4EmDNAChemistry_option3`. Its intended pre-reaction interpretation was disproved by the 2026-10-16 source audit: the first positive-step pre-callback follows zero-time IRT reactions at global 1 ps (docs/08, Q25/R17). Its existing code, arguments, physics and output format remain historical evidence. CSV columns are `energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2`, where the last quantity sums squared distances of every alive molecule from the primary origin. The unchanged original gate fails; it does not validate a dissociation-only Rust M6 snapshot.
 
 Build and smoke test first:
 
@@ -242,4 +242,75 @@ Exactly two files are needed in `validation/reference/`:
 - `provenance_m6.toml`, with `geant4_version`, `geant4_commit`, `g4emlow_version`, `g4emlow_md5`, `physics_constructor = "G4EmDNAPhysics_option2"`, `chemistry_constructor = "G4EmDNAChemistry_option3"`, `scheduler_snapshot_ps = 1.0`, generator commit, date, exact command line, seed, compiler and platform.
 
 Then run `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture`. The ignored test contains the pre-registered count and RMS acceptance criteria. It must remain ignored until both files exist and the generator exits successfully.
+
+## M6 pre-IRT diagnostic (RR-001, awaiting data)
+
+`physchem_prechem <out.csv> <seed> <E_eV:events,...>` is a **new mode**, compiled and linked against
+Geant4 11.4.1/MSVC on 2026-10-17, never run by an agent. It uses the same option2/option3 constructors,
+IRT selection, full cascade, liquid water, +z beam, Meesungnoen2002 and fluo/Auger-off settings. Only its
+snapshot hook differs: a zero-step **post** callback waits until no water molecule remains in the main
+list, then records the merged surviving daughters and stops **before the next IRT time selection**.
+`G4ITStepProcessor2.cc:110-185` merges daughters/removes killed parents before this hook;
+`G4DNAIRTMoleculeEncounterStepper.cc:431-467` defers IRT initialization while stopped water remains,
+and `G4ITModelProcessor.cc:118-131` initializes it on the next time selection (paths under
+`source/processes/electromagnetic/dna/{management,models}/src/`). The reaction table and water
+recombination/dissociation processes are unchanged. This isolates M6 without implementing M7 chemistry.
+
+The new mode requires explicit seed and statistics, refuses to overwrite its output, and exits nonzero
+if a positive step or inter-molecular chemical reaction precedes capture, an event lacks its snapshot,
+any captured molecule is not alive at global 1 ps, or the completed event count is wrong. An exit-0
+complete run is required; compilation alone does not validate these runtime assumptions. A failed run
+must be investigated, never accepted by removing a guard.
+
+The CSV uses the original six columns, with the new provenance marker:
+
+```text
+# snapshot_boundary: after_dissociation_before_irt; global_time_ps: 1; chemical_reactions: 0
+energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2
+```
+
+Each species/energy row contains the event count, summed alive count, sum of **squared per-event
+counts**, and sum of squared distances of all survivors from the primary origin, in nm^2. Zero-count
+events contribute zero to both count moments; the `n_events` denominator includes them. Native Geant4
+species names are mapped by the Rust consumer. The requested production run must contain all seven
+dissociation species (H3Op, °OH, OHm, e_aq, H, H2, Oxy) at all four energies: exactly 28 rows. Reaction-only
+species, incomplete energies/statistics, invalid moments, and duplicate rows are rejected.
+
+After the user smoke test in `BUILD_NOTES.md`, run from `validation/geant4/g4rs_ref` with a **new** output:
+
+```bash
+g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20
+```
+
+Commit the complete new CSV and `provenance_m6_prechem.toml`; never replace `physchem.csv` or its
+provenance. The new provenance must contain the following, plus a nonempty `geant4_commit`, `generator`
+(repository commit), `date`, `compiler`, `platform`, and explicit `generator_dirty` (boolean):
+
+```toml
+geant4_version = "11.4.1"
+g4emlow_version = "8.8"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+chemistry_time_step_model = "IRT"
+snapshot_boundary = "after_dissociation_before_irt"
+scheduler_snapshot_ps = 1.0
+fluo_auger = "off"
+seed = 20261020
+command_line = "g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20"
+```
+
+Record the exact executable invocation in the provenance; the command above assumes `g4rs_ref` is on
+PATH. The consumer accepts that registered command (use PATH or a shell alias for the built executable).
+Run only the paired ignored test after data and provenance are committed:
+
+```bash
+cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture
+```
+
+Criteria registered before these data exist: the same **z <= 4.5**, **15%** count difference when both
+means exceed 0.1/event, and **20%** RMS-radius difference as the original gate, for all 28 rows. Provenance,
+boundary and completeness checks run first. A passing stage-matched gate is required before M6 closes;
+a failure leaves the gate open and Q21/R14's scheduler projection under investigation. The original
+post-reaction reference/gate stays unchanged and is not expected to pass Rust M6.
 

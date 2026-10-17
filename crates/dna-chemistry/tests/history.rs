@@ -163,6 +163,36 @@ fn the_nearest_alive_electron_is_consumed_first() {
 }
 
 #[test]
+fn competing_holes_demonstrate_the_event_order_assumption() {
+    let engine = PhysChemEngine::option3().unwrap();
+    // The hole at 0 can reach only the electron at 0; the hole at 1 can
+    // reach both (the other electron is 7 nm away, inside 10 r_Onsager).
+    let mut events = [
+        ev(PhysChemKind::Solvation, 0, ORIGIN),
+        ev(PhysChemKind::Solvation, 0, [8.0, 0.0, 0.0]),
+        ev(PhysChemKind::Ionisation, 0, [1.0, 0.0, 0.0]),
+        ev(PhysChemKind::Ionisation, 0, ORIGIN),
+    ];
+    // p(7 nm) > 0.05. Recombined waters relax at u = 0.9 (no products).
+    let mut draws = vec![0.05, 0.9, 0.05, 0.9];
+    draws.extend([0.5; 9]);
+    let forward = engine
+        .convert_history(&events, &mut ScriptedRng::new(&draws))
+        .unwrap();
+    events.swap(2, 3);
+    let reverse = engine
+        .convert_history(&events, &mut ScriptedRng::new(&draws))
+        .unwrap();
+    assert_eq!(forward.stats.recombinations, 1);
+    assert_eq!(reverse.stats.recombinations, 2);
+    assert_eq!(
+        tags(&forward.species),
+        vec![Species::e_aq, Species::H3Op, Species::OH]
+    );
+    assert!(reverse.species.is_empty());
+}
+
+#[test]
 fn search_radius_is_ten_onsager_radii_and_a_coincident_electron_always_recombines() {
     let engine = PhysChemEngine::option3().unwrap();
     let radius = engine.params().recombination.search_radius.nm();
@@ -374,7 +404,7 @@ fn synthetic_events(streams: &RngStreams, history: u64) -> Vec<PhysChemEvent> {
 fn species_lists_are_bitwise_identical_for_any_thread_count() {
     let engine = PhysChemEngine::option3().unwrap();
     let streams = RngStreams::new(20261015);
-    let run = |threads: usize| -> Vec<Vec<u64>> {
+    let run = |threads: usize, reverse: bool| -> Vec<Vec<u64>> {
         rayon::ThreadPoolBuilder::new()
             .num_threads(threads)
             .build()
@@ -383,16 +413,26 @@ fn species_lists_are_bitwise_identical_for_any_thread_count() {
                 (0..300u64)
                     .into_par_iter()
                     .map(|h| {
-                        let events = synthetic_events(&streams, h);
+                        let mut events = synthetic_events(&streams, h);
+                        if reverse {
+                            events.reverse();
+                        }
                         let mut rng = streams.stream(h, Stage::PhysChem).unwrap();
                         bits(&engine.convert_history(&events, &mut rng).unwrap())
                     })
                     .collect()
             })
     };
-    let one = run(1);
-    assert_eq!(one, run(2));
-    assert_eq!(one, run(8));
+    let one = run(1, false);
+    assert_eq!(one, run(2, false));
+    assert_eq!(one, run(8, false));
+    let reversed = run(1, true);
+    assert_eq!(reversed, run(2, true));
+    assert_eq!(reversed, run(8, true));
+    assert_ne!(
+        one, reversed,
+        "the order ablation must exercise different conversions"
+    );
     assert!(
         one.iter().any(|b| b.len() > 40),
         "the synthetic histories are not trivial"

@@ -14,6 +14,11 @@
 # `decay_energy_ev` is the energy booked as local deposit by the *chemistry-stage* decay (DecayIt: ProposeLocalEnergyDeposit);
 # it is NOT part of the physical-stage energy ledger (docs/01 A.4, docs/09 Q20).
 # displacement: "none" for channels without products (relax) and the case of G4DNAWaterDissociationDisplacer otherwise.
+# Re-audited against Geant4 11.4.1 on 2026-10-16: all 23 channels agree (docs/02 B.7.8).
+# No channel sets a decay delay. H2O has lifetime 0 (G4H2O.cc:65), configurations inherit it
+# (G4MolecularConfiguration.cc:96,439,481); DecayIt creates products at the mother's global time.
+# H2Ovib relaxation sets neither products nor energy: its deposit stays at the constructor default 0,
+# unlike the five excitation relaxations. See G4MolecularDissociationChannel.cc:49-54 and CH:460.
 
 [[state]]
 name = "A^1B_1"

@@ -155,7 +155,10 @@ pub fn run_summary(table: &ProcessTable, config: &RunConfig) -> Result<RunSummar
 ///
 /// This is the M6 stage boundary: physics produces events, `engine` consumes them on the
 /// independent `(seed, history, PhysChem)` stream, and the returned species are only scored.
-/// No diffusion or reactions are performed.
+/// All returned species are at global time 1 ps, and radius is measured from the primary's
+/// start at zero. No diffusion or two-body chemical reactions are performed; electron-hole
+/// recombination is part of the conversion. Geant4's existing `physchem` snapshot additionally
+/// includes zero-time option3 reactions (docs/08), so equal time alone does not align the stages.
 pub fn run_physchem_summary(
     table: &ProcessTable,
     engine: &PhysChemEngine,

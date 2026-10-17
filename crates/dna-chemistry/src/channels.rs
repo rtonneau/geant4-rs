@@ -12,6 +12,11 @@
 //! `G4DNAMolecularDissociation::DecayIt` (processes/src/G4DNAMolecularDissociation.cc:142-153): one uniform
 //! number `u`; scan the channels in file order, select the first with `u < p`, otherwise `u -= p`. If rounding lets
 //! the scan run past the end the last channel stays selected (the C++ keeps the pointer of the last iteration).
+//!
+//! All option1 configurations inherit the zero water lifetime. Product times are assigned by the engine
+//! at 1 ps, with no additional channel delay (`G4H2O.cc:65`, `G4MolecularConfiguration.cc:96,439,481`,
+//! `G4DNAMolecularDissociation.cc:258`). The `H2Ovib` relaxation has zero released energy: its constructor
+//! default is never overridden, unlike the five excited-state relaxations (docs/02 B.7.8).
 
 use crate::error::ChemistryError;
 use crate::species::{SpeciesTable, atoms};

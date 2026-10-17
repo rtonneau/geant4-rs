@@ -15,12 +15,18 @@
 
 use dna_chemistry::PhysChemEngine;
 use dna_core::manifest::Manifest;
+use dna_core::physchem::{PhysChemEvent, PhysChemKind};
 use dna_core::rng::{RngStreams, Stage};
 use dna_core::species::Species;
+use dna_core::testing::ScriptedRng;
+use dna_core::units::Energy;
+use dna_core::vec3::Vec3;
 use dna_data::datadir::{DataDir, repo_data_dir};
-use dna_physics::models::ElasticRotation;
+use dna_physics::models::{ElasticRotation, ProcessKind};
 use dna_physics::table::ProcessTable;
+use dna_physics::transport::Termination;
 use dna_sim::config::RunConfig;
+use dna_sim::physchem_scoring::PhysChemScorer;
 use dna_sim::run::{run_detailed, run_physchem_summary};
 
 fn setup() -> Option<ProcessTable> {
@@ -55,6 +61,92 @@ fn g(summary: &dna_sim::physchem_scoring::PhysChemSummary, species: Species) -> 
         .g_ratio_of_totals
         .unwrap()
         .value
+}
+
+#[test]
+fn physchem_counts_and_radius_use_survivors_at_global_one_ps() {
+    // Primary starts at zero; this ionisation is 100 nm down its track. One electron
+    // is consumed at 101 nm and the other survives at (0, 6, 8), exactly 10 nm away.
+    let event = |kind, position| PhysChemEvent {
+        kind,
+        level_or_shell: 0,
+        position,
+        deposited_energy: Energy::from_ev(10.0),
+        parent_history: 0,
+    };
+    let parent = Vec3::new(100.0, 0.0, 0.0);
+    let events = [
+        event(PhysChemKind::Solvation, Vec3::new(101.0, 0.0, 0.0)),
+        event(PhysChemKind::Solvation, Vec3::new(0.0, 6.0, 8.0)),
+        event(PhysChemKind::Ionisation, parent),
+    ];
+    // p(1 nm) = 0.509159... > 0.50; H2Ovib channel 0.20 makes OH + H.
+    let mut rng = ScriptedRng::new(&[0.50, 0.20, 0.3, 0.4, 0.5, 0.6]);
+    let chemistry = PhysChemEngine::option3()
+        .unwrap()
+        .convert_history(&events, &mut rng)
+        .unwrap();
+    assert_eq!(chemistry.stats.recombinations, 1);
+    assert!(chemistry.species.iter().all(|s| s.time.ps() == 1.0));
+    let mut scorer = PhysChemScorer::default();
+    scorer.add(&chemistry, 100.0);
+    let summary = scorer.finish();
+    assert_eq!(summary.time_ps, 1.0);
+    let electron = &summary.species[Species::e_aq.index()];
+    assert_eq!(electron.produced_by_event, [0, 0, 0, 2]);
+    assert_eq!(electron.alive_total, 1);
+    assert_eq!(electron.alive_per_history.value, 1.0);
+    assert_eq!(electron.rms_radius_nm, Some(10.0));
+    assert_eq!(electron.rms_product_displacement_nm, None);
+    for species in [Species::OH, Species::H] {
+        let product = chemistry
+            .species
+            .iter()
+            .find(|s| s.species == species)
+            .unwrap();
+        let score = &summary.species[species.index()];
+        assert_eq!(score.alive_total, 1);
+        let radius = product.position.norm();
+        let displacement = (product.position - parent).norm();
+        assert!((score.rms_radius_nm.unwrap() - radius).abs() < 1e-12);
+        assert!((score.rms_product_displacement_nm.unwrap() - displacement).abs() < 1e-12);
+        assert!(radius > 90.0 && displacement < 10.0);
+    }
+}
+
+#[test]
+fn physchem_cascade_follows_all_electrons_without_a_secondary_floor() {
+    let Some(table) = setup() else { return };
+    assert_eq!(table.primary_energy_range().min().ev(), 2.0);
+    let mut config = RunConfig::new(1_000.0, 8);
+    config.master_seed = 20261017;
+    config.record_physchem = true;
+    assert!(config.transport_secondaries);
+    assert_eq!(config.tracking_cut_ev, None);
+    assert_eq!(config.max_interactions, None);
+    let histories = run_detailed(&table, &config).unwrap();
+    let mut sub_floor_solvations = 0;
+    for history in histories {
+        let outcome = &history.outcome;
+        assert_eq!(outcome.termination, Termination::Completed);
+        assert_eq!(outcome.n_tracks, 1 + outcome.n_secondaries);
+        assert_eq!(
+            outcome.n_tracks,
+            outcome.solvations + outcome.counts.get(ProcessKind::Attachment)
+        );
+        assert_eq!(outcome.ledger.untracked_secondaries, 0.0);
+        assert_eq!(outcome.ledger.remaining_untracked, 0.0);
+        sub_floor_solvations += history
+            .physchem
+            .iter()
+            .filter(|event| {
+                event.kind == PhysChemKind::Solvation && event.deposited_energy.ev() < 2.0
+            })
+            .count();
+    }
+    assert!(sub_floor_solvations > 0);
+    assert!(run_detailed(&table, &RunConfig::new(2.0, 1)).is_ok());
+    assert!(run_detailed(&table, &RunConfig::new(1.99, 1)).is_err());
 }
 
 #[test]

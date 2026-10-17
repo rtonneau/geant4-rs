@@ -1,0 +1,194 @@
+{
+  "session_id": "2026-10-16__m6-diagnose-and-fix",
+  "feature_name": "m6-diagnose-and-fix",
+  "scratch_dir": ".scratch/tests/2026-10-16__m6-diagnose-and-fix",
+  "created_at": "2026-10-16T19:53:49.341Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-16T19:53:49.341Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T19:55:43.974Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T19:55:49.108Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-16T20:00:00.651Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "fix/m6-diagnose-and-fix",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-16T20:00:00.676Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-establish-snapshot-semantics.md",
+        "02-plan/tickets/02-audit-and-correct-physchem-conversion.md",
+        "02-plan/tickets/03-audit-cascade-and-scoring-semantics.md",
+        "02-plan/tickets/04-resolve-m6-gate-or-request-diagnostics.md"
+      ],
+      "detail": {
+        "tickets": 4
+      }
+    },
+    {
+      "at": "2026-10-16T20:00:44.265Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-establish-snapshot-semantics.md",
+        "03-implement/01-establish-snapshot-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-establish-snapshot-semantics"
+      }
+    },
+    {
+      "at": "2026-10-16T20:09:46.515Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-establish-snapshot-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-establish-snapshot-semantics",
+        "commit": "8a281fd"
+      }
+    },
+    {
+      "at": "2026-10-16T20:18:32.920Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-audit-and-correct-physchem-conversion.md",
+        "03-implement/02-audit-and-correct-physchem-conversion/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-audit-and-correct-physchem-conversion"
+      }
+    },
+    {
+      "at": "2026-10-16T20:31:12.999Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-audit-and-correct-physchem-conversion/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-audit-and-correct-physchem-conversion",
+        "commit": "859030c"
+      }
+    },
+    {
+      "at": "2026-10-16T20:31:53.105Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-audit-cascade-and-scoring-semantics.md",
+        "03-implement/03-audit-cascade-and-scoring-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-audit-cascade-and-scoring-semantics"
+      }
+    },
+    {
+      "at": "2026-10-16T20:39:32.018Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-audit-cascade-and-scoring-semantics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-audit-cascade-and-scoring-semantics",
+        "commit": "baf986c"
+      }
+    },
+    {
+      "at": "2026-10-16T20:39:56.232Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-resolve-m6-gate-or-request-diagnostics.md",
+        "03-implement/04-resolve-m6-gate-or-request-diagnostics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-resolve-m6-gate-or-request-diagnostics"
+      }
+    },
+    {
+      "at": "2026-10-17T05:23:48.621Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/04-resolve-m6-gate-or-request-diagnostics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-resolve-m6-gate-or-request-diagnostics",
+        "commit": "c6bea6e"
+      }
+    },
+    {
+      "at": "2026-10-17T05:29:49.840Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-17T05:30:53.854Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/14"
+      }
+    },
+    {
+      "at": "2026-10-17T05:30:53.857Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "fix/m6-diagnose-and-fix",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-16T20:00:00.651Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/14"
+  },
+  "ship_mode": "subagent",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-16__m6-diagnose-and-fix.md",
+    "written_at": "2026-10-17T05:29:49.833Z"
+  },
+  "finished_at": "2026-10-17T05:30:53.857Z"
+}

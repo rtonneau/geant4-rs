@@ -4,6 +4,9 @@
 //! products to excitation, ionisation, attachment and solvation before a later recombination can
 //! consume an electron. Displacements are from the parent physical event. Pair distances are for
 //! products of the same decay, avoiding an ill-defined and quadratic all-pairs observable.
+//! Radius instead uses the surviving species positions relative to the primary origin, which
+//! `RunConfig` fixes at (0, 0, 0). This reducer consumes the completed 1 ps stage; it does not
+//! advance species in time or select a snapshot from a time series.
 
 use dna_chemistry::HistoryChemistry;
 use dna_core::species::Species;
@@ -177,6 +180,9 @@ impl Default for PhysChemScorer {
 }
 
 impl PhysChemScorer {
+    /// Add a completed physicochemical history at global time 1 ps, with the primary at zero.
+    /// Alive counts and radius use the post-recombination population; event production and
+    /// product displacement retain their distinct pre-consumption definitions.
     pub fn add(&mut self, chemistry: &HistoryChemistry, deposited_energy_ev: f64) {
         self.n += 1;
         let stats = &chemistry.stats;

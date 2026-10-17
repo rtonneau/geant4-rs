@@ -43,7 +43,23 @@ runs them (Geant4 11.4.1, see `BUILD_NOTES.md`) and commits the output.
 
 ## Log
 
-No request exists yet.
-
 | id | seed (gps) | program | command | rng seed, statistics | outputs | provenance | consumer | status |
 |---|---|---|---|---|---|---|---|---|
+| RR-001 | `m6-diagnose-and-fix`, `2026-10-16__m6-diagnose-and-fix` | `g4rs_ref physchem_prechem`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20` (from `validation/geant4/g4rs_ref`, executable on PATH) | 20261020; 20000/2000/200/20 events at 1/10/100/900 keV | `validation/reference/physchem_prechem.csv` (new) | `validation/reference/provenance_m6_prechem.toml` (new; README fields) | `crates/dna-sim/tests/physchem_reference.rs::m6_prechem_counts_and_rms_match_geant4`; `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` | awaiting run |
+
+### RR-001 purpose and acceptance (2026-10-17)
+
+M6 is **awaiting data**. The old first-positive-step pre-callback contains zero-time IRT reactions;
+its aggregate CSV cannot reconstruct the pre-reaction survivors or positions (docs/08 Q25/R17).
+The new post-zero-step callback captures the merged alive list as soon as no water states remain,
+before the next model selection initializes IRT. No chemistry processes or reaction table are changed.
+The new mode compiles and links against Geant4 11.4.1; it has **not been run** by an agent.
+
+The project lead first runs the separate smoke case in `BUILD_NOTES.md` section 7, then the production
+command above. Require exit 0, four energy completion lines, correct statistics and 28 rows. Runtime
+guards reject any preceding chemical reaction or positive-time step, wrong time/status, or missing
+snapshot. Do not commit partial/smoke data. The consumer rejects missing/duplicate species, reaction-only
+products, invalid moments or provenance. Every species/energy row retains the original count z <= 4.5,
+15% count limit when both means exceed 0.1/event, and 20% RMS limit; criteria are fixed before the run.
+The paired `m6-close-gate` seed checks this result before declaring closure. A failure leaves Q21/R14
+and any additional cause open; neither the original gate nor its historical evidence is replaced.
