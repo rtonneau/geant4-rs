@@ -44,6 +44,10 @@ fn species(name: &str) -> Option<Species> {
 
 fn rows() -> Vec<Row> {
     let text = std::fs::read_to_string(reference_dir().join("physchem.csv")).unwrap();
+    parse_rows(&text)
+}
+
+fn parse_rows(text: &str) -> Vec<Row> {
     text.lines()
         .filter(|line| !line.starts_with('#') && !line.starts_with("energy_eV"))
         .map(|line| {
@@ -132,8 +136,12 @@ fn m6_reference_contains_products_requiring_zero_time_chemistry() {
 fn m6_initial_species_counts_and_rms_match_geant4() {
     assert!(reference_dir().join("provenance_m6.toml").is_file());
     let rows = rows();
+    assert_counts_and_rms(&rows);
+}
+
+fn assert_counts_and_rms(rows: &[Row]) {
     let mut cases = BTreeMap::<u64, (f64, u64)>::new();
-    for r in &rows {
+    for r in rows {
         cases.insert(r.energy.to_bits(), (r.energy, r.n));
     }
     let root = repo_data_dir();
@@ -182,6 +190,92 @@ fn m6_initial_species_counts_and_rms_match_geant4() {
             }
         }
     }
+}
+
+/// RR-001, registered before the new Geant4 run. This is a distinct stage-matched gate:
+/// every one of the seven dissociation species at 1/10/100/900 keV is compared with exactly
+/// the original z <= 4.5, 15% non-small count and 20% RMS limits (at most 28 tests/family).
+/// All four energies and the requested 20000/2000/200/20 histories are required. Missing species,
+/// reaction-only products, wrong boundary, invalid moments or incomplete output fail validation.
+/// A pass can validate the M6 boundary; a failure leaves Q21/R14 and any remaining bias open.
+#[test]
+#[ignore = "RR-001: awaiting physchem_prechem.csv and provenance_m6_prechem.toml, user-run Geant4 only"]
+fn m6_prechem_counts_and_rms_match_geant4() {
+    let csv = std::fs::read_to_string(reference_dir().join("physchem_prechem.csv"))
+        .expect("RR-001 awaiting data: physchem_prechem.csv");
+    assert!(csv.contains("mode physchem_prechem"));
+    assert!(csv.contains("# snapshot_boundary: after_dissociation_before_irt; global_time_ps: 1; chemical_reactions: 0"));
+    let provenance: toml::Value =
+        std::fs::read_to_string(reference_dir().join("provenance_m6_prechem.toml"))
+            .expect("RR-001 awaiting provenance_m6_prechem.toml")
+            .parse()
+            .unwrap();
+    for (key, expected) in [
+        ("geant4_version", "11.4.1"),
+        ("g4emlow_version", "8.8"),
+        ("g4emlow_md5", "328330009df633f7e9b3a9f445745298"),
+        ("physics_constructor", "G4EmDNAPhysics_option2"),
+        ("chemistry_constructor", "G4EmDNAChemistry_option3"),
+        ("chemistry_time_step_model", "IRT"),
+        ("snapshot_boundary", "after_dissociation_before_irt"),
+        ("fluo_auger", "off"),
+    ] {
+        assert_eq!(provenance[key].as_str(), Some(expected), "{key}");
+    }
+    assert_eq!(provenance["scheduler_snapshot_ps"].as_float(), Some(1.0));
+    assert_eq!(provenance["seed"].as_integer(), Some(20261020));
+    assert_eq!(
+        provenance["command_line"].as_str(),
+        Some(
+            "g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20"
+        )
+    );
+    for key in ["geant4_commit", "generator", "date", "compiler", "platform"] {
+        assert!(
+            provenance
+                .get(key)
+                .and_then(toml::Value::as_str)
+                .is_some_and(|value| !value.trim().is_empty()),
+            "missing or empty {key}"
+        );
+    }
+    assert!(provenance["generator_dirty"].as_bool().is_some());
+    let rows = parse_rows(&csv);
+    let expected_species = BTreeSet::from([
+        Species::H3Op,
+        Species::OH,
+        Species::OHm,
+        Species::e_aq,
+        Species::H,
+        Species::H2,
+        Species::Oxy,
+    ]);
+    assert_eq!(rows.len(), 28, "seven species at each of four energies");
+    for (energy, n) in [
+        (1_000.0, 20_000),
+        (10_000.0, 2_000),
+        (100_000.0, 200),
+        (900_000.0, 20),
+    ] {
+        let case: Vec<_> = rows.iter().filter(|r| r.energy == energy).collect();
+        assert_eq!(case.len(), 7, "{energy}: incomplete or duplicate species");
+        assert_eq!(
+            case.iter().map(|r| r.species).collect::<BTreeSet<_>>(),
+            expected_species
+        );
+        for row in case {
+            assert_eq!(row.n, n);
+            assert!(row.sum.is_finite() && row.sum > 0.0);
+            assert!(row.sum2.is_finite() && row.sum2 >= 0.0);
+            assert!(row.sum_r2.is_finite() && row.sum_r2 > 0.0);
+            assert!(
+                row.sum2 + 1e-12 * row.sum2 >= row.sum * row.sum / row.n as f64,
+                "{energy} {:?}: inconsistent count moments",
+                row.species
+            );
+        }
+    }
+    assert_counts_and_rms(&rows);
 }
 
 fn report_metric(value: Option<f64>, signed: bool) -> String {
