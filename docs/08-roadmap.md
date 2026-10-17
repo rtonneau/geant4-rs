@@ -232,6 +232,79 @@ The 12 other rows pass. Differences are small in absolute terms (H3O+/e_aq up to
 
 Final verification: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace` all exit 0 (**268 passed, 13 ignored**). The original asserting gate separately exits 101 with the same z failure (6.64 s); the new ignored consumer separately exits 101 with `RR-001 awaiting data: physchem_prechem.csv` (0.06 s), and the existing zero-time-chemistry diagnostic passes. These two expected ignored-test failures are reported separately from the passing normal suite. Logs and build artifacts are in `.scratch/tests/2026-10-16__m6-diagnose-and-fix/` (`ticket04-workspace.log`, `ticket04-original-gate.log`, `ticket04-awaiting-data.log`, `ticket04-semantics.log`, `ticket04-geant4-build*.log`). `validation/reference/` has no changes. Session outcome: **awaiting data**, not M6 closure.
 
+### M6 residual audit: source comparison (draft 2026-10-17, finalised in ticket 04)
+
+Rust physicochemical stage compared with the Geant4 **11.4.1** `.cc` sources, read 2026-10-17 in the read-only checkout (nothing there was modified). The scope follows the ticket-01 harness (`crates/dna-sim/tests/physchem_audit.rs`, commit `b30beb5`). Charge and H/O conservation hold exactly on both sides, so they do not separate stage families. What remains is a Rust excess of O atoms per event (+0.9 % at 1 keV, z +21), H3O+/e_aq high and H/H2/O low. The rows therefore cover the event-to-state mapping, the channel fractions, dissociative attachment (DA) and electron-hole recombination. Marks: **identical** (same rule and numbers), **differs** (different rule; a candidate only, the verdict belongs to ticket 03), **undecidable** (static reading does not settle it).
+
+Path prefixes. Geant4: `D/` = `source/processes/electromagnetic/dna/`, `PL/` = `source/physics_lists/constructors/electromagnetic/src/`, `CH` = `PL/G4ChemDissociationChannels_option1.cc`, `EHR` = `D/processes/src/G4DNAElectronHoleRecombination.cc`, `WDD` = `D/processes/src/G4DNAWaterDissociationDisplacer.cc`, `MD` = `D/processes/src/G4DNAMolecularDissociation.cc`, `CM` = `D/utils/src/G4DNAChemistryManager.cc`. Rust: `T` = `data/chemistry/dissociation_option3.toml`, `P` = `data/chemistry/physchem_option3.toml`, other paths relative to `crates/`.
+
+**A. Physics event to water state**
+
+| # | Item | Rust file:line | Geant4 file:line | Mark | Note |
+|---|---|---|---|---|---|
+| A1 | Excitation level `k` from the partial cross sections; molecule created even when `E <= E_exc` (no-op) | `dna-physics/src/models/born_excitation.rs:77-104`, `dna-physics/src/transport.rs:512-518` | `D/models/src/G4DNABornExcitationModel1.cc:191-209` | identical | `CreateWaterMolecule` sits outside the `newEnergy > 0` branch |
+| A2 | Level `k` empties orbit `4-k` and fills orbit 5: k = 0..4 -> A^1B_1, B^1A_1, Exci3rdLayer, Exci2ndLayer, Exci1stLayer | `dna-chemistry/src/channels.rs:198-205,312-317,341-345`; `T:27,48,90,111,132` | `CM:636-637`; `D/molecules/management/src/G4MolecularConfiguration.cc:554-564`; `CH:237-240,283-287,312-317,338-342,351-366` | identical | |
+| A3 | Ionisation shell `s`; no molecule if `k < B`; shell-2 redraw below 19 eV | `dna-physics/src/models/born_ionisation.rs:125-145`, `transport.rs:519-526` | `D/models/src/G4DNABornIonisationModel1.cc:461-472,589-592` | identical | |
+| A4 | Shell `s` empties orbit `4-s` (Ioni5..Ioni1) | `channels.rs:312-317,346-350`; `T:149-217` | `CM:639-640`; `G4MolecularConfiguration.cc:571-598`; `CH:376-408` | identical | all five states share one channel: the shell split cannot change counts |
+| A5 | K-shell ionisation with de-excitation off: no extra molecules | `born_ionisation.rs:173-179` | `G4DNABornIonisationModel1.cc:527-569` | identical | the reference runs with fluo/Auger off (Q12) |
+| A6 | DA: absorbed electron -> H2O^- (orbit 5 +1) -> `DissociAttachment_ch1` | `dna-physics/src/models/melton.rs:82-97`, `transport.rs:527-533`, `channels.rs:318,351-357`, `T:219-230` | `D/models/src/G4DNAMeltonAttachmentModel.cc:73,255-261`; `CM:633-634`; `CH:413-426` | identical | `fDissociationFlag` defaults to true |
+| A7 | Vibrational excitation and elastic scattering create no molecule | `dna-core/src/physchem.rs:17`, `transport.rs:534` | `D/models/src/G4DNASancheExcitationModel.cc:228-286` (no `CreateWaterMolecule`) | identical | |
+| A8 | Molecule at the post-step point, born at 1 ps, lifetime 0, products at the mother's time | `transport.rs:467,515`; `P:9`; `dna-chemistry/src/engine.rs:277-282` | `source/tracking/src/G4SteppingManager.cc:198-219`; `CM:655-656`; `D/molecules/types/src/G4H2O.cc:65`; `MD:108-113,258` | identical | |
+
+The per-history counts of excitation, ionisation, attachment and solvation were compared with Geant4 at 1, 10, 100 and 900 keV in the M3 gate (`dna-sim/tests/slowing_down_reference.rs:66-75,407-411`, `validation/reference/slow_sums.csv`; all passed at z < 4). That run had no chemistry, and the per-level and per-shell split of the full cascade was not compared there.
+
+**B. Dissociation channels and selection**
+
+| # | Item | Rust file:line | Geant4 file:line | Mark | Note |
+|---|---|---|---|---|---|
+| B1 | A^1B_1: relax 0.35 (8.22 eV); OH + H 0.65 (A1B1) | `T:23-42` | `CH:225-242` | identical | |
+| B2 | B^1A_1: relax 0.175 (10.00 eV); H2 + 2 OH 0.0325 (B1A1); OH + H3O+ + e_aq 0.50 (AutoIoni); H + OH 0.2535 (A1B1); O + 2 H 0.039 (B1A1_2) | `T:44-84` | `CH:246-292` | identical | same order, which matters for the scan (B10) |
+| B3 | Exci3rdLayer: AutoIoni 0.5; relax 0.5 (11.24 eV) | `T:86-105` | `CH:296-319` | identical | |
+| B4 | Exci2ndLayer: AutoIoni 0.5; relax 0.5 (12.61 eV) | `T:107-126` | `CH:323-344` | identical | |
+| B5 | Exci1stLayer: AutoIoni 0.5; relax 0.5 (13.77 eV) | `T:128-147` | `CH:348-368` | identical | |
+| B6 | Ioni1..Ioni5: H3O+ + OH, 1.0 | `T:149-217` | `CH:376-408` | identical | |
+| B7 | DA: H2 + OH- + OH, 1.0 | `T:219-230` | `CH:413-426` | identical | |
+| B8 | H2Ovib: H2 + 2 OH 0.1365; OH + H 0.3575; O + 2 H 0.156; relax 0.35 (0 eV) | `T:232-264` | `CH:431-465` | identical | |
+| B9 | Relax energies = excitation structure; ionisation energies | `T:33,54,103,124,145`; `dna-physics/src/water.rs:18,22` | `D/utils/src/G4DNAWaterExcitationStructure.cc:31-35,45-52`; `D/utils/src/G4DNAWaterIonisationStructure.cc:31-35`; `CH:228,253,308,335,363` | identical | chemistry-stage deposit only, no effect on counts |
+| B10 | One uniform per decay; `u < p` selects, else `u -= p`; overrun keeps the last channel | `channels.rs:119-128`, `engine.rs:268-269` | `MD:142-155` | identical | |
+
+**C. Displacements** (product counts do not depend on them; they enter only through recombination distances)
+
+| # | Item | Rust file:line | Geant4 file:line | Mark | Note |
+|---|---|---|---|---|---|
+| C1 | `radialDistributionOfProducts(R)`: three Gaussians, sigma = R/sqrt(3) | `dna-chemistry/src/displacer.rs:50-55` | `WDD:683-691` | identical | same distribution, different Gaussian generator (docs/09) |
+| C2 | Mother shift RMS 2.0 nm for ionisation and auto-ionisation, 0 otherwise, added to every product | `displacer.rs:131-135` | `WDD:182-231`; `MD:175-177,207` | identical | |
+| C3 | Ionisation and auto-ionisation: `u < 0.5` -> OH 0.8 nm, else H3O+ 0.8 nm | `displacer.rs:112-126` | `WDD:248-281,379-410` | identical | |
+| C4 | Auto-ionisation e_aq: Meesungnoen2002 penetration at 1.7 eV | `displacer.rs:127-129`; `P:14` | `WDD:144,411-413,696-721`; `D/models/src/G4DNAOneStepThermalizationModel.cc:123-147` | identical | |
+| C5 | A1B1: 2.4 nm axis, OH -1/18, H +17/18 | `displacer.rs:74-83` | `WDD:282-302` | identical | |
+| C6 | B1A1 and DA: 0.8 nm axis, H2 -16/18, each OH +2/18 axis +- 0.5 x (1.1 nm); OH- not displaced | `displacer.rs:84-101` | `WDD:303-346,417-457` | identical | |
+| C7 | B1A1_2: O fixed, each H +- 0.5 x (1.6 nm) | `displacer.rs:102-111` | `WDD:347-378` | identical | |
+| C8 | Navigator clip to 0.8 x safety | `engine.rs:277-282` (none) | `MD:211-223` | identical | infinite-medium limit; shortens displacements, never changes counts |
+
+**D. Electron-hole recombination**
+
+| # | Item | Rust file:line | Geant4 file:line | Mark | Note |
+|---|---|---|---|---|---|
+| D1 | Only charge +1 water (ionised states) can recombine | `engine.rs:357` | `EHR:217-220` | identical | excited states have charge 0, DA -1 |
+| D2 | Onsager radius `e^2/(4 pi eps0 k_B T eps(rho,T))`, T = 293.15 K, rho = 1 g/cm^3 | `dna-chemistry/src/params.rs:88-110`; `P:16-38` | `EHR:51,57-104,222-229` | identical | numbers cross-checked to 1e-12 at M6 (`cpp_crosscheck`) |
+| D3 | Search radius 10 r_O (inclusive); `p = 1 - exp(-r_O/d)`, 1 at d = 0 | `params.rs:110,114-120`; `engine.rs:198,360-364` | `EHR:280-306`; `D/management/include/G4KDTree.icc:172,411-418` | identical | |
+| D4 | Candidates sorted by distance (KD tree; the octree branch is used only by IRT_syn) | `engine.rs:175-208` | `EHR:238,280-293`; `D/management/src/G4KDTreeResult.cc:69,112`; `D/models/src/G4DNAIndependentReactionTimeModel.cc:85`; `PL/G4EmDNAChemistry_option3.cc:757-767`; `validation/geant4/g4rs_ref/g4rs_ref.cc:795` | identical | IRT selects `G4DNAMolecularIRTModel` |
+| D5 | Recombination is tried before the decay of an ionised molecule | `engine.rs:357-375` | `PL/G4EmDNAChemistry_option3.cc:732-741`; `D/management/src/G4ITStepProcessor.cc:561-575`; `EHR:336-344`; `MD:108-113` | identical | both lifetimes 0; the first strict minimum of the at-rest loop wins (`P:18`, docs/02 B.7.6) |
+| D6 | Recombined molecule -> H2Ovib, partner e_aq killed | `engine.rs:364-368`; `T:232-264` | `EHR:183-201`; `CH:459-465` | identical | |
+| D7 | Candidate set at the first test | solvated e_aq plus the auto-ionisation e_aq of excitations earlier in event order (`engine.rs:331-343,401-406`) | KD tree rebuilt from the main list at each zero-time step (`D/models/src/G4DNAIRTMoleculeEncounterStepper.cc:80-87`; `D/management/src/G4ITModelProcessor.cc:95-107,146-161`; `D/management/src/G4VITStepModel.cc:69-72`; `D/management/include/G4ITFinder.icc:213-273`); every `FindReactant` of a step runs before its DoIts (`D/management/src/G4Scheduler.cc:550-552,584`); decay products join after the step (`D/management/src/G4ITStepProcessor2.cc:184-185`) | differs | in Geant4's first step only solvated e_aq are candidates. Rust can pair an ion with an auto-ionisation e_aq at once, which raises the Rust count |
+| D8 | Nearest e_aq already consumed in the same pass | nearest alive e_aq, tested with the ion's own uniform (`engine.rs:358-364`) | `FindReactant` draws `u` and tests the cached nearest (`EHR:235,290-308`); `MakeReaction` tests the first still-alive cached candidate with the same `u` (`EHR:164-181`) | identical | in both, the in-pass probability is p(nearest alive among the candidates); the candidate sets differ (D7) |
+| D9 | Second test after a failed `MakeReaction` | none: one test, then the Ioni channel (`engine.rs:357-375`) | the ion stays `fStopButAlive` in its ionised state (`EHR:205-208`); at the next zero-time step `GetMeanLifeTime` calls `FindReactant` again with a new uniform on the rebuilt tree, which now holds the auto-ionisation e_aq and lacks the consumed ones (`EHR:235,336-344`; `G4DNAIRTMoleculeEncounterStepper.cc:80-87`; `G4ITStepProcessor2.cc:184-185`) | differs | possible only when p_alive < u < p_nearest. This raises the Geant4 count. Inferred from the at-rest selection, not traced at run time |
+| D10 | Processing order within a pass | event order (`engine.rs:345-348`) | reverse main-list order (`G4ITStepProcessor2.cc:122-156`); how the main-list order relates to the physical event order is not established (docs/09 Q21) | undecidable | decides which ion takes which e_aq |
+
+**Not audited** (the ticket-01 relations do not point here)
+
+| # | Item | Rust file:line | Geant4 file:line | Status | Note |
+|---|---|---|---|---|---|
+| N1 | Thermalisation: electron below 7.4 eV -> e_aq at a Meesungnoen2002-displaced position | `dna-physics/src/models/solvation.rs:99-137`, `transport.rs:427-450` | `D/models/include/G4DNAOneStepThermalizationModel.hpp:166-247`; `CM:668-695` | not audited | with chemistry on, Geant4 clips the displacement to 0.8 x safety (`hpp:225-239`); Rust has no clip. D2-D10 depend on these positions, so N1 comes into scope if ticket 03 names recombination |
+| N2 | Solvation count and e_aq creation before the water decays | `engine.rs:331-343` | `CM:677-695` | not audited | `n_solvation` passed the M3 gate (see A) |
+
+**Reading of the RR-001 residual** (consistency check for ticket 03, not a verdict). Suppose Rust performs Delta fewer recombinations per event than Geant4. The channel tables (B6, B8) then fix the shift caused by each missing recombination: H3O+ +1, e_aq +1, OH +1 - (2 x 0.1365 + 0.3575) = +0.3695, H -(0.3575 + 2 x 0.156) = -0.6695, H2 -0.1365, O -0.156, O atoms +1.2135. The RR-001 shifts at 1 keV (Rust - Geant4 per event) are H3O+ +0.72, e_aq +0.73, OH +0.27, H -0.46, H2 -0.102 and O -0.103. With Delta = 0.72 the tables predict OH +0.27, H -0.48, H2 -0.098, O -0.112 and +0.87 O atoms per event, which is the +0.9 % found in ticket 01. A shift in the ionisation count alone would move OH as much as H3O+ (+0.72) and leave H unchanged, which the data do not show. At higher energies the fit is looser: at 10 keV, H3O+ +3.3 predicts H -2.2 and H2 -0.45 against -2.67 and -0.82 observed; at 100 keV, H3O+ +44.9 predicts H -30 against -18.9 observed. D7, D9 and D10 are therefore the first candidates for ticket 03. Caveat: D7 and D9 act in opposite directions, and the source alone does not give the sign of the net effect. No source difference was found in the mapping (A), the channel fractions (B), DA (A6, B7) or the displacer (C).
+
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.
 Tests: V9, V10, unit tests for reaction selection and boundaries. Acceptance: V9 for A+B and A+A over three D/R/k sets; IRT vs SBS agreement on a TDC case within 3 sigma.
