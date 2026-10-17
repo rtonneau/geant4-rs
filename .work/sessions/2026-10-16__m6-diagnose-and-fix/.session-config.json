@@ -124,9 +124,33 @@
         "ticket": "03-audit-cascade-and-scoring-semantics",
         "commit": "baf986c"
       }
+    },
+    {
+      "at": "2026-10-16T20:39:56.232Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-resolve-m6-gate-or-request-diagnostics.md",
+        "03-implement/04-resolve-m6-gate-or-request-diagnostics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-resolve-m6-gate-or-request-diagnostics"
+      }
+    },
+    {
+      "at": "2026-10-17T05:23:48.621Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/04-resolve-m6-gate-or-request-diagnostics/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-resolve-m6-gate-or-request-diagnostics",
+        "commit": "c6bea6e"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "fix/m6-diagnose-and-fix",
     "base_branch": "main",
