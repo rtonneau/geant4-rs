@@ -75,7 +75,7 @@ Tests: V2-V7 for protons; stopping power vs PSTAR (L4 report). Acceptance: V5 ra
 ## M6 Physicochemical stage
 Scope: dissociation channels, displacer, thermalisation (G6), solvated electron placement, output of `SpeciesInstance` list.
 Tests: V8. Acceptance: initial species counts per 100 eV vs Geant4 `chem6` at t = 1 ps (pre-chemistry) within V11 criterion.
-**Status: Rust M6 implementation complete on `m6-physchem-b`; stage-matched Geant4 gate (RR-001) run 2026-10-17 and FAILED (16 of 28 species/energy rows exceed z <= 4.5); M6 stays open, see "RR-001 result" below.** Part A is unchanged. Part B adds fixed-order two-stage runs (`run_physchem_summary`, JSON schema `geant4-rs/dna-sim/run/v3`), a SHA-256 of the three embedded chemistry inputs, and initial-species scoring at global time 1 ps. The old physical-only v2 output remains available.
+**Status: Rust M6 implementation complete on `m6-physchem-b`; stage-matched Geant4 gate (RR-001) run 2026-10-17 and FAILED (16 of 28 species/energy rows exceed z <= 4.5); M6 stays open, see "RR-001 result" below.** **Update (2026-10-17, M6 residual audit): after a source-proven change to the electron-hole recombination schedule the same gate passes (28/28 rows, unchanged criteria); see "M6 residual audit (final record)" below. The Rust means and failure counts in the paragraphs and tables between here and that section describe the engine before the fix.** Part A is unchanged. Part B adds fixed-order two-stage runs (`run_physchem_summary`, JSON schema `geant4-rs/dna-sim/run/v3`), a SHA-256 of the three embedded chemistry inputs, and initial-species scoring at global time 1 ps. The old physical-only v2 output remains available.
 - *What exists.* New crate `dna-chemistry` (depends on `dna-core` only): `SpeciesTable` (15 species, D/charge/radius), `ChannelTable` (12 decay states, 23 channels, validated at load: probability sums to 1 within 1e-12, products and displacement names known, orbit = 4 - index, hydrogen/oxygen/charge balance with 0 or 1 extra water), `displacer` (port of `G4DNAWaterDissociationDisplacer`, cases reachable from option2 events), `params` (birth time 1 ps, auto-ionisation electron 1.7 eV, Onsager recombination parameters), `PhysChemEngine::convert_history(events, rng) -> species + stats`. Data in `data/chemistry/*.toml` with C++ line numbers; the shared record types (`PhysChemEvent`, `Species`, `SpeciesInstance`), the Gaussian helpers, the Meesungnoen2002 law and `ScriptedRng` moved to `dna-core` (re-exported by `dna-physics`, no behaviour change; the M3 suite passes unchanged).
 - *Species identity.* The 15 TOML tags, extraction fixture keys, and emitted chemistry names are the exact Geant4 `G4MoleculeTable` configuration keys. `Species::OH` and `Species::HO2` are legal Rust identifiers for `°OH` and `HO2°`; the old ASCII spellings are accepted only by the explicit legacy parser. `H2O(B)`, `H3Op(B)`, `OHm(B)`, and `NoneM` are bookkeeping configurations outside `Species`.
 - *Scope as decided (prompt A items 1, 2, 4).* Event -> species per history: solvation -> `e_aq` at the stored displaced position; excitation/ionisation/attachment -> channel selection + displacement + mother recoil; **electron-hole recombination of `G4DNAElectronHoleRecombination`** (found in the audit, docs/02 B.7.6 item 5; it is part of option3's pre-chemistry and was not in the brief): an ionised molecule recombines with its nearest alive `e_aq` within 7.12 nm with probability `1 - exp(-r_O/d)`, `r_O = 0.7116 nm`, and then decays through the `H2Ovib` channels. Species are born at **1 ps** (Geant4, not 0). Not done (session B): scoring, G-values, wiring into `dna-sim` runs and JSON, Geant4 `physchem` generator and comparison.
@@ -90,6 +90,8 @@ Tests: V8. Acceptance: initial species counts per 100 eV vs Geant4 `chem6` at t 
 - *Next steps (2026-10-16).* M6 closure is split into the seeds `m6-comparison-report`, `m6-diagnose-and-fix` and `m6-close-gate` in `docs/gps-backlog.md`. The reference data exist (Q24 is closed, see docs/09), but `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture` fails at the first assertion described above; the gate is **open**.
 
 ### M6 snapshot audit and full comparison (2026-10-16)
+
+*Pre-fix note (2026-10-17): every Rust number in this comparison, and in the sections up to "M6 residual audit (final record)", comes from the engine before commit `5df0aa1` (recombination schedule). They stay as the record of what was observed then; do not quote them as the current Rust result.*
 
 The existing `physchem.csv` is an **after-zero-time-reactions** snapshot at global time 1 ps. It is not the dissociation-only list returned by Rust M6. The first `dt > 0` **pre-step** callback precedes the selected positive-time step, but follows every earlier zero-time step, including contact reactions. The CSV header, `provenance_m6.toml` and generator comment calling it "before diffusion/reactions" are historical labels contradicted by the source audit below; the evidence files and existing generator mode are preserved unchanged. This establishes a comparison-stage mismatch, not a numerical correction or closure of M6.
 
@@ -217,6 +219,8 @@ The consuming `m6_prechem_counts_and_rms_match_geant4` test is ignored pending t
 
 ### RR-001 result (2026-10-17): data committed, gate FAILED
 
+*Pre-fix: the Rust means below (and the 16 failing checks) are those of the engine before commit `5df0aa1`. After that commit the same test passes with 0 failing checks; see "M6 residual audit (final record)". The Geant4 means and the failure list are kept unchanged as the reference evidence.*
+
 The project lead authorised the run in a later session. `g4rs_ref physchem_prechem` (generator commit `ad1aceb`, clean tree, MSVC 19.50.35729, Geant4 11.4.1, seed 20261020) exited 0 with all four energies complete (20000/2000/200/20 events) and 28 data rows. A smoke case (1 keV, 200 events, seed 1) passed first; its CSV was not kept. The runtime guards did not fire, so no chemical reaction precedes the snapshot. Data: `validation/reference/physchem_prechem.csv` (commit `e808b2f`), `provenance_m6_prechem.toml` (`ffe4b48`).
 
 `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` passed provenance, boundary and completeness checks and **failed the comparison** with the unchanged criteria (z <= 4.5, 15% count, 20% RMS): 16 failing checks, all in the z test; none in the 15% count or 20% RMS tests. The test was changed (commits `9e03af8`, `0f833fa`) only to parse the provenance as a TOML document and to report every failing row; no criterion or tolerance changed.
@@ -232,7 +236,7 @@ The 12 other rows pass. Differences are small in absolute terms (H3O+/e_aq up to
 
 Final verification: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace` all exit 0 (**268 passed, 13 ignored**). The original asserting gate separately exits 101 with the same z failure (6.64 s); the new ignored consumer separately exits 101 with `RR-001 awaiting data: physchem_prechem.csv` (0.06 s), and the existing zero-time-chemistry diagnostic passes. These two expected ignored-test failures are reported separately from the passing normal suite. Logs and build artifacts are in `.scratch/tests/2026-10-16__m6-diagnose-and-fix/` (`ticket04-workspace.log`, `ticket04-original-gate.log`, `ticket04-awaiting-data.log`, `ticket04-semantics.log`, `ticket04-geant4-build*.log`). `validation/reference/` has no changes. Session outcome: **awaiting data**, not M6 closure.
 
-### M6 residual audit: source comparison (draft 2026-10-17, finalised in ticket 04)
+### M6 residual audit: source comparison (2026-10-17, ticket 02; recorded in the final section below)
 
 Rust physicochemical stage compared with the Geant4 **11.4.1** `.cc` sources, read 2026-10-17 in the read-only checkout (nothing there was modified). The scope follows the ticket-01 harness (`crates/dna-sim/tests/physchem_audit.rs`, commit `b30beb5`). Charge and H/O conservation hold exactly on both sides, so they do not separate stage families. What remains is a Rust excess of O atoms per event (+0.9 % at 1 keV, z +21), H3O+/e_aq high and H/H2/O low. The rows therefore cover the event-to-state mapping, the channel fractions, dissociative attachment (DA) and electron-hole recombination. Marks: **identical** (same rule and numbers), **differs** (different rule; a candidate only, the verdict belongs to ticket 03), **undecidable** (static reading does not settle it).
 
@@ -326,6 +330,76 @@ The test re-converted the same Rust physics histories with each candidate schedu
 D9 dominates. At 1 keV, 4.4 ions per event are tested again, and they add 0.70 recombinations per event, close to the 0.72 fitted above. D7 alone moves the count by -0.03. An RMS z near 1 is what statistical noise alone gives.
 
 **Fix** (the only production change): `PhysChemEngine::convert_history` (`crates/dna-chemistry/src/engine.rs`) now runs this schedule in passes; the module rustdoc gives the source lines. The docs/reproducibility.md draw order changed with it. **Gate rerun**, with the criteria unchanged (z <= 4.5, 15 %, 20 %): `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` **passed** (exit 0, 34 s). All 28 rows pass, and the largest |z| is 2.04 (100 keV H). At 1 keV the recombination fraction rises from 24.50 % to 25.86 %. Rust baselines that changed: in `crates/dna-chemistry/tests/history.rs`, `the_nearest_alive_electron_is_consumed_first` has a new script for the DoIt order. `competing_holes_demonstrate_the_event_order_assumption` became `competing_holes_follow_the_geant4_doit_order`, and its outcome is reversed. `an_auto_ionisation_electron_is_a_candidate_for_later_holes` became `..._is_not_a_candidate_in_the_pass_that_creates_it`. The new tests are `a_hole_whose_electron_was_taken_is_tested_again_in_the_next_pass` (D9) and `water_states_follow_the_geant4_configuration_order`. The three changed tests fail on the previous engine. The Rust means quoted above (RR-001 table, docs/04 D.2.1, ticket-01 output) describe the previous engine. No file in `validation/reference/` and no tolerance changed. Ticket 04 records the M6 status, Q21/R14 and the limits: one Geant4 seed, and the assumed tracking order.
+
+### M6 residual audit (final record, 2026-10-17)
+
+Session `m6-residual-rust-audit`, seed of `docs/gps-backlog-m6-residual.md`, started from the RR-001 failure (16 of 28 rows, all in the z test). It used only data that already existed: the committed `physchem_prechem.csv` (Geant4 11.4.1, seed 20261020) and Rust reruns. No Geant4 program was run, no file in `validation/reference/` and no tolerance changed. Commits: harness `b30beb5` (ticket 01), source comparison `bfe2a73` (ticket 02), fix `5df0aa1` (ticket 03).
+
+**Outcome.** The stage is **electron-hole recombination scheduling** in `PhysChemEngine::convert_history`. It was proven from the Geant4 source and confirmed by a prototype scored on the RR-001 rows. The follow-up Geant4 request `m6-process-counts-geant4-request` (RR-002) is therefore not needed. After the fix the stage-matched gate `m6_prechem_counts_and_rms_match_geant4` **passes** (exit 0, 0 failing checks, was 16; the largest |z| of the 28 rows is 2.04, 100 keV H), with the criteria unchanged: count z <= 4.5, 15 % for non-small means, 20 % for the RMS radius.
+
+**What this pass is and is not.** It is a pass on the stage-matched gate only: seven dissociation species, four energies, one Geant4 run, at global 1 ps before any IRT reaction. It does not by itself close M6, and nothing in this record unblocks M7 or M8 beyond what the gating rules already in this file say ("Consuming M6 species requires M6 closed", and "M6 closes only after their provenance/boundary checks and the unchanged numerical criteria pass" in the RR-001 paragraph above). Passing the criteria is a necessary condition in those rules; this file does not define the closure as automatic. **Lifting the M6-closed gate, and the M6 status, are decisions for the project lead.**
+
+**1. Conservation relations (ticket 01, `crates/dna-sim/tests/physchem_audit.rs`).** Definitions and the 4.5 sigma bar were fixed in the test header before the results were read.
+
+| Relation | Geant4 CSV (1, 10, 100, 900 keV) | Rust, 5 seeds x 4 energies | Can it name a family? |
+|---|---|---|---|
+| R-Q: charge of the alive species + 1 (thermalised primary e_aq) = 0 | integer residual 0 at all four energies | 0 on every seed | No: holds on both sides |
+| R-H: H atoms - 2 x O atoms = 0 | integer residual 0 at all four energies | 0 on every seed | No: holds on both sides |
+| R-Ch: every one of the 23 channels balances H, O and charge; run-level budget per event kind (excitation, ionisation, attachment, solvation) | n/a (the CSV has no event kinds) | exact on every kind, every energy | No: holds by construction of the table |
+| R-W: O atoms per event (reported, not asserted) | 94.7355 / 927.903 / 9176.51 / 82481.2 | pre-fix 95.611 / 932.79 / 9227.0 / 82609.5, z +21.2 / +5.8 / +5.2 / +1.1 | Only a hint (+0.9 % O atoms at 1 keV) |
+
+The relations hold exactly on both sides, so they cannot separate stage families: a missing or extra recombination moves species while keeping H, O and charge balanced, which is what the residual looked like. The Rust-side passes are close to identities of the channel table, so they are weak evidence on their own. **Geant4-side variance limitation:** the CSV has means, standard errors and second moments but no per-event covariance, so the Geant4 sigma of a combined quantity (R-W, any z of a relation) is the sum of the single-species variances as if uncorrelated. It is used as a bound on the order of the noise, not as an exact error. The integer-residual relations R-Q and R-H do not depend on it.
+
+**2. Seed spread (ticket 01, pre-fix engine).** Five Rust master seeds (20261101-20261105), 20000/2000/200/20 histories per seed at 1/10/100/900 keV. z is (mean of 5 seeds - Geant4) over the combined error, from the harness output:
+
+| Species | 1 keV | 10 keV | 100 keV | 900 keV | z after the fix: 1 / 10 / 100 / 900 keV |
+|---|---:|---:|---:|---:|---|
+| H3Op | +27.72 | +7.94 | +6.35 | +2.60 | +1.21 / -0.33 / +0.58 / -1.51 |
+| °OH | +9.11 | +2.43 | +2.51 | -0.19 | +1.10 / +0.29 / +0.69 / -1.44 |
+| OHm | -1.30 | -1.73 | -0.37 | -0.04 | -1.30 / -1.73 / -0.37 / -0.04 |
+| e_aq | +26.65 | +8.18 | +6.36 | +2.62 | +1.56 / -0.10 / +0.62 / -1.52 |
+| H | -16.12 | -8.94 | -6.19 | -8.18 | -0.05 / +1.16 / +1.59 / -1.29 |
+| H2 | -8.13 | -6.01 | -5.67 | -4.40 | -0.74 / +0.06 / -0.71 / +0.37 |
+| Oxy | -9.86 | -5.04 | -4.36 | -5.77 | -0.39 / +0.46 / +0.97 / -0.67 |
+
+The seed-to-seed spread of the Rust means is small against the offset: at 1 keV the offset H3O+ 0.72, e_aq 0.73, H -0.46 molecules/event is about 40-80 times the seed spread (0.009, 0.010, 0.012). The pre-fix offsets keep their sign on all five seeds, so they are not a seed artefact. After the fix every one of these 28 z values is within |z| <= 1.73 (OHm, which the recombination does not touch, is unchanged by construction).
+
+**3. Source comparison (ticket 02, Geant4 11.4.1 `.cc`; the file:line tables are in "M6 residual audit: source comparison" above).** 36 items compared, 2 more not audited.
+
+| Group | Items | Result |
+|---|---|---|
+| A. Physics event to water state (excitation level, ionisation shell, DA, vibration and elastic, birth time) | A1-A8 | all identical |
+| B. Dissociation channels, probabilities, order, selection rule | B1-B10 | all identical |
+| C. Displacements | C1-C8 | all identical (they enter only through recombination distances) |
+| D. Electron-hole recombination | D1-D6, D8 identical | D7 candidate set at the first test: **differs**; D9 retest of a failed ion in the next zero-time step: **differs**; D10 processing order: undecidable in ticket 02, decided in ticket 03 from the track-holder source |
+| N. Not audited | N1 thermalisation (Rust has no 0.8 x safety clip on the e_aq displacement), N2 solvation count | not audited, see limits |
+
+**4. Verdict and fix (ticket 03).** D9 (a failed recombination is retried at the next zero-time step with a new uniform, on a tree that now holds the auto-ionisation e_aq) dominates; D7 (auto-ionisation e_aq are not candidates in the pass that creates them) and D10 (Geant4 DoIt order: reverse main list, one sub-list per configuration ID in creation order) complete the schedule. The full trace is in "M6 residual audit: verdict and fix" above. The prototype re-converted identical Rust physics histories with each candidate schedule and scored the 28 RR-001 rows with the unchanged criteria, on the gate seed 20261017 and the five ticket-01 seeds:
+
+| Schedule | Failing checks (6 seeds) | RMS of the 28 z (6 seeds) | Recombinations/event at 1 keV |
+|---|---|---|---|
+| Previous Rust (sequential, event order) | 11-16 | 7.06-7.89 | 12.547 |
+| D7 only (pass structure, no retest) | 13-15 | 7.06-7.69 | 12.518 |
+| D10 only (Geant4 order, sequential) | 12-16 | 7.26-7.77 | 12.555 |
+| D7 + D9, event order | 0-2 | 1.60-1.99 | 13.084 |
+| D7 + D9, reverse event order | 0 | 0.91-1.37 | 13.255 |
+| **D7 + D9 + D10 (Geant4 order), implemented** | **0** | **0.93-1.10** | 13.213 |
+
+An RMS z near 1 is what noise alone gives. The recombination fraction at 1 keV rose from 24.50 % to 25.86 % of the ionisations. The implemented change is the only production change (`crates/dna-chemistry/src/engine.rs`); three tests in `crates/dna-chemistry/tests/history.rs` were re-baselined and two added, and `docs/reproducibility.md` records the new draw order.
+
+**Verification at the end of the audit** (2026-10-17, logs in `.scratch/tests/2026-10-17__m6-residual-rust-audit/`, files `04-*.log`). `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` all exit 0: **270 passed, 0 failed, 16 ignored**. The stage-matched ignored gate `m6_prechem_counts_and_rms_match_geant4` passes (exit 0, 0 failing checks; run by ticket 03 and by the supervising session). The *original* post-reaction gate `m6_initial_species_counts_and_rms_match_geant4` is an ignored test that fails by design (it compares different stages, Q25/R17): rerun now with `-- --ignored --exact`, it exits 101, and since commit `0f833fa` collects all failing rows it reaches `rms_radius_nm.unwrap()` (`physchem_reference.rs:186`) on the first reaction-only species with zero Rust population and panics there, instead of asserting at `1000 H2O2: z=111.56` as in the earlier text. The failure is the same stage mismatch; the test was not changed in this audit.
+
+**5. Limits of this result.**
+- **One Geant4 seed.** All Rust runs are compared with the single Geant4 run (seed 20261020). A Geant4 fluctuation of order 1-2 sigma on a row is not excluded, and the Geant4 seed-to-seed spread of this observable was not measured. A Rust-side pass at |z| <= 2.04 against one Geant4 run is consistent with agreement; it does not prove it.
+- **No per-event covariance** in the reference CSV (see item 1): combined z values of correlated species use an uncorrelated bound. The gate itself tests species one at a time with the criteria fixed before the data existed.
+- **Assumed tracking order.** D10 holds if the order of Rust cascade events (LIFO stack in `transport.rs`) corresponds to the order in which Geant4 creates the molecules of a sub-list. This is argued from the source, not traced at run time. The prototype cannot discriminate between the order variants: D7 + D9 in event order, reverse order and Geant4 order give 0-2, 0 and 0 failing checks with close recombination counts (13.084, 13.255, 13.213 per event at 1 keV). Evidence for D10 is therefore the source reading and not the data.
+- **D9 was inferred** from the at-rest selection code, not traced in a running Geant4. The match of the recombination count (+0.70 per event from retests against 0.72 fitted from the species shifts) supports it.
+- **N1 not audited.** Geant4 clips the e_aq displacement to 0.8 x safety when chemistry is on; Rust has none. It changes positions (and so recombination distances and the RMS), never the counts of the channel tables. It was outside the relations' reach and, after the fix, no evidence points to it.
+- **900 keV RMS radius still +12 to +13 % high** (seven species, +12.1 % to +13.5 %, 20 histories, gate seed). It is inside the 20 % criterion, it is not explained, and the seed-to-seed spread of a 20-history RMS was not measured here.
+- The fix selected a schedule among six on the RR-001 rows, which were also the rows that failed before. The five audit seeds are new Rust streams but compare with the same Geant4 run, so they do not provide independent Geant4 evidence.
+- The stage-matched reference stops before IRT. The RMS of species created by reactions, chemistry-stage G-values and anything after 1 ps are not touched by this result.
+
+**Status of the open questions.** Q21/R14 are updated in docs/09. The ablation tables in docs/04 D.2.1 describe the pre-fix engine.
 
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.
