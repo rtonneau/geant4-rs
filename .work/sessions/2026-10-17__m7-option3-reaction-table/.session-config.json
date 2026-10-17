@@ -1,0 +1,64 @@
+{
+  "session_id": "2026-10-17__m7-option3-reaction-table",
+  "feature_name": "m7-option3-reaction-table",
+  "scratch_dir": ".scratch/tests/2026-10-17__m7-option3-reaction-table",
+  "created_at": "2026-10-17T18:11:13.589Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-17T18:11:13.589Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T18:23:49.548Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T18:23:56.129Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T19:57:56.393Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/m7-option3-reaction-table",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-17T19:57:56.419Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-extract-option3-reactions.md",
+        "02-plan/tickets/02-load-and-validate-reactions.md",
+        "02-plan/tickets/03-crosscheck-reaction-table.md",
+        "02-plan/tickets/04-document-option3-reactions.md"
+      ],
+      "detail": {
+        "tickets": 4
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "feat/m7-option3-reaction-table",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-17T19:57:56.393Z",
+    "pr_url": null
+  }
+}
