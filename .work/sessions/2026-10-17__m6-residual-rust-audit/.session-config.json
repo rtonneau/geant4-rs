@@ -1,0 +1,204 @@
+{
+  "session_id": "2026-10-17__m6-residual-rust-audit",
+  "feature_name": "m6-residual-rust-audit",
+  "scratch_dir": ".scratch/tests/2026-10-17__m6-residual-rust-audit",
+  "created_at": "2026-10-17T08:57:50.364Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-17T08:57:50.364Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T10:04:32.717Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T10:04:32.834Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T10:05:29.479Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/m6-residual-audit",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-17T10:05:29.505Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-audit-relations-harness.md",
+        "02-plan/tickets/02-source-channel-comparison.md",
+        "02-plan/tickets/03-verdict-and-source-proven-fix.md",
+        "02-plan/tickets/04-record-audit-result.md"
+      ],
+      "detail": {
+        "tickets": 4
+      }
+    },
+    {
+      "at": "2026-10-17T10:32:54.347Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-17T10:32:59.570Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-audit-relations-harness.md",
+        "03-implement/01-audit-relations-harness/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-relations-harness"
+      }
+    },
+    {
+      "at": "2026-10-17T10:48:06.204Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-audit-relations-harness/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-relations-harness",
+        "commit": "b30beb5"
+      }
+    },
+    {
+      "at": "2026-10-17T10:48:10.147Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-source-channel-comparison.md",
+        "03-implement/02-source-channel-comparison/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-source-channel-comparison"
+      }
+    },
+    {
+      "at": "2026-10-17T10:59:17.362Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-source-channel-comparison/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-source-channel-comparison",
+        "commit": "bfe2a73"
+      }
+    },
+    {
+      "at": "2026-10-17T10:59:22.085Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-verdict-and-source-proven-fix.md",
+        "03-implement/03-verdict-and-source-proven-fix/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-verdict-and-source-proven-fix"
+      }
+    },
+    {
+      "at": "2026-10-17T11:29:46.419Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-verdict-and-source-proven-fix/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-verdict-and-source-proven-fix",
+        "commit": "5df0aa1"
+      }
+    },
+    {
+      "at": "2026-10-17T11:29:50.321Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-record-audit-result.md",
+        "03-implement/04-record-audit-result/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-record-audit-result"
+      }
+    },
+    {
+      "at": "2026-10-17T11:33:43.063Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/04-record-audit-result/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-record-audit-result",
+        "commit": "4d3816f"
+      }
+    },
+    {
+      "at": "2026-10-17T11:33:51.378Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-17T11:33:56.616Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/15"
+      }
+    },
+    {
+      "at": "2026-10-17T11:33:56.619Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "test/m6-residual-audit",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-17T10:05:29.479Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/15"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-17__m6-residual-rust-audit.md",
+    "written_at": "2026-10-17T11:33:51.370Z"
+  },
+  "finished_at": "2026-10-17T11:33:56.619Z"
+}

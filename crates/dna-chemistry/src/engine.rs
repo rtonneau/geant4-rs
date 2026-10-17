@@ -5,26 +5,43 @@
 //! time too (`chem6`), so the e_aq that a hole can recombine with are those of the same history (isolated-track
 //! approximation, docs/05 E.1).
 //!
-//! # Processing order and its assumption
-//! Solvation events first create their `e_aq` (in Geant4 these tracks are pushed to the chemistry stack when the
-//! electron is solvated, so they exist when the chemical stage starts). Then the water-molecule events
-//! (excitation, ionisation, attachment) are processed **in the order of the event list**, which is the order of
-//! the physical cascade. Auto-ionisation e_aq appear when their parent is processed, so they are candidates for
-//! the holes that follow. Geant4 processes the molecules in the order of its track list, which is not specified by
-//! the source read (docs/09 Q21). This can change recombination counts as well as pairings and positions.
-//! The ordering ablation is documented in docs/04 D.2.1; event order remains the default assumption.
+//! # Schedule: Geant4's zero-time steps at 1 ps
+//! Geant4 11.4.1 decays the water molecules and runs the electron-hole recombination in zero-time steps of
+//! the IT scheduler (`D` = `source/processes/electromagnetic/dna`). Every step first computes the
+//! interaction lengths of all tracks, then performs the selected actions (`D/management/src/G4Scheduler.cc:584,682`).
+//! The stage reproduces that schedule as *passes* (docs/08, "M6 residual audit"):
+//! 1. The solvated electrons exist when the stage starts (`D/utils/src/G4DNAChemistryManager.cc:668-714`).
+//! 2. At the start of a pass every pending ionised molecule finds the alive e_aq within 10 r_Onsager
+//!    (`FindReactant`, `D/processes/src/G4DNAElectronHoleRecombination.cc:213-308`). `ComputeInteractionLength`
+//!    calls it for every track before any action (`D/management/src/G4ITStepProcessor.cc:535-626`), on a
+//!    KD tree rebuilt from the track list at each zero-time step
+//!    (`D/models/src/G4DNAIRTMoleculeEncounterStepper.cc:80-87`).
+//! 3. The molecules are then processed in Geant4's `DoIt` order. The main list holds one sub-list per molecular
+//!    configuration, in ascending configuration ID (`D/management/src/G4ITTrackHolder.cc:288-356,401-443,620-658`,
+//!    `D/management/include/G4ManyFastLists.hh:91-94`), with the molecules in creation (event) order inside each
+//!    sub-list. The IDs follow the creation order of `G4ChemDissociationChannels_option1.cc:237-459`
+//!    (`source/physics_lists/constructors/electromagnetic/src/`), which is the state order of the channel table.
+//!    `G4ITStepProcessor::DoIt` walks the whole list backwards (`D/management/src/G4ITStepProcessor2.cc:110-187`).
+//!    Hence: descending state index, and reverse event order within a state.
+//! 4. An ionised molecule with uniform `u` and `p(d) <= u` for its nearest candidate at the pass start, or
+//!    without a candidate, dissociates. Otherwise it tests its nearest *still alive* candidate with the same
+//!    `u` (`MakeReaction`, cc:161-209). If `p > u` it recombines: the e_aq is killed and the molecule decays
+//!    through `H2Ovib`. If not (the nearest one was taken earlier in the pass), the molecule stays ionised
+//!    (cc:205-208) and is tested again in the next pass. It then draws a new uniform and sees the updated
+//!    electron set (`GetMeanLifeTime`, cc:336-344).
+//! 5. Products, including auto-ionisation e_aq, join only after the pass (`G4ITStepProcessor2.cc:184-185`).
+//!    An auto-ionisation electron is therefore a candidate only for a molecule tested again in a later pass.
 //!
-//! This is a sequential projection of Geant4's scheduler, not an exact scheduler port. Geant4 caches
-//! candidates and a uniform in `FindReactant` during interaction-length selection, then tests the first
-//! still-alive cached electron in `MakeReaction` (`G4DNAElectronHoleRecombination.cc:161-205,211-308`).
-//! `G4ITStepProcessor::ComputeInteractionLength` scans the main list before `DoIt` steps it in reverse,
-//! and secondaries join afterwards (`G4ITStepProcessor.cc:598-625`, `G4ITStepProcessor2.cc:110-190`).
-//! A fresh nearest-alive search per event does not establish equivalence to that cached-candidate path.
+//! A recombined molecule decays at once. Geant4 decays its `H2Ovib` in the next zero-time step, but no `H2Ovib`
+//! channel makes an e_aq, so no candidate set depends on that delay.
 //!
 //! # Random numbers (per history, in order)
-//! For each non-solvation event: [ionisation only: one uniform for the recombination test, always drawn];
-//! one uniform for the channel; then the draws of the displacer (`displacer` module). Solvation events draw
-//! nothing (their position is already displaced).
+//! Pass by pass, molecule by molecule in the order above: [ionised molecule only: one uniform for the
+//! recombination test, drawn in every pass in which the molecule is pending, also without a candidate or with
+//! the process switched off]; then, if the molecule decays in this pass, one uniform for the channel and the
+//! draws of the displacer (`displacer` module). Solvation events draw nothing (their position is already
+//! displaced). Geant4 draws its `u` in `FindReactant`, before the actions; drawing it at the action is the same
+//! distribution, because `u` is independent of everything else.
 
 use crate::channels::{ChannelTable, DecayState};
 use crate::displacer::{autoionisation_r_mean_nm, displacements};
@@ -46,7 +63,7 @@ pub struct PhysChemStats {
     pub events: [u64; 4],
     /// `channel_counts[state][channel]`, states and channels in table order.
     pub channel_counts: Vec<Vec<u64>>,
-    /// Ionised molecules for which at least one alive e_aq lay within the search radius.
+    /// Ionised molecules for which at least one alive e_aq lay within the search radius at their first test.
     pub holes_with_candidate: u64,
     /// Ionised molecules that recombined with an e_aq.
     pub recombinations: u64,
@@ -143,6 +160,16 @@ pub struct EventDecay {
     pub channel: usize,
     pub species: Vec<SpeciesInstance>,
     pub decay_energy: Energy,
+}
+
+/// Index of an event kind in [`PhysChemStats::events`] and [`PhysChemStats::species_produced_by_event`].
+fn event_kind_index(kind: PhysChemKind) -> usize {
+    match kind {
+        PhysChemKind::Excitation => 0,
+        PhysChemKind::Ionisation => 1,
+        PhysChemKind::Attachment => 2,
+        PhysChemKind::Solvation => 3,
+    }
 }
 
 /// Uniform grid of the alive e_aq, cell edge = search radius, for the nearest-neighbour query.
@@ -316,17 +343,18 @@ impl PhysChemEngine {
         }
     }
 
-    /// The whole stage for one history (see the module documentation for the processing order).
+    /// The whole stage for one history (see the module documentation for the schedule).
     pub fn convert_history<R: Rng + ?Sized>(
         &self,
         events: &[PhysChemEvent],
         rng: &mut R,
     ) -> Result<HistoryChemistry, ChemistryError> {
         let rec = &self.params.recombination;
+        let radius_nm = rec.search_radius.nm();
         let mut stats = PhysChemStats::new(&self.channels);
         let mut species: Vec<SpeciesInstance> = Vec::with_capacity(events.len() * 2);
         let mut alive: Vec<bool> = Vec::with_capacity(events.len() * 2);
-        let mut grid = ElectronGrid::new(rec.search_radius.nm());
+        let mut grid = ElectronGrid::new(radius_nm);
 
         // 1. the solvated electrons exist when the chemical stage starts
         for ev in events.iter().filter(|e| e.kind == PhysChemKind::Solvation) {
@@ -342,69 +370,96 @@ impl PhysChemEngine {
             stats.species_produced_by_event[3][Species::e_aq.index()] += 1;
         }
 
-        // 2. the water molecules, in event order
+        // 2. the water molecules, in Geant4's DoIt order: descending state index (configuration ID),
+        //    reverse event order within a state
+        let mut pending: Vec<(usize, usize)> = Vec::new(); // (event index, state index)
+        for (i, ev) in events.iter().enumerate() {
+            if ev.kind == PhysChemKind::Solvation {
+                continue;
+            }
+            pending.push((i, self.channels.state_index(ev.kind, ev.level_or_shell)?));
+            stats.events[event_kind_index(ev.kind)] += 1;
+        }
+        pending.sort_unstable_by(|a, b| b.1.cmp(&a.1).then(b.0.cmp(&a.0)));
+
         let recombined = self.channels.recombined_index();
         let mut scratch: Vec<SpeciesInstance> = Vec::with_capacity(3);
-        for ev in events.iter().filter(|e| e.kind != PhysChemKind::Solvation) {
-            let mut si = self.channels.state_index(ev.kind, ev.level_or_shell)?;
-            stats.events[match ev.kind {
-                PhysChemKind::Excitation => 0,
-                PhysChemKind::Ionisation => 1,
-                PhysChemKind::Attachment => 2,
-                PhysChemKind::Solvation => 3,
-            }] += 1;
-
-            if ev.kind == PhysChemKind::Ionisation {
-                let u_rec = uniform(rng); // always drawn (docs/reproducibility.md)
-                if rec.enabled {
-                    if let Some((id, d)) =
-                        grid.nearest(ev.position, rec.search_radius.nm(), &species, &alive)
-                    {
+        let mut born: Vec<SpeciesInstance> = Vec::new();
+        let mut nearest_at_start: Vec<Option<f64>> = Vec::with_capacity(pending.len());
+        let mut first_pass = true;
+        while !pending.is_empty() {
+            // FindReactant of every pending ionised molecule, on the electrons alive at the pass start
+            nearest_at_start.clear();
+            nearest_at_start.extend(pending.iter().map(|&(i, _)| {
+                let ev = &events[i];
+                (rec.enabled && ev.kind == PhysChemKind::Ionisation)
+                    .then(|| grid.nearest(ev.position, radius_nm, &species, &alive))
+                    .flatten()
+                    .map(|(_, d)| d)
+            }));
+            let mut retested = Vec::new();
+            for (&(i, state_index), &nearest) in pending.iter().zip(&nearest_at_start) {
+                let ev = &events[i];
+                let mut si = state_index;
+                if ev.kind == PhysChemKind::Ionisation {
+                    let u_rec = uniform(rng); // always drawn (docs/reproducibility.md)
+                    if first_pass && nearest.is_some() {
                         stats.holes_with_candidate += 1;
-                        if rec.probability(d) > u_rec {
-                            alive[id as usize] = false;
-                            stats.recombinations += 1;
-                            si = recombined;
+                    }
+                    if nearest.is_some_and(|d| rec.probability(d) > u_rec) {
+                        // MakeReaction: the nearest candidate still alive, with the same uniform
+                        match grid.nearest(ev.position, radius_nm, &species, &alive) {
+                            Some((id, d)) if rec.probability(d) > u_rec => {
+                                alive[id as usize] = false;
+                                stats.recombinations += 1;
+                                si = recombined;
+                            }
+                            // stays ionised: tested again in the next pass
+                            _ => {
+                                retested.push((i, state_index));
+                                continue;
+                            }
                         }
                     }
                 }
-            }
 
-            scratch.clear();
-            let state = &self.channels.states()[si];
-            let (ci, decay_energy) = self.decay(state, ev.position, rng, &mut scratch);
-            stats.channel_counts[si][ci] += 1;
-            stats.decay_energy_ev += decay_energy.ev();
-            let event_index = match ev.kind {
-                PhysChemKind::Excitation => 0,
-                PhysChemKind::Ionisation => 1,
-                PhysChemKind::Attachment => 2,
-                PhysChemKind::Solvation => unreachable!(),
-            };
-            for inst in &scratch {
-                let i = inst.species.index();
-                stats.species_produced_by_event[event_index][i] += 1;
-                stats.displacement_count[i] += 1;
-                let displacement = inst.position - ev.position;
-                stats.displacement_sum_sq_nm2[i] += displacement.dot(displacement);
-            }
-            for (pair_index, other) in [Species::e_aq, Species::H3Op].into_iter().enumerate() {
-                for oh in scratch.iter().filter(|s| s.species == Species::OH) {
-                    for partner in scratch.iter().filter(|s| s.species == other) {
-                        let d = (oh.position - partner.position).norm();
-                        stats.pair_count[pair_index] += 1;
-                        stats.pair_sum_nm[pair_index] += d;
-                        stats.pair_sum_sq_nm2[pair_index] += d * d;
+                scratch.clear();
+                let state = &self.channels.states()[si];
+                let (ci, decay_energy) = self.decay(state, ev.position, rng, &mut scratch);
+                stats.channel_counts[si][ci] += 1;
+                stats.decay_energy_ev += decay_energy.ev();
+                let event_index = event_kind_index(ev.kind);
+                for inst in &scratch {
+                    let i = inst.species.index();
+                    stats.species_produced_by_event[event_index][i] += 1;
+                    stats.displacement_count[i] += 1;
+                    let displacement = inst.position - ev.position;
+                    stats.displacement_sum_sq_nm2[i] += displacement.dot(displacement);
+                }
+                for (pair_index, other) in [Species::e_aq, Species::H3Op].into_iter().enumerate() {
+                    for oh in scratch.iter().filter(|s| s.species == Species::OH) {
+                        for partner in scratch.iter().filter(|s| s.species == other) {
+                            let d = (oh.position - partner.position).norm();
+                            stats.pair_count[pair_index] += 1;
+                            stats.pair_sum_nm[pair_index] += d;
+                            stats.pair_sum_sq_nm2[pair_index] += d * d;
+                        }
                     }
                 }
+                born.append(&mut scratch);
             }
-            for inst in scratch.drain(..) {
+            // the products join after the pass
+            for inst in born.drain(..) {
                 if inst.species == Species::e_aq {
                     grid.insert(species.len() as u32, inst.position);
                 }
                 species.push(inst);
                 alive.push(true);
             }
+            // Each retest needs an electron killed earlier in its pass, so the number of passes is
+            // bounded by the number of e_aq plus one.
+            pending = retested;
+            first_pass = false;
         }
 
         let species: Vec<SpeciesInstance> = species

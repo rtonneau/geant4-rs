@@ -125,17 +125,19 @@ fn recombination_decision_follows_the_onsager_probability() {
 #[test]
 fn the_nearest_alive_electron_is_consumed_first() {
     let engine = PhysChemEngine::option3().unwrap();
-    // two electrons at 2 nm (listed first) and 1 nm; two holes at the origin
+    // two electrons at 2 nm (listed first) and 1 nm; two holes at the origin. DoIt order: the Ioni4
+    // hole (shell 1, higher state index) before the Ioni5 hole (shell 0).
     let events = [
         ev(PhysChemKind::Solvation, 0, [2.0, 0.0, 0.0]),
         ev(PhysChemKind::Solvation, 0, [0.0, 1.0, 0.0]),
         ev(PhysChemKind::Ionisation, 0, ORIGIN),
         ev(PhysChemKind::Ionisation, 1, ORIGIN),
     ];
-    // hole 1: u_rec 0.01 < p(1 nm) -> recombines with the 1 nm electron; H2Ovib channel u 0.2 -> OH + H (4 draws)
-    // hole 2: u_rec 0.40 > p(2 nm) = 0.2994 -> no recombination; Ioni4 decay (1 + 9 draws)
+    // Ioni4 hole: u_rec 0.01 < p(1 nm) -> recombines with the 1 nm electron; H2Ovib channel u 0.2 -> OH + H (4 draws)
+    // Ioni5 hole: u_rec 0.60 > p(1 nm) = 0.5092 of its nearest candidate at the pass start -> no recombination;
+    // Ioni5 decay (1 + 9 draws)
     let mut script = vec![0.01, 0.2, 0.3, 0.4, 0.5, 0.6];
-    script.extend([0.40, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
+    script.extend([0.60, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
     let mut rng = ScriptedRng::new(&script);
     let r = engine.convert_history(&events, &mut rng).unwrap();
     assert_eq!(rng.consumed(), script.len());
@@ -153,43 +155,56 @@ fn the_nearest_alive_electron_is_consumed_first() {
     assert_eq!(r.stats.recombinations, 1);
     assert_eq!(r.stats.holes_with_candidate, 2);
 
-    // with u_rec small for both holes the 2 nm electron is consumed by the second hole
-    let mut script = vec![0.01, 0.2, 0.3, 0.4, 0.5, 0.6, 0.01, 0.2, 0.3, 0.4, 0.5, 0.6];
-    script.extend([0.5; 4]);
+    // with u_rec small for both holes the 2 nm electron is consumed by the second hole (still in pass 1:
+    // p(2 nm) = 0.2994 > 0.01 for its nearest still-alive candidate)
+    let script = vec![0.01, 0.2, 0.3, 0.4, 0.5, 0.6, 0.01, 0.2, 0.3, 0.4, 0.5, 0.6];
     let mut rng = ScriptedRng::new(&script);
     let r = engine.convert_history(&events, &mut rng).unwrap();
+    assert_eq!(rng.consumed(), script.len());
     assert_eq!(r.stats.recombinations, 2);
     assert!(r.species.iter().all(|s| s.species != Species::e_aq));
 }
 
 #[test]
-fn competing_holes_demonstrate_the_event_order_assumption() {
+fn competing_holes_follow_the_geant4_doit_order() {
+    // Both holes are Ioni5 molecules, so they share one Geant4 sub-list and DoIt takes them in
+    // reverse event order (G4ITStepProcessor2.cc:122-156). The hole at 0 can reach only the electron
+    // at 0; the hole at 1 can reach both (the other electron is 7 nm away, inside 10 r_Onsager).
     let engine = PhysChemEngine::option3().unwrap();
-    // The hole at 0 can reach only the electron at 0; the hole at 1 can
-    // reach both (the other electron is 7 nm away, inside 10 r_Onsager).
     let mut events = [
         ev(PhysChemKind::Solvation, 0, ORIGIN),
         ev(PhysChemKind::Solvation, 0, [8.0, 0.0, 0.0]),
         ev(PhysChemKind::Ionisation, 0, [1.0, 0.0, 0.0]),
         ev(PhysChemKind::Ionisation, 0, ORIGIN),
     ];
-    // p(7 nm) > 0.05. Recombined waters relax at u = 0.9 (no products).
+    // p(7 nm) = 0.0967 > 0.05. Recombined waters relax at u = 0.9 (no products, no displacement draws).
     let mut draws = vec![0.05, 0.9, 0.05, 0.9];
-    draws.extend([0.5; 9]);
-    let forward = engine
-        .convert_history(&events, &mut ScriptedRng::new(&draws))
-        .unwrap();
+    // only used by the swapped order, after its pass-2 u_rec (the fourth value): the Ioni5 decay (1 + 9 draws)
+    draws.extend([0.5; 10]);
+
+    // The hole at 0 (listed last) acts first and takes the electron at 0; the hole at 1 then takes
+    // the electron at 8 nm.
+    let mut rng = ScriptedRng::new(&draws);
+    let first_listed_last = engine.convert_history(&events, &mut rng).unwrap();
+    assert_eq!(rng.consumed(), 4);
+    assert_eq!(first_listed_last.stats.recombinations, 2);
+    assert!(first_listed_last.species.is_empty());
+
+    // Swapped: the hole at 1 acts first and takes the electron at 0. The hole at 0 found that
+    // electron at the pass start (p = 1 > u), but no other candidate is in range: it stays ionised,
+    // is tested again in pass 2 without a candidate and dissociates.
     events.swap(2, 3);
-    let reverse = engine
-        .convert_history(&events, &mut ScriptedRng::new(&draws))
-        .unwrap();
-    assert_eq!(forward.stats.recombinations, 1);
-    assert_eq!(reverse.stats.recombinations, 2);
+    let mut rng = ScriptedRng::new(&draws);
+    let swapped = engine.convert_history(&events, &mut rng).unwrap();
+    assert_eq!(rng.consumed(), 14);
+    assert_eq!(swapped.stats.recombinations, 1);
+    assert_eq!(swapped.stats.holes_with_candidate, 2);
+    // the electron at 8 nm survives; the pass-2 products follow it in creation order
     assert_eq!(
-        tags(&forward.species),
+        tags(&swapped.species),
         vec![Species::e_aq, Species::H3Op, Species::OH]
     );
-    assert!(reverse.species.is_empty());
+    assert_eq!(swapped.species[0].position, Vec3::new(8.0, 0.0, 0.0));
 }
 
 #[test]
@@ -255,51 +270,141 @@ fn the_recombination_switch_changes_only_the_decay_state_that_is_scanned() {
     assert_eq!(b.consumed(), 11);
 }
 
-#[test]
-fn an_auto_ionisation_electron_is_a_candidate_for_later_holes() {
-    let engine = PhysChemEngine::option3().unwrap();
-    // B^1A_1 (level 1): channel u = 0.5 selects the auto-ionisation channel (cumulative 0.175, 0.2075, 0.7075).
-    let prefix = [
-        0.5, 0.31, 0.32, 0.33, 0.34, 0.71, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49,
-        0.51, 0.52, 0.53, 0.54,
-    ];
-    let first = engine
-        .convert_history(
-            &[ev(PhysChemKind::Excitation, 1, ORIGIN)],
-            &mut ScriptedRng::new(&prefix),
-        )
+/// B^1A_1 (level 1) decay through the auto-ionisation channel (channel u = 0.5, cumulative 0.175, 0.2075,
+/// 0.7075), then its 13 displacer draws: which product (0.3: the OH), triple(0.8) for the OH, the e_aq
+/// penetration and the mother triple(2.0). Box-Muller radii from u = 0.99 keep the e_aq close to the parent.
+const AUTO_IONISATION: [f64; 14] = [
+    0.5, 0.3, 0.9, 0.1, 0.9, 0.2, 0.99, 0.1, 0.99, 0.3, 0.99, 0.6, 0.99, 0.7,
+];
+
+/// Position of the auto-ionisation e_aq of a B^1A_1 molecule at the origin decaying with [`AUTO_IONISATION`].
+fn auto_ionisation_electron(engine: &PhysChemEngine) -> Vec3 {
+    let mut rng = ScriptedRng::new(&AUTO_IONISATION);
+    let r = engine
+        .convert_history(&[ev(PhysChemKind::Excitation, 1, ORIGIN)], &mut rng)
+        .unwrap();
+    assert_eq!(rng.consumed(), AUTO_IONISATION.len());
+    let b1a1 = engine
+        .channel_table()
+        .state_index(PhysChemKind::Excitation, 1)
         .unwrap();
     assert_eq!(
-        first.stats.channel_counts[engine
-            .channel_table()
-            .state_index(PhysChemKind::Excitation, 1)
-            .unwrap()][2],
-        1
+        r.stats.channel_counts[b1a1][2], 1,
+        "auto-ionisation channel"
     );
-    let eaq = first
-        .species
+    r.species
         .iter()
         .find(|s| s.species == Species::e_aq)
-        .expect("auto-ionisation makes an e_aq");
-    // a hole placed exactly on that electron recombines for any u_rec < 1 (d == 0): the electron was available
+        .expect("auto-ionisation makes an e_aq")
+        .position
+}
+
+#[test]
+fn an_auto_ionisation_electron_is_not_a_candidate_in_the_pass_that_creates_it() {
+    // Decay products join the track list only after the zero-time step (G4ITStepProcessor2.cc:184-185).
+    let engine = PhysChemEngine::option3().unwrap();
+    let x = auto_ionisation_electron(&engine);
+    // A hole placed exactly on that electron (d = 0 would recombine for any u_rec < 1) acts in the
+    // same pass: DoIt order Ioni1 (shell 4) before B^1A_1, and no electron exists at the pass start.
     let events = [
         ev(PhysChemKind::Excitation, 1, ORIGIN),
-        ev(
-            PhysChemKind::Ionisation,
-            4,
-            [eaq.position.x, eaq.position.y, eaq.position.z],
-        ),
+        ev(PhysChemKind::Ionisation, 4, [x.x, x.y, x.z]),
     ];
-    let mut script = prefix.to_vec();
-    script.extend([0.999, 0.2, 0.3, 0.4, 0.5, 0.6]);
-    let r = engine
-        .convert_history(&events, &mut ScriptedRng::new(&script))
-        .unwrap();
+    // u_rec, Ioni1 decay (1 + 9 draws), then the B^1A_1 decay
+    let mut script = vec![0.999];
+    script.extend([0.5; 10]);
+    script.extend(AUTO_IONISATION);
+    let mut rng = ScriptedRng::new(&script);
+    let r = engine.convert_history(&events, &mut rng).unwrap();
+    assert_eq!(rng.consumed(), script.len());
+    assert_eq!(r.stats.recombinations, 0);
+    assert_eq!(r.stats.holes_with_candidate, 0);
+    let eaq: Vec<&SpeciesInstance> = r
+        .species
+        .iter()
+        .filter(|s| s.species == Species::e_aq)
+        .collect();
+    assert_eq!(eaq.len(), 1, "the auto-ionisation electron survives");
+    assert_eq!(eaq[0].position, x);
+}
+
+#[test]
+fn a_hole_whose_electron_was_taken_is_tested_again_in_the_next_pass() {
+    // Geant4 11.4.1 G4DNAElectronHoleRecombination.cc: FindReactant (213-308) finds the solvated
+    // electron for both holes at the pass start; the Ioni4 hole acts first (DoIt order) and takes it.
+    // MakeReaction (161-209) then finds no alive candidate for the Ioni5 hole, which stays ionised
+    // (205-208). In the next zero-time step GetMeanLifeTime (336-344) calls FindReactant again with a
+    // new uniform on the rebuilt electron set, which now holds the auto-ionisation e_aq.
+    let engine = PhysChemEngine::option3().unwrap();
+    let radius = engine.params().recombination.search_radius.nm();
+    let x = auto_ionisation_electron(&engine);
+    assert!(
+        x.norm() < radius,
+        "the solvated electron at 0 must be a candidate of the hole at the auto-ionisation electron ({x:?})"
+    );
+    let events = [
+        ev(PhysChemKind::Solvation, 0, ORIGIN),
+        ev(PhysChemKind::Excitation, 1, ORIGIN),
+        ev(PhysChemKind::Ionisation, 1, ORIGIN),
+        ev(PhysChemKind::Ionisation, 0, [x.x, x.y, x.z]),
+    ];
+    // pass 1: Ioni4 hole u_rec 0.5 < p(0) = 1 -> recombines, H2Ovib relaxes (u 0.9, no draws);
+    //         Ioni5 hole u_rec 0.01 < p(|x|) of the electron at 0, now taken -> no alive candidate, retested;
+    //         B^1A_1 auto-ionisation (14 draws).
+    // pass 2: Ioni5 hole u_rec 0.999 < p(0) = 1 of the auto-ionisation e_aq -> recombines, H2Ovib relaxes.
+    let mut script = vec![0.5, 0.9, 0.01];
+    script.extend(AUTO_IONISATION);
+    script.extend([0.999, 0.9]);
+    let mut rng = ScriptedRng::new(&script);
+    let r = engine.convert_history(&events, &mut rng).unwrap();
+    assert_eq!(rng.consumed(), script.len());
+    assert_eq!(r.stats.recombinations, 2);
+    assert_eq!(r.stats.holes_with_candidate, 2);
+    let h2ovib = engine.channel_table().recombined_index();
+    assert_eq!(r.stats.channel_counts[h2ovib], vec![0, 0, 0, 2]);
+    assert_eq!(r.stats.species_counts[Species::e_aq.index()], 0);
+    assert_eq!(tags(&r.species), vec![Species::OH, Species::H3Op]);
+
+    // Without the excitation the retested hole has no candidate in pass 2 and dissociates
+    // (u_rec 0.999, then the Ioni5 decay: 1 + 9 draws).
+    let events = [events[0], events[2], events[3]];
+    let mut script = vec![0.5, 0.9, 0.01, 0.999];
+    script.extend([0.5; 10]);
+    let mut rng = ScriptedRng::new(&script);
+    let r = engine.convert_history(&events, &mut rng).unwrap();
+    assert_eq!(rng.consumed(), script.len());
     assert_eq!(r.stats.recombinations, 1);
+    assert_eq!(r.stats.holes_with_candidate, 2);
+    assert_eq!(tags(&r.species), vec![Species::H3Op, Species::OH]);
+}
+
+#[test]
+fn water_states_follow_the_geant4_configuration_order() {
+    // The DoIt order is the descending configuration ID, i.e. the reverse creation order of
+    // G4ChemDissociationChannels_option1.cc:237-459; the engine takes it from the state order.
+    let engine = PhysChemEngine::option3().unwrap();
+    let names: Vec<&str> = engine
+        .channel_table()
+        .states()
+        .iter()
+        .map(|s| s.name.as_str())
+        .collect();
     assert_eq!(
-        r.stats.species_counts[Species::e_aq.index()],
-        0,
-        "the auto-ionisation electron was consumed"
+        names,
+        [
+            "A^1B_1",
+            "B^1A_1",
+            "Exci3rdLayer",
+            "Exci2ndLayer",
+            "Exci1stLayer",
+            "Ioni5",
+            "Ioni4",
+            "Ioni3",
+            "Ioni2",
+            "Ioni1",
+            "DissociAttachment_ch1",
+            "H2Ovib",
+        ]
     );
 }
 

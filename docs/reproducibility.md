@@ -40,9 +40,9 @@ Consequences: a change of any model, of the process order in `ProcessKind::ALL` 
 Geant4 draws one number of interaction lengths per process and a different Gaussian generator: only distributions, never individual histories, can be compared with Geant4.
 
 ## Draw order of the physicochemical stage (stream `(seed, history, PhysChem)`, `dna-chemistry`)
-One stream per history, consumed in the order of the event list: solvation events first (no draws), then every excitation / ionisation / attachment event in order:
-1. ionisation only: **1 uniform** for the recombination test, *always* drawn (also when no electron is in range or the process is switched off);
-2. **1 uniform** for the channel of the selected decay state (`H2Ovib` after a recombination, otherwise the state of the event);
+One stream per history. Solvation events come first and draw nothing. The excitation / ionisation / attachment events are then processed in passes that follow Geant4's zero-time steps (`dna-chemistry` engine module docs). Within a pass the order is descending decay-state index, then reverse event order within a state. A pass holds every water molecule at first, and later only the ionised molecules retested after a failed recombination. Per molecule and pass:
+1. ionised molecule only: **1 uniform** for the recombination test, drawn *in every pass in which it is pending* (also when no electron is in range or the process is switched off); a retested molecule draws nothing else in that pass;
+2. if the molecule decays in this pass, **1 uniform** for the channel of the selected decay state (`H2Ovib` after a recombination, otherwise the state of the event);
 3. the displacer of the channel, with a "triple" = 4 uniforms (two Box-Muller pairs, the fourth variate discarded):
    `A1B1`: triple(2.4); `B1A1` and attachment: triple(0.8) + one triple(1.1) per `OH` (the `OH-` of the attachment draws nothing); `B1A1_2`: one triple(1.6) per H;
    ionisation: 1 uniform (which product is displaced) + one triple(0.8) for the displaced product + triple(2.0) for the mother shift;
