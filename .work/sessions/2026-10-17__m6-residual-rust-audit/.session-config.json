@@ -86,6 +86,30 @@
         "ticket": "01-audit-relations-harness",
         "commit": "b30beb5"
       }
+    },
+    {
+      "at": "2026-10-17T10:48:10.147Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-source-channel-comparison.md",
+        "03-implement/02-source-channel-comparison/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-source-channel-comparison"
+      }
+    },
+    {
+      "at": "2026-10-17T10:59:17.362Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-source-channel-comparison/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-source-channel-comparison",
+        "commit": "bfe2a73"
+      }
     }
   ],
   "current_phase": "ship",
