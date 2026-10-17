@@ -300,12 +300,12 @@ The per-history counts of excitation, ionisation, attachment and solvation were 
 | D9 | Second test after a failed `MakeReaction` | none: one test, then the Ioni channel (`engine.rs:357-375`) | the ion stays `fStopButAlive` in its ionised state (`EHR:205-208`); at the next zero-time step `GetMeanLifeTime` calls `FindReactant` again with a new uniform on the rebuilt tree, which now holds the auto-ionisation e_aq and lacks the consumed ones (`EHR:235,336-344`; `G4DNAIRTMoleculeEncounterStepper.cc:80-87`; `G4ITStepProcessor2.cc:184-185`) | differs | possible only when p_alive < u < p_nearest. This raises the Geant4 count. Inferred from the at-rest selection, not traced at run time |
 | D10 | Processing order within a pass | event order (`engine.rs:345-348`) | reverse main-list order (`G4ITStepProcessor2.cc:122-156`); how the main-list order relates to the physical event order is not established (docs/09 Q21) | undecidable | decides which ion takes which e_aq |
 
-**Not audited** (the ticket-01 relations do not point here)
+**Thermalisation follow-up** (the original residual-audit relations did not point here; N1 was subsequently audited below)
 
 | # | Item | Rust file:line | Geant4 file:line | Status | Note |
 |---|---|---|---|---|---|
-| N1 | Thermalisation: electron below 7.4 eV -> e_aq at a Meesungnoen2002-displaced position | `dna-physics/src/models/solvation.rs:99-137`, `transport.rs:427-450` | `D/models/include/G4DNAOneStepThermalizationModel.hpp:166-247`; `CM:668-695` | not audited | with chemistry on, Geant4 clips the displacement to 0.8 x safety (`hpp:225-239`); Rust has no clip. D2-D10 depend on these positions, so N1 comes into scope if ticket 03 names recombination |
-| N2 | Solvation count and e_aq creation before the water decays | `engine.rs:331-343` | `CM:677-695` | not audited | `n_solvation` passed the M3 gate (see A) |
+| N1 | Thermalisation: electron at or below 7.4 eV -> e_aq at a Meesungnoen2002-displaced position | `dna-physics/src/models/solvation.rs:107-143`, `transport.rs:427-450` | `D/models/include/G4DNAOneStepThermalizationModel.hpp:166-247`; `CM:668-695` | audited 2026-10-17 | same sampled displacement law and event position; active `safety <= displacementMag` clip is inapplicable to infinite water and operationally unreachable in the committed reference workload (quantified below). It cannot explain the 900 keV RMS excess |
+| N2 | Solvation count and e_aq creation before the water decays | `engine.rs:360-371` | `CM:677-695` | not audited; out of scope | `n_solvation` passed the M3 gate (see A); the existing terminal-track identity is checked, without extending this audit to N2 |
 
 **Reading of the RR-001 residual** (consistency check for ticket 03, not a verdict). Suppose Rust performs Delta fewer recombinations per event than Geant4. The channel tables (B6, B8) then fix the shift caused by each missing recombination: H3O+ +1, e_aq +1, OH +1 - (2 x 0.1365 + 0.3575) = +0.3695, H -(0.3575 + 2 x 0.156) = -0.6695, H2 -0.1365, O -0.156, O atoms +1.2135. The RR-001 shifts at 1 keV (Rust - Geant4 per event) are H3O+ +0.72, e_aq +0.73, OH +0.27, H -0.46, H2 -0.102 and O -0.103. With Delta = 0.72 the tables predict OH +0.27, H -0.48, H2 -0.098, O -0.112 and +0.87 O atoms per event, which is the +0.9 % found in ticket 01. A shift in the ionisation count alone would move OH as much as H3O+ (+0.72) and leave H unchanged, which the data do not show. At higher energies the fit is looser: at 10 keV, H3O+ +3.3 predicts H -2.2 and H2 -0.45 against -2.67 and -0.82 observed; at 100 keV, H3O+ +44.9 predicts H -30 against -18.9 observed. D7, D9 and D10 are therefore the first candidates for ticket 03. Caveat: D7 and D9 act in opposite directions, and the source alone does not give the sign of the net effect. No source difference was found in the mapping (A), the channel fractions (B), DA (A6, B7) or the displacer (C).
 
@@ -364,7 +364,7 @@ The relations hold exactly on both sides, so they cannot separate stage families
 
 The seed-to-seed spread of the Rust means is small against the offset: at 1 keV the offset H3O+ 0.72, e_aq 0.73, H -0.46 molecules/event is about 40-80 times the seed spread (0.009, 0.010, 0.012). The pre-fix offsets keep their sign on all five seeds, so they are not a seed artefact. After the fix every one of these 28 z values is within |z| <= 1.73 (OHm, which the recombination does not touch, is unchanged by construction).
 
-**3. Source comparison (ticket 02, Geant4 11.4.1 `.cc`; the file:line tables are in "M6 residual audit: source comparison" above).** 36 items compared, 2 more not audited.
+**3. Source comparison (ticket 02, Geant4 11.4.1 `.cc`; the file:line tables are in "M6 residual audit: source comparison" above).** Originally 36 items compared, 2 more not audited. The later N1 audit below closes the thermalisation-boundary item; N2 remains out of scope.
 
 | Group | Items | Result |
 |---|---|---|
@@ -372,7 +372,7 @@ The seed-to-seed spread of the Rust means is small against the offset: at 1 keV 
 | B. Dissociation channels, probabilities, order, selection rule | B1-B10 | all identical |
 | C. Displacements | C1-C8 | all identical (they enter only through recombination distances) |
 | D. Electron-hole recombination | D1-D6, D8 identical | D7 candidate set at the first test: **differs**; D9 retest of a failed ion in the next zero-time step: **differs**; D10 processing order: undecidable in ticket 02, decided in ticket 03 from the track-holder source |
-| N. Not audited | N1 thermalisation (Rust has no 0.8 x safety clip on the e_aq displacement), N2 solvation count | not audited, see limits |
+| N. Follow-up | N1 thermalisation boundary; N2 solvation count | N1 audited below: clip inapplicable to infinite water and operationally unreachable for this reference. N2 not audited, out of scope |
 
 **4. Verdict and fix (ticket 03).** D9 (a failed recombination is retried at the next zero-time step with a new uniform, on a tree that now holds the auto-ionisation e_aq) dominates; D7 (auto-ionisation e_aq are not candidates in the pass that creates them) and D10 (Geant4 DoIt order: reverse main list, one sub-list per configuration ID in creation order) complete the schedule. The full trace is in "M6 residual audit: verdict and fix" above. The prototype re-converted identical Rust physics histories with each candidate schedule and scored the 28 RR-001 rows with the unchanged criteria, on the gate seed 20261017 and the five ticket-01 seeds:
 
@@ -394,12 +394,87 @@ An RMS z near 1 is what noise alone gives. The recombination fraction at 1 keV r
 - **No per-event covariance** in the reference CSV (see item 1): combined z values of correlated species use an uncorrelated bound. The gate itself tests species one at a time with the criteria fixed before the data existed.
 - **Assumed tracking order.** D10 holds if the order of Rust cascade events (LIFO stack in `transport.rs`) corresponds to the order in which Geant4 creates the molecules of a sub-list. This is argued from the source, not traced at run time. The prototype cannot discriminate between the order variants: D7 + D9 in event order, reverse order and Geant4 order give 0-2, 0 and 0 failing checks with close recombination counts (13.084, 13.255, 13.213 per event at 1 keV). Evidence for D10 is therefore the source reading and not the data.
 - **D9 was inferred** from the at-rest selection code, not traced in a running Geant4. The match of the recombination count (+0.70 per event from retests against 0.72 fitted from the species shifts) supports it.
-- **N1 not audited.** Geant4 clips the e_aq displacement to 0.8 x safety when chemistry is on; Rust has none. It changes positions (and so recombination distances and the RMS), never the counts of the channel tables. It was outside the relations' reach and, after the fix, no evidence points to it.
+- **N1 audited subsequently (2026-10-17).** The active Geant4 safety clip is inapplicable to infinite water and operationally unreachable in the committed reference workload; it cannot explain the 900 keV RMS excess. The source trace, scale argument and limits are below. N2 remains explicitly out of scope.
 - **900 keV RMS radius still +12 to +13 % high** (seven species, +12.1 % to +13.5 %, 20 histories, gate seed). It is inside the 20 % criterion, it is not explained, and the seed-to-seed spread of a 20-history RMS was not measured here.
 - The fix selected a schedule among six on the RR-001 rows, which were also the rows that failed before. The five audit seeds are new Rust streams but compare with the same Geant4 run, so they do not provide independent Geant4 evidence.
 - The stage-matched reference stops before IRT. The RMS of species created by reactions, chemistry-stage G-values and anything after 1 ps are not touched by this result.
 
 **Status of the open questions.** Q21/R14 are updated in docs/09. The ablation tables in docs/04 D.2.1 describe the pre-fix engine.
+
+### N1 thermalisation boundary audit (2026-10-17)
+
+**Verdict: N1 is audited.** Rust preserves the default Meesungnoen2002 displacement and its handoff
+to the solvated electron. Geant4's geometry clip is active, but inapplicable to the Rust infinite-water
+model and operationally unreachable in the committed M6 reference workload. It cannot explain the
+900 keV RMS excess. **The excess remains unresolved; N2 is not audited and remains out of scope.**
+Formal M6 closure remains the project lead's decision.
+
+**Source trace.** The read-only Geant4 source is version 11.4.1
+(`source/global/management/include/G4Version.hh:46,71-73`, version number 1141,
+`geant4-11-04-patch-01`). Paths below use `D = source/processes/electromagnetic/dna`;
+line numbers are the original files, including comments.
+
+| Boundary | Geant4 11.4.1 evidence | Rust evidence |
+|---|---|---|
+| Kill and physical deposit | `D/models/include/G4DNAOneStepThermalizationModel.hpp:180-190`: for `k <= HighEnergyLimit()`, kill and deposit all `k`; chemistry activates the displacement draw | `crates/dna-physics/src/models/solvation.rs:107-143` returns the full deposit and sampled displacement; `crates/dna-physics/src/transport.rs:427-432,450` deposits it once and ends the track |
+| Penetration law | `hpp:158-163` delegates to the model; `D/models/src/G4DNAOneStepThermalizationModel.cc:51-57,95-107,123-148` defines the polynomial, three independent Gaussian components with sigma `0.62665706865775006 * r_mean`, and the `r_mean == 0` isotropic `1e-3 nm` branch | `crates/dna-core/src/penetration.rs:10-43` has the same coefficients and polynomial; `solvation.rs:122-139` samples those two branches. Different Gaussian generators reproduce the distribution, not the Geant4 random stream |
+| Active geometry correction | `hpp:193-203,225-239` first forms `position + displacement`, sets the navigator world, locates the incoming track, calls `ComputeStep(position, unit(displacement), displacementMag, safety)` and, if `safety <= displacementMag`, replaces the final position by `position + unit(displacement) * 0.80 * safety` | No geometry/navigator is supplied to `Solvation::sample`; infinite-water transport uses `position + displacement` directly |
+| Product handoff | `hpp:241-244` passes the final position to `CreateSolvatedElectron` and proposes 25 meV on the killed track; `D/utils/src/G4DNAChemistryManager.cc:668-695` pushes one `e_aq` at that position at `picosecond + delayedTime` | `transport.rs:436-449` reports the thermalisation origin separately from the displaced `PhysChemEvent.position`; `crates/dna-chemistry/src/engine.rs:359-371` creates one `e_aq` at that event position, with no new displacement draw |
+
+The old `CheckNextStep` alternative at `hpp:210-222` is commented out; the `ComputeStep` and
+`safety <= displacementMag` block is **not**. Safety is isotropic distance to the nearest surface,
+so this condition is broader than a directional segment-crossing test. For normal navigation the
+mother safety starts from `DistanceToOut(localPoint)` and is returned as `newSafety`
+(`source/geometry/navigation/src/G4NormalNavigation.cc:86-95,325-326`). For this full sphere,
+`source/geometry/solids/CSG/src/G4Sphere.cc:2614-2616,2634-2642` gives `R - |position|`.
+
+**Geometry and displacement scale.** `validation/geant4/g4rs_ref/g4rs_ref.cc:357-365` constructs
+a single `G4_WATER` world sphere of radius **1 m**, placed at zero, with no daughters;
+`:396-410` starts each primary at its centre along +z. Both committed M6 modes use this geometry.
+The 900 keV physical track scale is millimetres (about 4 mm, as recorded in
+`validation/geant4/README.md`), and `physchem_prechem.csv` gives an `e_aq` origin RMS of
+`sqrt(sum_r2_nm2 / sum_count) = 1.810788 mm`. Those are scales, **not maximum-radius bounds**.
+For comparison, the existing hand-polynomial checks (`low_energy.rs:438-464`) give mean
+displacements 19.102655 nm at 7 eV and 18.860116 nm at 7.4 eV; the latter has component sigma
+11.819 nm and displacement RMS 20.471 nm. One metre is about **53 million** of those mean
+displacements. The low-energy zero-mean branch is only `1e-3 nm`.
+
+A conservative analytic check avoids treating a typical displacement as a cutoff. On the whole
+solvation window, the coefficient triangle inequality gives
+`|r_mean(E)| <= sum(abs(gCoeff[12-i]) * 7.4^i) < 695306.507 nm`, hence
+`sigma < 435719 nm` (an intentionally loose bound, much larger than the tested values).
+Conditional on a thermalisation point remaining within the central 0.5 m, safety is at least
+`s = 0.5 m`; the Gaussian union bound is `P(|d| >= s) <= 6 exp(-s^2 / (6 sigma^2))`.
+Even with this loose sigma bound it is below `10^-95313` per draw, or below `10^-95304` for an
+illustrative billion draws. The central-half-metre condition is far looser than the observed
+millimetre track scale, but is not a measured maximum of the M6 histories. These facts support
+**effective workload unreachability**, not mathematical impossibility: the Gaussian has unbounded
+support, and the aggregate CSVs contain neither a clip counter nor maximum track radius, so they
+cannot directly prove zero activations. No new physical cutoff is imposed. The conclusion does
+not apply to primaries near surfaces, smaller volumes or finite-volume chemistry generally.
+
+**Coverage and verification.** Existing tests retain their statistical criteria:
+`low_energy::meesungnoen_r_mean_matches_the_hand_polynomial`,
+`solvation_displacement_is_a_gaussian_with_sigma_proportional_to_the_mean_radius` and
+`solvation_below_0_1_ev_displaces_by_1e_minus_3_nm_in_an_isotropic_direction` cover the law.
+`crates/dna-physics/tests/transport.rs::energy_ledger_is_conserved_for_the_whole_cascade_at_five_energies`
+checks `N_solv + N_att = N_tracks = 1 + N_sec` (`:133-138`).
+`crates/dna-chemistry/tests/history.rs:35-50::solvation_creates_an_e_aq_at_the_event_position_without_random_numbers`
+checks one electron at the event position and 1 ps, consuming zero uniforms.
+`crates/dna-sim/tests/physchem_a.rs::species_conservation_and_untouched_ledger_on_real_cascades`
+checks the cascade's deposits and `e_aq = N_solv + N_auto - N_recombined`.
+The only missing invariant was the exact transport-to-event position handoff: the new deterministic
+`low_energy::transport_solvation_event_keeps_the_sampled_displacement_and_local_deposit`
+checks two valid off-origin primaries, including 7.4 eV, against the same scripted sampler draw,
+with the deposit remaining at the thermalisation point and no extra draw or step. No statistical
+test is duplicated. No production behavior, reference data, tolerance, generator or run request changes.
+
+Verification on 2026-10-17: `cargo test -p dna-physics --test low_energy` exits 0 (21 passed);
+the named `history` and `physchem_a` tests each pass with `-- --exact`.
+`cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and
+`cargo test --workspace` all exit 0 (**271 passed, 0 failed, 16 ignored**), including the existing
+cascade count identity. Logs `01-low-energy.log` through `06-workspace.log` and all build/test
+artifacts are under `.scratch/tests/2026-10-17__m6-n1-thermalisation-audit/`.
 
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.

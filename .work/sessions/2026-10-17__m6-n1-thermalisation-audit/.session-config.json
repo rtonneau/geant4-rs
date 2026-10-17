@@ -1,0 +1,139 @@
+{
+  "session_id": "2026-10-17__m6-n1-thermalisation-audit",
+  "feature_name": "m6-n1-thermalisation-audit",
+  "scratch_dir": ".scratch/tests/2026-10-17__m6-n1-thermalisation-audit",
+  "created_at": "2026-10-17T12:53:01.699Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-17T12:53:01.699Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T12:55:53.885Z",
+      "event": "auto_started",
+      "phase": "grill",
+      "detail": {
+        "target": "finish",
+        "steps": "write:grill → plan → write:plan → ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-17T12:56:26.505Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T12:56:36.783Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-17T12:58:26.131Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "docs/m6-n1-thermalisation-audit",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-17T12:58:26.149Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-audit-n1-thermalisation-boundary.md"
+      ],
+      "detail": {
+        "tickets": 1
+      }
+    },
+    {
+      "at": "2026-10-17T17:37:25.796Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-17T17:37:35.644Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-audit-n1-thermalisation-boundary.md",
+        "03-implement/01-audit-n1-thermalisation-boundary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-n1-thermalisation-boundary"
+      }
+    },
+    {
+      "at": "2026-10-17T17:48:47.063Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/01-audit-n1-thermalisation-boundary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-n1-thermalisation-boundary",
+        "commit": "920faa6"
+      }
+    },
+    {
+      "at": "2026-10-17T17:49:07.444Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-17T17:49:17.495Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/16"
+      }
+    },
+    {
+      "at": "2026-10-17T17:49:17.498Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "docs/m6-n1-thermalisation-audit",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-17T12:58:26.131Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/16"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-17__m6-n1-thermalisation-audit.md",
+    "written_at": "2026-10-17T17:49:07.437Z"
+  },
+  "finished_at": "2026-10-17T17:49:17.498Z"
+}

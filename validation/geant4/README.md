@@ -207,6 +207,11 @@ platform            = ""
    at the 0.5-1 % level at 1-10 keV, not in anything else (docs/08).
 4. Solvation: with chemistry off Geant4 kills the electron and deposits `k`; Rust does the same. The 25 meV
    proposal of the chemistry-on branch and the navigator correction of the displacement are not reproduced.
+   With chemistry on (M6), `G4DNAOneStepThermalizationModel.hpp:225-242` actively calls `ComputeStep`
+   and replaces the displacement by `0.8 * safety` along its direction when `safety <= displacementMag`.
+   Rust models infinite water, so this clip is inapplicable. The N1 audit in docs/08 records why the clip
+   is operationally unreachable for the committed reference geometry and workload (metre safety versus
+   nanometre thermalisation); the aggregate CSV has no clip counter and the Gaussian has no hard cutoff.
 5. Primaries start at the origin in an infinite medium; the Geant4 world is a 1 m sphere of water, large
    against the 900 keV range (about 4 mm).
 

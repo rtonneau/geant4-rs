@@ -23,6 +23,7 @@ mod common;
 use approx::assert_relative_eq;
 use common::{chi2_merged, chi2_pvalue, data, ev, ks_pvalue, ks_statistic, raw_rows};
 use dna_core::error::DnaError;
+use dna_core::physchem::{PhysChemEvent, PhysChemKind};
 use dna_core::rng::{RngStreams, Stage};
 use dna_core::units::Area;
 use dna_core::vec3::Vec3;
@@ -34,7 +35,9 @@ use dna_physics::models::{
 };
 use dna_physics::table::ProcessTable;
 use dna_physics::testing::ScriptedRng;
-use dna_physics::transport::{NoObserver, Primary, TransportConfig, transport_electron};
+use dna_physics::transport::{
+    HistoryObserver, NoObserver, Primary, SolvationEvent, TransportConfig, transport_electron,
+};
 use dna_physics::water::WATER_MOLECULES_PER_NM3;
 
 fn next_up(x: f64) -> f64 {
@@ -512,6 +515,75 @@ fn solvation_draw_counts_are_four_uniforms_or_two_in_the_zero_rmean_branch() {
     assert_eq!(rng.consumed(), 2);
     assert!(out.zero_rmean_branch);
     assert_relative_eq!(out.displacement_nm.norm(), 1e-3, max_relative = 1e-12);
+}
+
+#[test]
+fn transport_solvation_event_keeps_the_sampled_displacement_and_local_deposit() {
+    let Some(dir) = data() else { return };
+    let table = ProcessTable::option2_electron(&dir, ElasticRotation::Geant4).unwrap();
+    #[derive(Default)]
+    struct Recorder {
+        solvations: Vec<SolvationEvent>,
+        physchem: Vec<PhysChemEvent>,
+    }
+    impl HistoryObserver for Recorder {
+        fn on_solvation(&mut self, event: &SolvationEvent) {
+            self.solvations.push(*event);
+        }
+        fn on_physchem(&mut self, event: &PhysChemEvent) {
+            self.physchem.push(*event);
+        }
+    }
+
+    // Use valid primaries, including the 7.4 eV boundary, at an off-origin thermalisation point.
+    // The sampler distribution is tested separately; here only its transport handoff is checked.
+    let origin = Vec3::new(17.0, -31.0, 5.0);
+    let draws = [0.3, 0.4, 0.5, 0.6];
+    for energy in [2.0, 7.4] {
+        let mut sampler_rng = ScriptedRng::new(&draws);
+        let sampled = table
+            .solvation()
+            .unwrap()
+            .sample(ev(energy), &mut sampler_rng)
+            .unwrap();
+        let mut rng = ScriptedRng::new(&draws);
+        let mut recorder = Recorder::default();
+        let outcome = transport_electron(
+            &table,
+            &TransportConfig::default(),
+            Primary {
+                energy: ev(energy),
+                position: origin,
+                direction: Z,
+                history_id: 42,
+            },
+            &mut rng,
+            &mut recorder,
+        )
+        .unwrap();
+        assert_eq!(rng.consumed(), sampler_rng.consumed());
+        assert_eq!(recorder.solvations.len(), 1);
+        let solvation = &recorder.solvations[0];
+        assert_eq!(solvation.origin, origin);
+        assert_eq!(solvation.displacement_nm, sampled.displacement_nm);
+        assert_eq!(solvation.energy, sampled.deposit);
+        assert_eq!(
+            recorder.physchem,
+            [PhysChemEvent {
+                kind: PhysChemKind::Solvation,
+                level_or_shell: 0,
+                position: origin + sampled.displacement_nm,
+                deposited_energy: ev(energy),
+                parent_history: 42,
+            }]
+        );
+        assert_eq!(outcome.solvations, 1);
+        assert_eq!(outcome.steps, 0);
+        assert_eq!(outcome.track_length_nm, 0.0);
+        assert_eq!(outcome.end_position, origin);
+        assert_eq!(outcome.ledger.deposited_solvation, energy);
+        assert_eq!(outcome.ledger.residual(), 0.0);
+    }
 }
 
 fn normal_cdf(z: f64) -> f64 {

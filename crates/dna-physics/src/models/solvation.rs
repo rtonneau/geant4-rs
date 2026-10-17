@@ -23,8 +23,14 @@
 //!   radius equals `r_mean`), `r_mean(E) = nm * sum_{i=0}^{12} c[12 - i] E[eV]^i` for `E >
 //!   0.1 eV` (0 otherwise; fit of Meesungnoen et al., Radiat. Res. 158 (2002) 657, data until
 //!   0.2 eV). If `r_mean == 0` the electron is displaced by 1e-3 nm in a random direction
-//!   (`GetGaussianPenetrationFromRmean3D`). The geometry correction in Geant4 (`safety * 0.8`
-//!   when the segment leaves the volume) is irrelevant in an infinite medium.
+//!   (`GetGaussianPenetrationFromRmean3D`). With chemistry active, Geant4 calls the navigator's
+//!   `ComputeStep` and replaces the displacement by `0.8 * safety` along the sampled direction
+//!   when `safety <= displacementMag` (`G4DNAOneStepThermalizationModel.hpp:225-242`). This is
+//!   an active isotropic-safety test, not only a test of whether that direction crosses a surface.
+//!   It is inapplicable to this infinite-water model. In the committed M6 reference (origin at
+//!   the centre of a 1 m water sphere), the metre boundary versus nanometre displacements makes
+//!   it operationally unreachable; the Gaussian law has no hard cutoff. See the N1 audit in
+//!   `docs/08-roadmap.md` for the geometry margin and the aggregate-data limitation.
 //!
 //! `G4DNATransformElectronModel` (0 - 0.025 eV; kill, deposit `k`, solvated electron at the
 //! *same* position) was read as well: no physics constructor of the 11.4.1 tree registers it
