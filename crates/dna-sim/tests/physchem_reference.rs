@@ -149,6 +149,7 @@ fn assert_counts_and_rms(rows: &[Row]) {
         ProcessTable::option2_electron(&DataDir::new(&root).unwrap(), ElasticRotation::Geant4)
             .unwrap();
     let engine = PhysChemEngine::option3().unwrap();
+    let mut failures = Vec::<String>::new();
     for (_, (energy, n)) in cases {
         let mut config = RunConfig::new(energy, n);
         config.master_seed = 20261017;
@@ -166,30 +167,39 @@ fn assert_counts_and_rms(rows: &[Row]) {
             };
             let se = (g4_se * g4_se + ours.alive_per_history.std_err.powi(2)).sqrt();
             let delta = (ours.alive_per_history.value - g4_mean).abs();
-            assert!(
-                se == 0.0 || delta / se <= 4.5,
-                "{energy} {}: z={}",
-                g4.species.chemistry_name(),
-                delta / se
-            );
-            if g4_mean > 0.1 && ours.alive_per_history.value > 0.1 {
-                assert!(
-                    delta / g4_mean <= 0.15,
-                    "{energy} {} count",
-                    g4.species.chemistry_name()
-                );
+            let name = g4.species.chemistry_name();
+            let rust_mean = ours.alive_per_history.value;
+            if !(se == 0.0 || delta / se <= 4.5) {
+                failures.push(format!(
+                    "{energy} {name}: z={:.2} (g4 {g4_mean:.4}, rust {rust_mean:.4})",
+                    delta / se
+                ));
+            }
+            if g4_mean > 0.1 && rust_mean > 0.1 && delta / g4_mean > 0.15 {
+                failures.push(format!(
+                    "{energy} {name} count: diff={:.1}% (g4 {g4_mean:.4}, rust {rust_mean:.4})",
+                    100.0 * delta / g4_mean
+                ));
             }
             if g4.sum > 0.0 {
                 let g4_rms = (g4.sum_r2 / g4.sum).sqrt();
                 let rust_rms = ours.rms_radius_nm.unwrap();
-                assert!(
-                    (rust_rms - g4_rms).abs() / g4_rms <= 0.20,
-                    "{energy} {} RMS",
-                    g4.species.chemistry_name()
-                );
+                if (rust_rms - g4_rms).abs() / g4_rms > 0.20 {
+                    failures.push(format!(
+                        "{energy} {name} RMS: diff={:.1}% (g4 {g4_rms:.3} nm, rust {rust_rms:.3} nm)",
+                        100.0 * (rust_rms - g4_rms).abs() / g4_rms
+                    ));
+                }
             }
         }
     }
+    // All rows are evaluated so a failing gate reports every offending row at once.
+    assert!(
+        failures.is_empty(),
+        "{} failing checks:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }
 
 /// RR-001, registered before the new Geant4 run. This is a distinct stage-matched gate:
