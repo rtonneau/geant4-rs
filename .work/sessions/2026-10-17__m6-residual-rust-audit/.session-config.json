@@ -134,9 +134,33 @@
         "ticket": "03-verdict-and-source-proven-fix",
         "commit": "5df0aa1"
       }
+    },
+    {
+      "at": "2026-10-17T11:29:50.321Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-record-audit-result.md",
+        "03-implement/04-record-audit-result/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-record-audit-result"
+      }
+    },
+    {
+      "at": "2026-10-17T11:33:43.063Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/04-record-audit-result/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-record-audit-result",
+        "commit": "4d3816f"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "test/m6-residual-audit",
     "base_branch": "main",
