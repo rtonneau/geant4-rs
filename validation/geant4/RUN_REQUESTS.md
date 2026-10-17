@@ -45,7 +45,7 @@ runs them (Geant4 11.4.1, see `BUILD_NOTES.md`) and commits the output.
 
 | id | seed (gps) | program | command | rng seed, statistics | outputs | provenance | consumer | status |
 |---|---|---|---|---|---|---|---|---|
-| RR-001 | `m6-diagnose-and-fix`, `2026-10-16__m6-diagnose-and-fix` | `g4rs_ref physchem_prechem`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20` (from `validation/geant4/g4rs_ref`, executable on PATH) | 20261020; 20000/2000/200/20 events at 1/10/100/900 keV | `validation/reference/physchem_prechem.csv` (new) | `validation/reference/provenance_m6_prechem.toml` (new; README fields) | `crates/dna-sim/tests/physchem_reference.rs::m6_prechem_counts_and_rms_match_geant4`; `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` | awaiting run |
+| RR-001 | `m6-diagnose-and-fix`, `2026-10-16__m6-diagnose-and-fix` | `g4rs_ref physchem_prechem`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20` (from `validation/geant4/g4rs_ref`, executable on PATH) | 20261020; 20000/2000/200/20 events at 1/10/100/900 keV | `validation/reference/physchem_prechem.csv` (new) | `validation/reference/provenance_m6_prechem.toml` (new; README fields) | `crates/dna-sim/tests/physchem_reference.rs::m6_prechem_counts_and_rms_match_geant4`; `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` | data committed (2026-10-17, `e808b2f`, `ffe4b48`) |
 
 ### RR-001 purpose and acceptance (2026-10-17)
 

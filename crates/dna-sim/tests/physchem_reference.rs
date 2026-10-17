@@ -205,11 +205,11 @@ fn m6_prechem_counts_and_rms_match_geant4() {
         .expect("RR-001 awaiting data: physchem_prechem.csv");
     assert!(csv.contains("mode physchem_prechem"));
     assert!(csv.contains("# snapshot_boundary: after_dissociation_before_irt; global_time_ps: 1; chemical_reactions: 0"));
-    let provenance: toml::Value =
-        std::fs::read_to_string(reference_dir().join("provenance_m6_prechem.toml"))
-            .expect("RR-001 awaiting provenance_m6_prechem.toml")
-            .parse()
-            .unwrap();
+    let provenance: toml::Value = toml::from_str(
+        &std::fs::read_to_string(reference_dir().join("provenance_m6_prechem.toml"))
+            .expect("RR-001 awaiting provenance_m6_prechem.toml"),
+    )
+    .unwrap();
     for (key, expected) in [
         ("geant4_version", "11.4.1"),
         ("g4emlow_version", "8.8"),
