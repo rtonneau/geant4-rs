@@ -150,7 +150,8 @@ script: it silently becomes a real newline and breaks compilation (`C2001`); pre
 
 `physchem_prechem` is additive; do not change or rerun the existing `physchem` mode to obtain these data.
 Its new post-zero-step hook captures after all water decays and before IRT initialization (README).
-The mode has been **compiled and linked, not run**. Agent sessions never run even its smoke test.
+The mode was run on 2026-10-17 at the project lead's request (smoke and production passed all guards;
+RR-001 is closed, see `RUN_REQUESTS.md`). Agent sessions otherwise never run it, not even the smoke test.
 
 Build with section 2's recipe, replacing `-B build-msvc` and the build argument with the repository-root
 scratch directory `.scratch/tests/2026-10-16__m6-diagnose-and-fix/g4-prechem-build` (use the appropriate

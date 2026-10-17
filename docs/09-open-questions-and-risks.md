@@ -71,7 +71,7 @@
 
 ### M6 retained difference register and decision (2026-10-17)
 
-**Gate awaiting data, RR-001.** The final original-gate rerun still fails at `1000 eV H2O2: z=111.55722825815035`; count z <= 4.5, the 15% non-small-mean limit and the 20% RMS limit are unchanged. No audited Rust defect was established. Every retained difference relevant to this M6 comparison is classified below; source paths are relative to Geant4 11.4.1. `D` means `source/processes/electromagnetic/dna`.
+**RR-001 run 2026-10-17: stage-matched gate FAILED (16/28 rows, z test only; see docs/08 "RR-001 result"); Q21/R14 stay open.** Earlier text, kept as history: **gate awaiting data, RR-001.** The final original-gate rerun still fails at `1000 eV H2O2: z=111.55722825815035`; count z <= 4.5, the 15% non-small-mean limit and the 20% RMS limit are unchanged. No audited Rust defect was established. Every retained difference relevant to this M6 comparison is classified below; source paths are relative to Geant4 11.4.1. `D` means `source/processes/electromagnetic/dna`.
 
 | Difference | Source evidence | Observed effect and classification |
 |---|---|---|
