@@ -110,6 +110,30 @@
         "ticket": "02-source-channel-comparison",
         "commit": "bfe2a73"
       }
+    },
+    {
+      "at": "2026-10-17T10:59:22.085Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-verdict-and-source-proven-fix.md",
+        "03-implement/03-verdict-and-source-proven-fix/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-verdict-and-source-proven-fix"
+      }
+    },
+    {
+      "at": "2026-10-17T11:29:46.419Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-verdict-and-source-proven-fix/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-verdict-and-source-proven-fix",
+        "commit": "5df0aa1"
+      }
     }
   ],
   "current_phase": "ship",
