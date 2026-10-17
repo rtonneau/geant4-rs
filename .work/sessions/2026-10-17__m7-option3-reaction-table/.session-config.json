@@ -52,6 +52,30 @@
       "detail": {
         "tickets": 4
       }
+    },
+    {
+      "at": "2026-10-17T20:05:03.323Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-extract-option3-reactions.md",
+        "03-implement/01-extract-option3-reactions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-extract-option3-reactions"
+      }
+    },
+    {
+      "at": "2026-10-17T20:08:25.765Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-extract-option3-reactions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-extract-option3-reactions",
+        "commit": "84c67ff"
+      }
     }
   ],
   "current_phase": "ship",
@@ -60,5 +84,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-17T19:57:56.393Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "inline"
 }
