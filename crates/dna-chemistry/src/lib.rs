@@ -39,7 +39,7 @@ mod data_hash_tests {
     fn option3_fingerprint_includes_reactions_after_the_existing_three_files() {
         assert_eq!(
             super::option3_data_sha256(),
-            "a39145d601f68b1e8a6a119e23af5007619e0135191564f000ae8c47cc2c6d10"
+            "46a49f0cde41062cd4c55fb93e7817f481c68918e3ad6c810686db9dda4cbbde"
         );
     }
 }
