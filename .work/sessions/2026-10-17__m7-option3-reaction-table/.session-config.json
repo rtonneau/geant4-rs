@@ -100,6 +100,30 @@
         "ticket": "02-load-and-validate-reactions",
         "commit": "bd03de8"
       }
+    },
+    {
+      "at": "2026-10-18T05:16:28.385Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-crosscheck-reaction-table.md",
+        "03-implement/03-crosscheck-reaction-table/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-crosscheck-reaction-table"
+      }
+    },
+    {
+      "at": "2026-10-18T05:23:39.065Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-crosscheck-reaction-table/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-crosscheck-reaction-table",
+        "commit": "41d931c"
+      }
     }
   ],
   "current_phase": "ship",
