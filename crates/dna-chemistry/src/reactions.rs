@@ -90,8 +90,13 @@ pub enum KineticIntent {
 /// The executable observed-rate literal, kept in the source unit appropriate to its order.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ObservedRate {
-    Bimolecular { m3_per_mol_s: f64 },
-    FirstOrder { per_s: f64 },
+    /// The C++ numeric literal multiplied by `1e-3 m^3/(mol s)`, equivalently M^-1 s^-1.
+    Bimolecular {
+        per_molar_s: f64,
+    },
+    FirstOrder {
+        per_s: f64,
+    },
 }
 
 /// One validated source-table entry.
@@ -127,7 +132,7 @@ struct RawReaction {
     products: Vec<String>,
     kinetic_intent: KineticIntent,
     rate_order: RateOrder,
-    rate_m3_per_mol_s: Option<f64>,
+    rate_per_molar_s: Option<f64>,
     rate_per_s: Option<f64>,
     set_reaction_type: bool,
     #[allow(dead_code)]
@@ -209,7 +214,7 @@ impl ReactionTable {
             let rate = parse_rate(
                 item.id,
                 item.rate_order,
-                item.rate_m3_per_mol_s,
+                item.rate_per_molar_s,
                 item.rate_per_s,
             )?;
             validate_intent(
@@ -297,9 +302,9 @@ fn parse_rate(
     first_order: Option<f64>,
 ) -> Result<ObservedRate, ChemistryError> {
     let rate = match (order, bimolecular, first_order) {
-        (RateOrder::Bimolecular, Some(value), None) => ObservedRate::Bimolecular {
-            m3_per_mol_s: value,
-        },
+        (RateOrder::Bimolecular, Some(value), None) => {
+            ObservedRate::Bimolecular { per_molar_s: value }
+        }
         (RateOrder::FirstOrder, None, Some(value)) => ObservedRate::FirstOrder { per_s: value },
         _ => {
             return Err(ChemistryError::invalid(
@@ -309,7 +314,7 @@ fn parse_rate(
         }
     };
     let value = match rate {
-        ObservedRate::Bimolecular { m3_per_mol_s } => m3_per_mol_s,
+        ObservedRate::Bimolecular { per_molar_s } => per_molar_s,
         ObservedRate::FirstOrder { per_s } => per_s,
     };
     if !value.is_finite() || value <= 0.0 {
@@ -441,6 +446,12 @@ mod tests {
         assert_eq!(table.iter().count(), 72);
         assert_eq!(table.get(1).unwrap().id, 1);
         assert_eq!(table.get(72).unwrap().id, 72);
+        assert_eq!(
+            table.get(1).unwrap().rate,
+            ObservedRate::Bimolecular {
+                per_molar_s: 0.503e10
+            }
+        );
         let anomaly = table.get(53).unwrap();
         assert_eq!(anomaly.source_class, SourceClass::VI);
         assert_eq!(anomaly.rate, ObservedRate::FirstOrder { per_s: 2.66e3 });
@@ -497,12 +508,12 @@ mod tests {
             replace_once(DEFAULT_REACTIONS_TOML, "id = 2", "id = 3"),
             replace_once(
                 DEFAULT_REACTIONS_TOML,
-                "rate_m3_per_mol_s = 0.503e10",
-                "rate_m3_per_mol_s = 0.0",
+                "rate_per_molar_s = 0.503e10",
+                "rate_per_molar_s = 0.0",
             ),
             replace_once(
                 DEFAULT_REACTIONS_TOML,
-                "rate_m3_per_mol_s = 0.503e10",
+                "rate_per_molar_s = 0.503e10",
                 "rate_per_s = 0.503e10",
             ),
             replace_once(
@@ -520,6 +531,21 @@ mod tests {
             assert!(ReactionTable::from_toml(&text).is_err());
         }
         assert!(ReactionTable::from_toml("not = [valid").is_err());
+    }
+
+    #[test]
+    fn balanced_duplicate_mobile_pair_is_rejected_as_a_duplicate() {
+        let duplicate = replace_once(
+            DEFAULT_REACTIONS_TOML,
+            "reactants = [\"e_aq\", \"H\"]\nproducts = [\"OHm\", \"H2\"]",
+            "reactants = [\"H\", \"H\"]\nproducts = [\"H2\"]",
+        );
+        let error = ReactionTable::from_toml(&duplicate).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("duplicates unordered mobile pair")
+        );
     }
 
     #[test]

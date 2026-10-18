@@ -49,6 +49,33 @@ def total(names: list[str]) -> tuple[int, int, int]:
     return tuple(sum(value[i] for value in values) for i in range(3))
 
 
+def validate_exact_anomaly(reactions: list[dict[str, object]]) -> None:
+    anomaly = reactions[52]
+    expected = {
+        "id": 53,
+        "reactants": ["O3m", "NoneM"],
+        "products": ["H3Op", "O2m"],
+        "rate_order": "first_order",
+        "rate_value": 2.66e3,
+        "rate_unit": "per_s",
+    }
+    for field, value in expected.items():
+        if anomaly[field] != value:
+            raise ValueError(
+                f"reaction 53 has unexpected {field}: {anomaly[field]!r}, expected {value!r}"
+            )
+
+
+def self_check_anomaly_guard(reactions: list[dict[str, object]]) -> None:
+    mutated = [dict(reaction) for reaction in reactions]
+    mutated[52]["products"] = ["Om", "O2"]
+    try:
+        validate_exact_anomaly(mutated)
+    except ValueError:
+        return
+    raise AssertionError("exact anomaly guard accepted a mutated reaction-53 signature")
+
+
 def evaluate() -> dict[str, object]:
     extraction = json.loads(EXTRACTION.read_text(encoding="utf-8"))
     reactions = extraction["reactions"]
@@ -88,6 +115,11 @@ def evaluate() -> dict[str, object]:
     ]
     if anomaly_ids != [53]:
         raise ValueError(f"expected reaction 53 as the sole imbalance, found {anomaly_ids}")
+    validate_exact_anomaly(reactions)
+    self_check_anomaly_guard(reactions)
+    first = reactions[0]
+    if first["rate_literal"] != "0.503e10" or first["rate_unit"] != "per_molar_s":
+        raise ValueError("reaction 1 must retain 0.503e10 M^-1 s^-1")
     if discrepancy_ids != [59, 63, 65, 68, 70]:
         raise ValueError(f"unexpected comment/rate discrepancies: {discrepancy_ids}")
     return {

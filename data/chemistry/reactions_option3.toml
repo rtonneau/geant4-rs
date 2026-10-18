@@ -13,7 +13,7 @@ reactants = ["H", "H"]
 products = ["H2"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 0.503e10
+rate_per_molar_s = 0.503e10
 set_reaction_type = false
 comment = "*H + *H -> H2"
 
@@ -25,7 +25,7 @@ reactants = ["e_aq", "H"]
 products = ["OHm", "H2"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.50e10
+rate_per_molar_s = 2.50e10
 set_reaction_type = false
 comment = "e_aq + H* + H2O -> H2 + OH-"
 
@@ -37,7 +37,7 @@ reactants = ["H", "Oxy"]
 products = ["°OH"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.02e10
+rate_per_molar_s = 2.02e10
 set_reaction_type = false
 comment = "H + O(3p) -> OH"
 
@@ -49,7 +49,7 @@ reactants = ["H", "Om"]
 products = ["OHm"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.00e10
+rate_per_molar_s = 2.00e10
 set_reaction_type = false
 comment = "H + O- -> OH-"
 
@@ -61,7 +61,7 @@ reactants = ["°OH", "Oxy"]
 products = ["HO2°"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.02e10
+rate_per_molar_s = 2.02e10
 set_reaction_type = false
 comment = "OH + O(3p) -> HO2"
 
@@ -73,7 +73,7 @@ reactants = ["HO2°", "Oxy"]
 products = ["O2", "°OH"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.02e10
+rate_per_molar_s = 2.02e10
 set_reaction_type = false
 comment = "HO2 + O(3p) -> O2"
 
@@ -85,7 +85,7 @@ reactants = ["Oxy", "Oxy"]
 products = ["O2"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.20e10
+rate_per_molar_s = 2.20e10
 set_reaction_type = false
 comment = "O(3p) + O(3p) -> O2"
 
@@ -97,7 +97,7 @@ reactants = ["e_aq", "e_aq"]
 products = ["OHm", "OHm", "H2"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 0.636e10
+rate_per_molar_s = 0.636e10
 set_reaction_type = false
 comment = "e_aq + e_aq + 2H2O -> H2 + 2OH-"
 
@@ -109,7 +109,7 @@ reactants = ["H3Op", "OHm"]
 products = []
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.13e11
+rate_per_molar_s = 1.13e11
 set_reaction_type = false
 comment = "H3O+ + OH- -> 2H2O"
 
@@ -121,7 +121,7 @@ reactants = ["H3Op", "O3m"]
 products = ["°OH", "O2"]
 kinetic_intent = "totally_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 9.0e10
+rate_per_molar_s = 9.0e10
 set_reaction_type = false
 comment = "H3O+ + O3- -> OH + O2"
 
@@ -133,7 +133,7 @@ reactants = ["°OH", "H"]
 products = []
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.55e10
+rate_per_molar_s = 1.55e10
 set_reaction_type = true
 comment = "*OH + *H -> H2O"
 
@@ -145,7 +145,7 @@ reactants = ["H", "H2O2"]
 products = ["°OH"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 3.50e7
+rate_per_molar_s = 3.50e7
 set_reaction_type = true
 comment = "H + H2O2 -> OH"
 
@@ -157,7 +157,7 @@ reactants = ["H", "OHm"]
 products = ["e_aq"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.51e7
+rate_per_molar_s = 2.51e7
 set_reaction_type = true
 comment = "H + OH- -> eaq-"
 
@@ -169,7 +169,7 @@ reactants = ["H", "O2"]
 products = ["HO2°"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.10e10
+rate_per_molar_s = 2.10e10
 set_reaction_type = true
 comment = "H + O2 -> HO2"
 
@@ -181,7 +181,7 @@ reactants = ["H", "HO2°"]
 products = ["H2O2"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.00e10
+rate_per_molar_s = 1.00e10
 set_reaction_type = true
 comment = "H + HO2 -> H2O2"
 
@@ -193,7 +193,7 @@ reactants = ["H", "O2m"]
 products = ["HO2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.00e10
+rate_per_molar_s = 1.00e10
 set_reaction_type = true
 comment = "H + O2- -> HO2-"
 
@@ -205,7 +205,7 @@ reactants = ["°OH", "°OH"]
 products = ["H2O2"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 0.55e10
+rate_per_molar_s = 0.55e10
 set_reaction_type = true
 comment = "*OH + *OH -> H2O2"
 
@@ -217,7 +217,7 @@ reactants = ["°OH", "H2O2"]
 products = ["HO2°"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.88e7
+rate_per_molar_s = 2.88e7
 set_reaction_type = true
 comment = "OH + H2O2 -> HO2"
 
@@ -229,7 +229,7 @@ reactants = ["°OH", "H2"]
 products = ["H"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 3.28e7
+rate_per_molar_s = 3.28e7
 set_reaction_type = true
 comment = "OH + H2 -> H"
 
@@ -241,7 +241,7 @@ reactants = ["e_aq", "°OH"]
 products = ["OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.95e10
+rate_per_molar_s = 2.95e10
 set_reaction_type = true
 comment = "e_aq + *OH -> OH-"
 
@@ -253,7 +253,7 @@ reactants = ["°OH", "OHm"]
 products = ["Om"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 6.30e9
+rate_per_molar_s = 6.30e9
 set_reaction_type = true
 comment = "OH + OH- -> O-"
 
@@ -265,7 +265,7 @@ reactants = ["°OH", "HO2°"]
 products = ["O2"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 7.90e9
+rate_per_molar_s = 7.90e9
 set_reaction_type = true
 comment = "OH + HO2 -> O2"
 
@@ -277,7 +277,7 @@ reactants = ["°OH", "O2m"]
 products = ["O2", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.07e10
+rate_per_molar_s = 1.07e10
 set_reaction_type = true
 comment = "OH + O2- -> O2 + OH-"
 
@@ -289,7 +289,7 @@ reactants = ["°OH", "HO2m"]
 products = ["HO2°", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 8.32e9
+rate_per_molar_s = 8.32e9
 set_reaction_type = true
 comment = "OH + HO2- -> HO2 + OH-"
 
@@ -301,7 +301,7 @@ reactants = ["°OH", "Om"]
 products = ["HO2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.00e9
+rate_per_molar_s = 1.00e9
 set_reaction_type = true
 comment = "OH + O- -> HO2-"
 
@@ -313,7 +313,7 @@ reactants = ["°OH", "O3m"]
 products = ["O2m", "HO2°"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 8.50e9
+rate_per_molar_s = 8.50e9
 set_reaction_type = true
 comment = "OH + O3- -> O2- + HO2"
 
@@ -325,7 +325,7 @@ reactants = ["e_aq", "H2O2"]
 products = ["OHm", "°OH"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.10e10
+rate_per_molar_s = 1.10e10
 set_reaction_type = true
 comment = "e_aq + H2O2 -> OH- + *OH"
 
@@ -337,7 +337,7 @@ reactants = ["H2O2", "OHm"]
 products = ["HO2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 4.71e8
+rate_per_molar_s = 4.71e8
 set_reaction_type = true
 comment = "H2O2 + OH- -> HO2-"
 
@@ -349,7 +349,7 @@ reactants = ["H2O2", "Oxy"]
 products = ["HO2°", "°OH"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.60e9
+rate_per_molar_s = 1.60e9
 set_reaction_type = true
 comment = "H2O2 + O(3p) -> HO2 + OH"
 
@@ -361,7 +361,7 @@ reactants = ["H2O2", "Om"]
 products = ["HO2°", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 5.55e8
+rate_per_molar_s = 5.55e8
 set_reaction_type = true
 comment = "H2O2 + O- -> HO2 + OH-"
 
@@ -373,7 +373,7 @@ reactants = ["H2", "Oxy"]
 products = ["H", "°OH"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 4.77e3
+rate_per_molar_s = 4.77e3
 set_reaction_type = true
 comment = "H2 + O(3p) -> H + OH"
 
@@ -385,7 +385,7 @@ reactants = ["H2", "Om"]
 products = ["H", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.21e8
+rate_per_molar_s = 1.21e8
 set_reaction_type = true
 comment = "H2 + O- -> H + OH-"
 
@@ -397,7 +397,7 @@ reactants = ["e_aq", "O2"]
 products = ["O2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.74e10
+rate_per_molar_s = 1.74e10
 set_reaction_type = true
 comment = "eaq- + O2 -> O2-"
 
@@ -409,7 +409,7 @@ reactants = ["e_aq", "HO2°"]
 products = ["HO2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.29e10
+rate_per_molar_s = 1.29e10
 set_reaction_type = true
 comment = "eaq + HO2 -> HO2-"
 
@@ -421,7 +421,7 @@ reactants = ["OHm", "HO2°"]
 products = ["O2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 6.30e9
+rate_per_molar_s = 6.30e9
 set_reaction_type = true
 comment = "OH- + HO2 -> O2-"
 
@@ -433,7 +433,7 @@ reactants = ["OHm", "Oxy"]
 products = ["HO2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 4.20e8
+rate_per_molar_s = 4.20e8
 set_reaction_type = true
 comment = "OH- + O(3p) -> HO2-"
 
@@ -445,7 +445,7 @@ reactants = ["O2", "Oxy"]
 products = ["O3"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 4.00e9
+rate_per_molar_s = 4.00e9
 set_reaction_type = true
 comment = "O2 + O(3p) -> O3"
 
@@ -457,7 +457,7 @@ reactants = ["O2", "Om"]
 products = ["O3m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 3.70e9
+rate_per_molar_s = 3.70e9
 set_reaction_type = true
 comment = "O2 + O- -> O3-"
 
@@ -469,7 +469,7 @@ reactants = ["HO2°", "HO2°"]
 products = ["H2O2", "O2"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 9.80e5
+rate_per_molar_s = 9.80e5
 set_reaction_type = true
 comment = "HO2 + HO2 -> H2O2 + O2"
 
@@ -481,7 +481,7 @@ reactants = ["HO2°", "O2m"]
 products = ["HO2m", "O2"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 9.70e7
+rate_per_molar_s = 9.70e7
 set_reaction_type = true
 comment = "HO2 + O2- -> HO2- + O2"
 
@@ -493,7 +493,7 @@ reactants = ["HO2m", "Oxy"]
 products = ["O2m", "°OH"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 5.30e9
+rate_per_molar_s = 5.30e9
 set_reaction_type = true
 comment = "HO2- + O(3p) -> O2- + OH"
 
@@ -505,7 +505,7 @@ reactants = ["e_aq", "H3Op"]
 products = ["H"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.11e10
+rate_per_molar_s = 2.11e10
 set_reaction_type = true
 comment = "e_aq + H3O+ -> H* + H2O"
 
@@ -517,7 +517,7 @@ reactants = ["e_aq", "O2m"]
 products = ["H2O2", "OHm", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.29e10
+rate_per_molar_s = 1.29e10
 set_reaction_type = true
 comment = "e_aq + O2- -> H2O2 + OH- + OH-"
 
@@ -529,7 +529,7 @@ reactants = ["e_aq", "HO2m"]
 products = ["Om", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 3.51e9
+rate_per_molar_s = 3.51e9
 set_reaction_type = true
 comment = "e_aq + HO2- -> O- + OH-"
 
@@ -541,7 +541,7 @@ reactants = ["e_aq", "Om"]
 products = ["OHm", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 2.31e10
+rate_per_molar_s = 2.31e10
 set_reaction_type = true
 comment = "e_aq + O- -> OH- + OH-"
 
@@ -553,7 +553,7 @@ reactants = ["H3Op", "O2m"]
 products = ["HO2°"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 4.78e10
+rate_per_molar_s = 4.78e10
 set_reaction_type = true
 comment = "H3O+ + O2- -> HO2"
 
@@ -565,7 +565,7 @@ reactants = ["H3Op", "HO2m"]
 products = ["H2O2"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 5.00e10
+rate_per_molar_s = 5.00e10
 set_reaction_type = true
 comment = "H3O+ + HO2- -> H2O2"
 
@@ -577,7 +577,7 @@ reactants = ["H3Op", "Om"]
 products = ["°OH"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 4.78e10
+rate_per_molar_s = 4.78e10
 set_reaction_type = true
 comment = "H3O+ + O- -> OH"
 
@@ -589,7 +589,7 @@ reactants = ["O2m", "Om"]
 products = ["O2", "OHm", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 6.00e8
+rate_per_molar_s = 6.00e8
 set_reaction_type = true
 comment = "O2- + O- -> O2 + OH- + OH-"
 
@@ -601,7 +601,7 @@ reactants = ["HO2m", "Om"]
 products = ["O2m", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 3.50e8
+rate_per_molar_s = 3.50e8
 set_reaction_type = true
 comment = "HO2- + O- -> O2- + OH-"
 
@@ -613,7 +613,7 @@ reactants = ["Om", "Om"]
 products = ["H2O2", "OHm", "OHm"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 1.00e8
+rate_per_molar_s = 1.00e8
 set_reaction_type = true
 comment = "O- + O- -> H2O2 + OH- + OH-"
 
@@ -625,7 +625,7 @@ reactants = ["Om", "O3m"]
 products = ["O2m", "O2m"]
 kinetic_intent = "partially_diffusion_controlled"
 rate_order = "bimolecular"
-rate_m3_per_mol_s = 7.00e8
+rate_per_molar_s = 7.00e8
 set_reaction_type = true
 comment = "O- + O3- -> O2- + O2-"
 

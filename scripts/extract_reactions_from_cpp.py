@@ -90,7 +90,19 @@ def extract(root: Path) -> dict[str, object]:
                 if coefficient_match is None:
                     raise ValueError(f"line {statement_line}: cannot parse rate {rate_expr!r}")
                 coefficient_literal = coefficient_match.group(1)
-                bimolecular = "m3" in rate_expr
+                unit_expression = rate_expr[coefficient_match.end():].strip()
+                if re.fullmatch(
+                    r"\*\s*\(\s*1e-3\s*\*\s*m3\s*/\s*\(\s*mole\s*\*\s*s\s*\)\s*\)",
+                    unit_expression,
+                    re.I,
+                ):
+                    bimolecular = True
+                elif re.fullmatch(r"/\s*s", unit_expression):
+                    bimolecular = False
+                else:
+                    raise ValueError(
+                        f"line {statement_line}: unsupported rate unit expression {rate_expr!r}"
+                    )
                 comment_rate = None
                 comment_matches = re.findall(
                     r"([0-9]+(?:\.[0-9]*)?(?:e[+-]?\d+)?)\s*(?:/\s*s|(?:M-1|M\^-1)\s*s-1)",
@@ -108,7 +120,7 @@ def extract(root: Path) -> dict[str, object]:
                     "rate_order": "bimolecular" if bimolecular else "first_order",
                     "rate_literal": coefficient_literal,
                     "rate_value": float(coefficient_literal),
-                    "rate_unit": "m3_per_mol_s" if bimolecular else "per_s",
+                    "rate_unit": "per_molar_s" if bimolecular else "per_s",
                     "kinetic_intent": (
                         "first_order" if source_class == "VI" else
                         "pseudo_first_order" if source_class == "scavenging" else
@@ -169,7 +181,7 @@ def toml_text(data: dict[str, object]) -> str:
         out.append(f'products = {json.dumps(reaction["products"], ensure_ascii=False)}')
         out.append(f'kinetic_intent = {json.dumps(reaction["kinetic_intent"])}')
         out.append(f'rate_order = {json.dumps(reaction["rate_order"])}')
-        rate_key = "rate_m3_per_mol_s" if reaction["rate_order"] == "bimolecular" else "rate_per_s"
+        rate_key = "rate_per_molar_s" if reaction["rate_order"] == "bimolecular" else "rate_per_s"
         out.append(f'{rate_key} = {reaction["rate_literal"]}')
         out.append(f'set_reaction_type = {str(reaction["set_reaction_type"]).lower()}')
         if reaction["comment"]:

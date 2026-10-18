@@ -22,7 +22,8 @@ are outside the 15-member `Species` set and are represented as explicit bulk par
 
 Each reaction has a stable source-order `id`, source line and class, ordered reactants and products, kinetic
 intent, observed-rate order and literal, and whether the constructor calls `SetReactionType`. Bimolecular
-rates retain the C++ unit `m^3/(mol s)`; first- and pseudo-first-order rates retain `s^-1`. Adjacent C++ comments
+literals retain `M^-1 s^-1`: the C++ expression multiplies each by `1e-3 m^3/(mol s)`, which is the same unit.
+First- and pseudo-first-order rates retain `s^-1`. Adjacent C++ comments
 are stored only as audit evidence: the executable literals are authoritative. In particular, comment/rate
 discrepancies at IDs 59, 63, 65, 68 and 70 are preserved without substituting the comment values. Reaction 53
 is the sole source-level atom/charge anomaly and is allowlisted only for its exact

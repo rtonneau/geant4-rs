@@ -446,10 +446,10 @@ fn reaction_table_equals_the_cpp_extraction() {
         assert_eq!(names(&reaction.reactants), expected_names("reactants"));
         assert_eq!(names(&reaction.products), expected_names("products"));
         match reaction.rate {
-            ObservedRate::Bimolecular { m3_per_mol_s } => {
+            ObservedRate::Bimolecular { per_molar_s } => {
                 assert_eq!(expected["rate_order"], "bimolecular");
-                assert_eq!(expected["rate_unit"], "m3_per_mol_s");
-                assert_eq!(m3_per_mol_s, expected["rate_value"].as_f64().unwrap());
+                assert_eq!(expected["rate_unit"], "per_molar_s");
+                assert_eq!(per_molar_s, expected["rate_value"].as_f64().unwrap());
             }
             ObservedRate::FirstOrder { per_s } => {
                 assert_eq!(expected["rate_order"], "first_order");
