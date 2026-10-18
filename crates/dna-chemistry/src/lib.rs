@@ -16,17 +16,30 @@ pub mod displacer;
 pub mod engine;
 pub mod error;
 pub mod params;
+pub mod reactions;
 pub mod species;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
 pub use error::ChemistryError;
 
-/// SHA-256 of the three embedded option3 chemistry input files, in the documented order
-/// species, dissociation channels, physicochemical parameters.
+/// SHA-256 of the four embedded option3 chemistry input files, in the documented order:
+/// species, dissociation channels, physicochemical parameters, reactions.
 pub fn option3_data_sha256() -> String {
     let mut hash = dna_core::sha256::Sha256::new();
     hash.update(species::DEFAULT_SPECIES_TOML.as_bytes());
     hash.update(channels::DEFAULT_DISSOCIATION_TOML.as_bytes());
     hash.update(params::DEFAULT_PHYSCHEM_TOML.as_bytes());
+    hash.update(reactions::DEFAULT_REACTIONS_TOML.as_bytes());
     dna_core::sha256::hex(&hash.finalize())
+}
+
+#[cfg(test)]
+mod data_hash_tests {
+    #[test]
+    fn option3_fingerprint_includes_reactions_after_the_existing_three_files() {
+        assert_eq!(
+            super::option3_data_sha256(),
+            "e82816d024843176ff5655613f824c255aa293ee1a6cb70af35d379f8a20d9d1"
+        );
+    }
 }
