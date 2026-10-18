@@ -12,6 +12,9 @@ use common::{CPP_BOOKKEEPING_KEYS, CPP_SPECIES_KEYS, fixture};
 use dna_chemistry::channels::{ChannelTable, StateKind};
 use dna_chemistry::displacer::{self, autoionisation_r_mean_nm};
 use dna_chemistry::params::PhysChemParams;
+use dna_chemistry::reactions::{
+    KineticIntent, ObservedRate, ReactionParticipant, ReactionTable, SourceClass,
+};
 use dna_chemistry::species::{SpeciesTable, atoms};
 use dna_core::species::Species;
 
@@ -387,4 +390,96 @@ fn every_channel_balances_as_in_the_hand_table() {
     }
     // relaxations: A^1B_1, B^1A_1, the three Rydberg layers, H2Ovib = 6
     assert_eq!(checked, 23 - 6, "23 channels, 6 of them relaxations");
+}
+
+#[test]
+fn reaction_table_equals_the_cpp_extraction() {
+    let x = fixture("cpp_reactions.json");
+    let table = ReactionTable::option3().unwrap();
+    let extracted = x["reactions"].as_array().unwrap();
+    assert_eq!(extracted.len(), 72);
+    assert_eq!(table.iter().count(), extracted.len());
+
+    let class_name = |class: SourceClass| match class {
+        SourceClass::I => "I",
+        SourceClass::II => "II",
+        SourceClass::III => "III",
+        SourceClass::IV => "IV",
+        SourceClass::VI => "VI",
+        SourceClass::Scavenging => "scavenging",
+    };
+    let intent_name = |intent: KineticIntent| match intent {
+        KineticIntent::TotallyDiffusionControlled => "totally_diffusion_controlled",
+        KineticIntent::PartiallyDiffusionControlled => "partially_diffusion_controlled",
+        KineticIntent::FirstOrder => "first_order",
+        KineticIntent::PseudoFirstOrder => "pseudo_first_order",
+    };
+
+    for (reaction, expected) in table.iter().zip(extracted) {
+        assert_eq!(u64::from(reaction.id), expected["id"].as_u64().unwrap());
+        assert_eq!(
+            u64::from(reaction.source_line),
+            expected["source_line"].as_u64().unwrap(),
+            "reaction {} source line",
+            reaction.id
+        );
+        assert_eq!(class_name(reaction.source_class), expected["source_class"]);
+        assert_eq!(
+            intent_name(reaction.kinetic_intent),
+            expected["kinetic_intent"]
+        );
+        assert_eq!(reaction.set_reaction_type, expected["set_reaction_type"]);
+        let names = |participants: &[ReactionParticipant]| {
+            participants
+                .iter()
+                .map(|participant| participant.chemistry_name())
+                .collect::<Vec<_>>()
+        };
+        let expected_names = |field: &str| {
+            expected[field]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|name| name.as_str().unwrap())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(names(&reaction.reactants), expected_names("reactants"));
+        assert_eq!(names(&reaction.products), expected_names("products"));
+        match reaction.rate {
+            ObservedRate::Bimolecular { per_molar_s } => {
+                assert_eq!(expected["rate_order"], "bimolecular");
+                assert_eq!(expected["rate_unit"], "per_molar_s");
+                assert_eq!(per_molar_s, expected["rate_value"].as_f64().unwrap());
+            }
+            ObservedRate::FirstOrder { per_s } => {
+                assert_eq!(expected["rate_order"], "first_order");
+                assert_eq!(expected["rate_unit"], "per_s");
+                assert_eq!(per_s, expected["rate_value"].as_f64().unwrap());
+            }
+        }
+    }
+}
+
+#[test]
+fn reaction_conservation_equals_the_independent_hand_evaluation() {
+    let hand = fixture("hand_reactions.json");
+    let table = ReactionTable::option3().unwrap();
+    let balances = hand["balances"].as_array().unwrap();
+    assert_eq!(balances.len(), 72);
+    for (reaction, expected) in table.iter().zip(balances) {
+        assert_eq!(u64::from(reaction.id), expected["id"].as_u64().unwrap());
+        assert_eq!(
+            i64::from(reaction.implicit_water),
+            expected["implicit_water_products"].as_i64().unwrap()
+        );
+        assert_eq!(
+            reaction.balance_exception,
+            !expected["balanced"].as_bool().unwrap()
+        );
+    }
+    assert_eq!(hand["anomaly_ids"], serde_json::json!([53]));
+    assert_eq!(
+        hand["rate_comment_discrepancy_ids"],
+        serde_json::json!([59, 63, 65, 68, 70])
+    );
 }

@@ -1,0 +1,870 @@
+# Executable reaction literals extracted from Geant4 11.4.1.
+# Source: source/physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc:96-666
+# Adjacent comments are audit evidence only; executable literals are authoritative.
+
+geant4_release = "11.4.1"
+source = "source/physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc"
+
+[[reaction]]
+id = 1
+source_line = 146
+source_class = "I"
+reactants = ["H", "H"]
+products = ["H2"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 0.503e10
+set_reaction_type = false
+comment = "*H + *H -> H2"
+
+[[reaction]]
+id = 2
+source_line = 152
+source_class = "I"
+reactants = ["e_aq", "H"]
+products = ["OHm", "H2"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.50e10
+set_reaction_type = false
+comment = "e_aq + H* + H2O -> H2 + OH-"
+
+[[reaction]]
+id = 3
+source_line = 159
+source_class = "I"
+reactants = ["H", "Oxy"]
+products = ["°OH"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.02e10
+set_reaction_type = false
+comment = "H + O(3p) -> OH"
+
+[[reaction]]
+id = 4
+source_line = 165
+source_class = "I"
+reactants = ["H", "Om"]
+products = ["OHm"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.00e10
+set_reaction_type = false
+comment = "H + O- -> OH-"
+
+[[reaction]]
+id = 5
+source_line = 171
+source_class = "I"
+reactants = ["°OH", "Oxy"]
+products = ["HO2°"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.02e10
+set_reaction_type = false
+comment = "OH + O(3p) -> HO2"
+
+[[reaction]]
+id = 6
+source_line = 177
+source_class = "I"
+reactants = ["HO2°", "Oxy"]
+products = ["O2", "°OH"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.02e10
+set_reaction_type = false
+comment = "HO2 + O(3p) -> O2"
+
+[[reaction]]
+id = 7
+source_line = 184
+source_class = "I"
+reactants = ["Oxy", "Oxy"]
+products = ["O2"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.20e10
+set_reaction_type = false
+comment = "O(3p) + O(3p) -> O2"
+
+[[reaction]]
+id = 8
+source_line = 192
+source_class = "III"
+reactants = ["e_aq", "e_aq"]
+products = ["OHm", "OHm", "H2"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 0.636e10
+set_reaction_type = false
+comment = "e_aq + e_aq + 2H2O -> H2 + 2OH-"
+
+[[reaction]]
+id = 9
+source_line = 200
+source_class = "III"
+reactants = ["H3Op", "OHm"]
+products = []
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.13e11
+set_reaction_type = false
+comment = "H3O+ + OH- -> 2H2O"
+
+[[reaction]]
+id = 10
+source_line = 205
+source_class = "III"
+reactants = ["H3Op", "O3m"]
+products = ["°OH", "O2"]
+kinetic_intent = "totally_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 9.0e10
+set_reaction_type = false
+comment = "H3O+ + O3- -> OH + O2"
+
+[[reaction]]
+id = 11
+source_line = 215
+source_class = "II"
+reactants = ["°OH", "H"]
+products = []
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.55e10
+set_reaction_type = true
+comment = "*OH + *H -> H2O"
+
+[[reaction]]
+id = 12
+source_line = 221
+source_class = "II"
+reactants = ["H", "H2O2"]
+products = ["°OH"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 3.50e7
+set_reaction_type = true
+comment = "H + H2O2 -> OH"
+
+[[reaction]]
+id = 13
+source_line = 228
+source_class = "II"
+reactants = ["H", "OHm"]
+products = ["e_aq"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.51e7
+set_reaction_type = true
+comment = "H + OH- -> eaq-"
+
+[[reaction]]
+id = 14
+source_line = 235
+source_class = "II"
+reactants = ["H", "O2"]
+products = ["HO2°"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.10e10
+set_reaction_type = true
+comment = "H + O2 -> HO2"
+
+[[reaction]]
+id = 15
+source_line = 242
+source_class = "II"
+reactants = ["H", "HO2°"]
+products = ["H2O2"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.00e10
+set_reaction_type = true
+comment = "H + HO2 -> H2O2"
+
+[[reaction]]
+id = 16
+source_line = 249
+source_class = "II"
+reactants = ["H", "O2m"]
+products = ["HO2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.00e10
+set_reaction_type = true
+comment = "H + O2- -> HO2-"
+
+[[reaction]]
+id = 17
+source_line = 256
+source_class = "II"
+reactants = ["°OH", "°OH"]
+products = ["H2O2"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 0.55e10
+set_reaction_type = true
+comment = "*OH + *OH -> H2O2"
+
+[[reaction]]
+id = 18
+source_line = 263
+source_class = "II"
+reactants = ["°OH", "H2O2"]
+products = ["HO2°"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.88e7
+set_reaction_type = true
+comment = "OH + H2O2 -> HO2"
+
+[[reaction]]
+id = 19
+source_line = 270
+source_class = "II"
+reactants = ["°OH", "H2"]
+products = ["H"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 3.28e7
+set_reaction_type = true
+comment = "OH + H2 -> H"
+
+[[reaction]]
+id = 20
+source_line = 277
+source_class = "II"
+reactants = ["e_aq", "°OH"]
+products = ["OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.95e10
+set_reaction_type = true
+comment = "e_aq + *OH -> OH-"
+
+[[reaction]]
+id = 21
+source_line = 284
+source_class = "II"
+reactants = ["°OH", "OHm"]
+products = ["Om"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 6.30e9
+set_reaction_type = true
+comment = "OH + OH- -> O-"
+
+[[reaction]]
+id = 22
+source_line = 291
+source_class = "II"
+reactants = ["°OH", "HO2°"]
+products = ["O2"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 7.90e9
+set_reaction_type = true
+comment = "OH + HO2 -> O2"
+
+[[reaction]]
+id = 23
+source_line = 298
+source_class = "II"
+reactants = ["°OH", "O2m"]
+products = ["O2", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.07e10
+set_reaction_type = true
+comment = "OH + O2- -> O2 + OH-"
+
+[[reaction]]
+id = 24
+source_line = 306
+source_class = "II"
+reactants = ["°OH", "HO2m"]
+products = ["HO2°", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 8.32e9
+set_reaction_type = true
+comment = "OH + HO2- -> HO2 + OH-"
+
+[[reaction]]
+id = 25
+source_line = 314
+source_class = "II"
+reactants = ["°OH", "Om"]
+products = ["HO2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.00e9
+set_reaction_type = true
+comment = "OH + O- -> HO2-"
+
+[[reaction]]
+id = 26
+source_line = 321
+source_class = "II"
+reactants = ["°OH", "O3m"]
+products = ["O2m", "HO2°"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 8.50e9
+set_reaction_type = true
+comment = "OH + O3- -> O2- + HO2"
+
+[[reaction]]
+id = 27
+source_line = 329
+source_class = "II"
+reactants = ["e_aq", "H2O2"]
+products = ["OHm", "°OH"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.10e10
+set_reaction_type = true
+comment = "e_aq + H2O2 -> OH- + *OH"
+
+[[reaction]]
+id = 28
+source_line = 337
+source_class = "II"
+reactants = ["H2O2", "OHm"]
+products = ["HO2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 4.71e8
+set_reaction_type = true
+comment = "H2O2 + OH- -> HO2-"
+
+[[reaction]]
+id = 29
+source_line = 344
+source_class = "II"
+reactants = ["H2O2", "Oxy"]
+products = ["HO2°", "°OH"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.60e9
+set_reaction_type = true
+comment = "H2O2 + O(3p) -> HO2 + OH"
+
+[[reaction]]
+id = 30
+source_line = 352
+source_class = "II"
+reactants = ["H2O2", "Om"]
+products = ["HO2°", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 5.55e8
+set_reaction_type = true
+comment = "H2O2 + O- -> HO2 + OH-"
+
+[[reaction]]
+id = 31
+source_line = 360
+source_class = "II"
+reactants = ["H2", "Oxy"]
+products = ["H", "°OH"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 4.77e3
+set_reaction_type = true
+comment = "H2 + O(3p) -> H + OH"
+
+[[reaction]]
+id = 32
+source_line = 368
+source_class = "II"
+reactants = ["H2", "Om"]
+products = ["H", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.21e8
+set_reaction_type = true
+comment = "H2 + O- -> H + OH-"
+
+[[reaction]]
+id = 33
+source_line = 376
+source_class = "II"
+reactants = ["e_aq", "O2"]
+products = ["O2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.74e10
+set_reaction_type = true
+comment = "eaq- + O2 -> O2-"
+
+[[reaction]]
+id = 34
+source_line = 383
+source_class = "II"
+reactants = ["e_aq", "HO2°"]
+products = ["HO2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.29e10
+set_reaction_type = true
+comment = "eaq + HO2 -> HO2-"
+
+[[reaction]]
+id = 35
+source_line = 390
+source_class = "II"
+reactants = ["OHm", "HO2°"]
+products = ["O2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 6.30e9
+set_reaction_type = true
+comment = "OH- + HO2 -> O2-"
+
+[[reaction]]
+id = 36
+source_line = 397
+source_class = "II"
+reactants = ["OHm", "Oxy"]
+products = ["HO2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 4.20e8
+set_reaction_type = true
+comment = "OH- + O(3p) -> HO2-"
+
+[[reaction]]
+id = 37
+source_line = 404
+source_class = "II"
+reactants = ["O2", "Oxy"]
+products = ["O3"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 4.00e9
+set_reaction_type = true
+comment = "O2 + O(3p) -> O3"
+
+[[reaction]]
+id = 38
+source_line = 411
+source_class = "II"
+reactants = ["O2", "Om"]
+products = ["O3m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 3.70e9
+set_reaction_type = true
+comment = "O2 + O- -> O3-"
+
+[[reaction]]
+id = 39
+source_line = 418
+source_class = "II"
+reactants = ["HO2°", "HO2°"]
+products = ["H2O2", "O2"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 9.80e5
+set_reaction_type = true
+comment = "HO2 + HO2 -> H2O2 + O2"
+
+[[reaction]]
+id = 40
+source_line = 426
+source_class = "II"
+reactants = ["HO2°", "O2m"]
+products = ["HO2m", "O2"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 9.70e7
+set_reaction_type = true
+comment = "HO2 + O2- -> HO2- + O2"
+
+[[reaction]]
+id = 41
+source_line = 434
+source_class = "II"
+reactants = ["HO2m", "Oxy"]
+products = ["O2m", "°OH"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 5.30e9
+set_reaction_type = true
+comment = "HO2- + O(3p) -> O2- + OH"
+
+[[reaction]]
+id = 42
+source_line = 444
+source_class = "IV"
+reactants = ["e_aq", "H3Op"]
+products = ["H"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.11e10
+set_reaction_type = true
+comment = "e_aq + H3O+ -> H* + H2O"
+
+[[reaction]]
+id = 43
+source_line = 451
+source_class = "IV"
+reactants = ["e_aq", "O2m"]
+products = ["H2O2", "OHm", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.29e10
+set_reaction_type = true
+comment = "e_aq + O2- -> H2O2 + OH- + OH-"
+
+[[reaction]]
+id = 44
+source_line = 460
+source_class = "IV"
+reactants = ["e_aq", "HO2m"]
+products = ["Om", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 3.51e9
+set_reaction_type = true
+comment = "e_aq + HO2- -> O- + OH-"
+
+[[reaction]]
+id = 45
+source_line = 468
+source_class = "IV"
+reactants = ["e_aq", "Om"]
+products = ["OHm", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 2.31e10
+set_reaction_type = true
+comment = "e_aq + O- -> OH- + OH-"
+
+[[reaction]]
+id = 46
+source_line = 476
+source_class = "IV"
+reactants = ["H3Op", "O2m"]
+products = ["HO2°"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 4.78e10
+set_reaction_type = true
+comment = "H3O+ + O2- -> HO2"
+
+[[reaction]]
+id = 47
+source_line = 483
+source_class = "IV"
+reactants = ["H3Op", "HO2m"]
+products = ["H2O2"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 5.00e10
+set_reaction_type = true
+comment = "H3O+ + HO2- -> H2O2"
+
+[[reaction]]
+id = 48
+source_line = 490
+source_class = "IV"
+reactants = ["H3Op", "Om"]
+products = ["°OH"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 4.78e10
+set_reaction_type = true
+comment = "H3O+ + O- -> OH"
+
+[[reaction]]
+id = 49
+source_line = 497
+source_class = "IV"
+reactants = ["O2m", "Om"]
+products = ["O2", "OHm", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 6.00e8
+set_reaction_type = true
+comment = "O2- + O- -> O2 + OH- + OH-"
+
+[[reaction]]
+id = 50
+source_line = 506
+source_class = "IV"
+reactants = ["HO2m", "Om"]
+products = ["O2m", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 3.50e8
+set_reaction_type = true
+comment = "HO2- + O- -> O2- + OH-"
+
+[[reaction]]
+id = 51
+source_line = 514
+source_class = "IV"
+reactants = ["Om", "Om"]
+products = ["H2O2", "OHm", "OHm"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 1.00e8
+set_reaction_type = true
+comment = "O- + O- -> H2O2 + OH- + OH-"
+
+[[reaction]]
+id = 52
+source_line = 523
+source_class = "IV"
+reactants = ["Om", "O3m"]
+products = ["O2m", "O2m"]
+kinetic_intent = "partially_diffusion_controlled"
+rate_order = "bimolecular"
+rate_per_molar_s = 7.00e8
+set_reaction_type = true
+comment = "O- + O3- -> O2- + O2-"
+
+[[reaction]]
+id = 53
+source_line = 534
+source_class = "VI"
+reactants = ["O3m", "NoneM"]
+products = ["H3Op", "O2m"]
+kinetic_intent = "first_order"
+rate_order = "first_order"
+rate_per_s = 2.66e3
+set_reaction_type = false
+comment = "O3- -> O- + O2"
+
+[[reaction]]
+id = 54
+source_line = 544
+source_class = "scavenging"
+reactants = ["HO2°", "H2O(B)"]
+products = ["H3Op", "O2m"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 7.15e5
+set_reaction_type = false
+comment = "HO2 + H2O -> H3O+ + O2-"
+
+[[reaction]]
+id = 55
+source_line = 551
+source_class = "scavenging"
+reactants = ["H", "H2O(B)"]
+products = ["e_aq", "H3Op"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 5.94e0
+set_reaction_type = false
+comment = "H + H2O -> eaq- + H3O+ 5.94 / s"
+
+[[reaction]]
+id = 56
+source_line = 558
+source_class = "scavenging"
+reactants = ["e_aq", "H2O(B)"]
+products = ["H", "OHm"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.58e1
+set_reaction_type = false
+comment = "eaq- + H2O -> H + OH- 15.8 / s"
+
+[[reaction]]
+id = 57
+source_line = 565
+source_class = "scavenging"
+reactants = ["O2m", "H2O(B)"]
+products = ["HO2°", "OHm"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.50e-1
+set_reaction_type = false
+comment = "O2- + H2O -> HO2 + OH- 0.15 / s"
+
+[[reaction]]
+id = 58
+source_line = 572
+source_class = "scavenging"
+reactants = ["HO2m", "H2O(B)"]
+products = ["H2O2", "OHm"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.36e6
+set_reaction_type = false
+comment = "HO2- + H2O -> H2O2 + OH- 1.36e6 / s"
+
+[[reaction]]
+id = 59
+source_line = 579
+source_class = "scavenging"
+reactants = ["Oxy", "H2O(B)"]
+products = ["°OH", "°OH"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.00e3
+set_reaction_type = false
+comment = "O(3p) + H2O -> OH + OH 1.90e3 / s"
+
+[[reaction]]
+id = 60
+source_line = 586
+source_class = "scavenging"
+reactants = ["Om", "H2O(B)"]
+products = ["°OH", "OHm"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.36e6
+set_reaction_type = false
+comment = "O- + H2O -> OH + OH- 1.36e6 / s"
+
+[[reaction]]
+id = 61
+source_line = 593
+source_class = "scavenging"
+reactants = ["e_aq", "H3Op(B)"]
+products = ["H"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 2.09e3
+set_reaction_type = false
+comment = "eaq- + H3O+(B) -> H + H2O 2.09e3 / s"
+
+[[reaction]]
+id = 62
+source_line = 599
+source_class = "scavenging"
+reactants = ["O2m", "H3Op(B)"]
+products = ["HO2°"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 4.73e3
+set_reaction_type = false
+comment = "O2- + H3O+(B) -> HO2 + H2O 4.73e3 / s"
+
+[[reaction]]
+id = 63
+source_line = 605
+source_class = "scavenging"
+reactants = ["OHm", "H3Op(B)"]
+products = []
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.12e4
+set_reaction_type = false
+comment = "OH- + H3O+(B) -> 2H2O 1.11e4 / s"
+
+[[reaction]]
+id = 64
+source_line = 612
+source_class = "scavenging"
+reactants = ["H3Op", "OHm(B)"]
+products = []
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 1.12e4
+set_reaction_type = false
+comment = "opposite description of OH- + H3O+(B) -> 2H2O"
+
+[[reaction]]
+id = 65
+source_line = 617
+source_class = "scavenging"
+reactants = ["HO2m", "H3Op(B)"]
+products = ["H2O2"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 4.95e3
+set_reaction_type = false
+comment = "HO2- + H3O+(B) -> H2O2 + H2O 4.98e3 / s"
+
+[[reaction]]
+id = 66
+source_line = 623
+source_class = "scavenging"
+reactants = ["Om", "H3Op(B)"]
+products = ["°OH"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 4.73e3
+set_reaction_type = false
+comment = "O- + H3O+(B) -> OH + H2O 4.73e3 / s"
+
+[[reaction]]
+id = 67
+source_line = 629
+source_class = "scavenging"
+reactants = ["O3m", "H3Op(B)"]
+products = ["°OH", "O2"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 8.91e3
+set_reaction_type = false
+comment = "O3- + H3O+(B) -> OH + O2 + H2O 8.91e3 / s"
+
+[[reaction]]
+id = 68
+source_line = 636
+source_class = "scavenging"
+reactants = ["H", "OHm(B)"]
+products = ["e_aq"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 2.48e0
+set_reaction_type = false
+comment = "H + OH-(B) -> H2O + eaq- 2.49e3 / s"
+
+[[reaction]]
+id = 69
+source_line = 642
+source_class = "scavenging"
+reactants = ["°OH", "OHm(B)"]
+products = ["Om"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 6.24e2
+set_reaction_type = false
+comment = "OH + OH-(B) -> O- + H2O 6.24e2 / s"
+
+[[reaction]]
+id = 70
+source_line = 648
+source_class = "scavenging"
+reactants = ["H2O2", "OHm(B)"]
+products = ["HO2m"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 4.66e1
+set_reaction_type = false
+comment = "H2O2 + OH-(B) -> HO2- + H2O 4.66e2 / s"
+
+[[reaction]]
+id = 71
+source_line = 654
+source_class = "scavenging"
+reactants = ["HO2°", "OHm(B)"]
+products = ["O2m"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 6.24e2
+set_reaction_type = false
+comment = "HO2 + OH-(B) -> O2- + H2O 6.24e2 / s"
+
+[[reaction]]
+id = 72
+source_line = 660
+source_class = "scavenging"
+reactants = ["Oxy", "OHm(B)"]
+products = ["HO2m"]
+kinetic_intent = "pseudo_first_order"
+rate_order = "first_order"
+rate_per_s = 4.16e1
+set_reaction_type = false
+comment = "O(3p) + OH-(B) -> HO2- 4.16e1 / s"

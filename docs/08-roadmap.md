@@ -481,6 +481,8 @@ Scope: species/reaction TOML loaders (option3 table, script-checked against C++)
 Tests: V9, V10, unit tests for reaction selection and boundaries. Acceptance: V9 for A+B and A+A over three D/R/k sets; IRT vs SBS agreement on a TDC case within 3 sigma.
 Seeds (`docs/gps-backlog.md`): `m7-option3-reaction-table`, `m7-diffusion-and-two-body-irt`, `m7-sbs-oracle-and-ode`, `m7-sbs-close-gate`, `m7-multispecies-irt-scheduler`, `m7-scheduler-close-gate`. Consuming M6 species requires M6 closed.
 
+**Reaction-table seed implemented.** `reactions_option3.toml` contains all 72 executable Geant4 11.4.1 option3 entries with stable source-order IDs. Machine extraction, an independent hand evaluator, strict Rust validation and an all-field cross-check cover participants, products, source class/line, observed-rate order/value, kinetic intent and `SetReactionType`. The four bulk configurations remain outside `Species`; exact reaction 53 is the only source anomaly allowlisted. This seed provides validated data only: diffusion, derived radii and probabilities, IRT/SBS kinetics, scheduling, and the M6-consumption gate remain for later seeds.
+
 ## M8 G(t) end-to-end
 Scope: orchestration, scoring G(t) with uncertainties, TOML config, CLI `dna run config.toml`, JSON output with metadata.
 Tests: V11, V13. Acceptance: V11 for e- 1 MeV (or 100 keV and 1 MeV) and p 10 MeV against chem6 reference.

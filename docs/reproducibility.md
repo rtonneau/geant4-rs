@@ -19,7 +19,7 @@ crate version, `rustc -V`, Geant4 reference version (11.4.1), dataset name/versi
 ## Data integrity
 `Manifest::verify` re-checks size and SHA-256 of every committed data file; `dna-core/tests/committed_data.rs` runs it on `data/` in CI. SHA-256 is implemented in-crate (`sha2` is not an approved dependency) and tested against the FIPS 180-4 / NIST vectors.
 
-The embedded chemistry files use exact Geant4 11.4.1 configuration keys. The 15 keys in the C++ extraction fixture are compared directly with `Species::chemistry_name()`; `°OH` and `HO2°` remain distinct from legacy ASCII input spellings `OH` and `HO2`. `H2O(B)`, `H3Op(B)`, `OHm(B)`, and `NoneM` are bookkeeping configurations outside the `Species` set. The `chemistry_data_sha256` output field fingerprints the three embedded chemistry files in species/channels/parameters order.
+The embedded chemistry files use exact Geant4 11.4.1 configuration keys. The 15 keys in the C++ extraction fixture are compared directly with `Species::chemistry_name()`; `°OH` and `HO2°` remain distinct from legacy ASCII input spellings `OH` and `HO2`. `H2O(B)`, `H3Op(B)`, `OHm(B)`, and `NoneM` are typed reaction-table bulk participants outside the `Species` set. The 72 option3 reactions are independently checked against the C++ source extraction and a hand-authored evaluator. Bimolecular literals are stored in `M^-1 s^-1`, matching the C++ `1e-3 m3/(mol s)` multiplier. The `chemistry_data_sha256` output field fingerprints the four embedded chemistry files in species/channels/parameters/reactions order; its current value is `46a49f0cde41062cd4c55fb93e7817f481c68918e3ad6c810686db9dda4cbbde`.
 
 ## Statistical test acceptance (fixed before running)
 - KS uniformity: N = 1e5, `D < 1.95/sqrt(N)` (alpha ~ 0.001); fixed seed, so the test is deterministic.
@@ -50,4 +50,3 @@ One stream per history. Solvation events come first and draw nothing. The excita
 Consequences: adding a species or a channel, changing the processing order (docs/09 Q21) or the number of draws changes every later number of the history. Geant4 draws differently (`G4RandGauss`, two calls of its recombination sampler); only distributions can be compared.
 
 M6 B does not add random draws. Physics histories are computed in parallel; their event lists are then converted with the per-history `PhysChem` stream and reduced sequentially in ascending history id, batch by batch. `run_physchem_summary` is therefore bitwise independent of thread count and batch scheduling. Production attribution, displacement sums and same-decay pair distances are accumulated while the already-selected channel products are emitted and consume no RNG values.
-

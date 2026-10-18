@@ -22,3 +22,15 @@ _Avoid_: the other words people use for it
 **Chemistry species name**:
 The byte-for-byte `G4MoleculeTable` configuration key used by Geant4 11.4.1, including spelling, case, punctuation, and symbols such as `°OH`, `HO2°`, and `e_aq`. The same name is canonical in data, serialization, and user-visible output, exposed by `Species::chemistry_name()` in Rust. `Species::OH` and `Species::HO2` are legal identifiers at the Rust syntax boundary. The four bookkeeping configurations `H2O(B)`, `H3Op(B)`, `OHm(B)`, and `NoneM` are outside `Species`.
 _Avoid_: treating the legacy ASCII input spellings `OH` or `HO2` as canonical keys
+
+**Reaction participant**:
+A named entity occupying a reactant or product position in the Geant4 option3 reaction table. It is either one of the 15 mobile chemistry species or a bulk reaction participant.
+_Avoid_: assuming every reaction participant is a mobile species
+
+**Bulk reaction participant**:
+One of the non-mobile Geant4 bookkeeping configurations `H2O(B)`, `H3Op(B)`, `OHm(B)`, or `NoneM`, representing a bulk reservoir or sentinel in first- and pseudo-first-order reactions. It is not a member of the mobile `Species` set.
+_Avoid_: reservoir species, ordinary species
+
+**Observed reaction rate**:
+The `k_obs` literal encoded by `G4EmDNAChemistry_option3` for a reaction, expressed according to that reaction's order. It is source data, unlike the activation-controlled rate `k_act` derived later by a selected reaction model.
+_Avoid_: treating `k_act` as a source-table constant
