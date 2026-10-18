@@ -60,8 +60,8 @@ Extrapolation/boundary behaviour of `G4DNACrossSectionDataSet`: see B.7.1 [V].
 | Displacement of products | `D/processes/src/G4DNAWaterDissociationDisplacer.cc` (RMS offsets, e.g. 2.4/0.8/1.1/1.6 nm) | `physchem::displacer` |
 | Electron thermalisation | `D/models/src/G4DNAOneStepThermalizationModel.cc` (Meesungnoen 2002 fits, Terrisol 1990 table, Gaussian 3-D penetration from mean) ; `G4DNAElectronSolvation` | `physchem::thermalisation` |
 | Species | `D/molecules/types/src/G4*.cc` (D, charge, radius) | `chemistry::species` |
-| Reactions (option3) | `C/src/G4EmDNAChemistry_option3.cc` L~100-640 | `data/chemistry/reactions_option3.toml` |
-| Reaction types | `SetReactionType(data, model)`: type 1 (partially diffusion-controlled) unless SBS (L770-774) | `ReactionKind` enum |
+| Reactions (option3) | `C/src/G4EmDNAChemistry_option3.cc:96-666` | `data/chemistry/reactions_option3.toml`, `dna_chemistry::reactions` |
+| Reaction types | `SetReactionType(data, model)` at `:770-773`: type 1 (partially diffusion-controlled) unless SBS | `KineticIntent` plus the source call flag; runtime model deferred |
 | IRT | `D/models/src/G4DNAIRT.cc` (space binning by `fRCutOff`, per-reactant sampling, Gaussian propagation to common time), `G4DNAIndependentReactionTimeStepper.cc`, `G4IRTUtils.cc` | `chemistry::irt` |
 | Partially diffusion-controlled time sampling | `G4DiffusionControlledReactionModel.cc` (L82-170: Smoluchowski radius, `kdif=4*pi*D*R*N_A`, erfc) | `chemistry::reaction_model` |
 | Smoluchowski (totally diffusion-controlled) | `G4DNASmoluchowskiReactionModel.cc` | same |
@@ -72,8 +72,9 @@ Extrapolation/boundary behaviour of `G4DNACrossSectionDataSet`: see B.7.1 [V].
 
 Species diffusion coefficients in `D/molecules/types/src` [V]: e_aq 4.9e-9, °OH 2.8e-9, H 7e-9, H2 5e-9, H2O2 1.4e-9, H3O+ 9e-9, HO2° 2.3e-9, O2 2.4e-9 m^2/s;
 e_aq radius 0.23 nm ("K.D. Jordan, Science 306 p.618"). Others [U].
-Rate constants in option3 are `x * (1e-3 m3 / (mole s))` = M^-1 s^-1 (e.g. `H+H` 0.503e10, `e_aq+H` 2.50e10, `OH+OH` 0.55e10, `e_aq+OH` 2.95e10, `H3O+ + OH-` 1.13e11).
-Complete verified table to be transcribed in M7 with a script that diffs against the C++ source.
+The complete option3 table is transcribed and checked in M7: 72 source-order entries, comprising classes I/III/II/IV/VI/scavenging = 7/3/31/11/1/19. There are 52 ordinary mobile-pair reactions and 20 first-order, pseudo-first-order or bulk-participant entries; 42 entries call `SetReactionType`. Bimolecular literals use `m3/(mol s)` and first-order literals use `s^-1`; the loader retains the order instead of coercing both into one unit. The four non-mobile configurations `H2O(B)`, `H3Op(B)`, `OHm(B)` and `NoneM` remain outside `Species` and are represented as bulk participants.
+
+Executable statements are authoritative over nearby prose. Five adjacent comments disagree with their executable rate literals (IDs 59, 63, 65, 68 and 70). Reaction 53, `O3m + NoneM -> H3Op + O2m` at `2.66e3 s^-1`, is the sole exact-signature conservation anomaly allowed by the loader; no generalized imbalance exemption exists. Extraction and independent hand checks are `scripts/extract_reactions_from_cpp.py`, `scripts/hand_reactions.py`, and `crates/dna-chemistry/tests/cpp_crosscheck.rs`. The audited source is the unpacked Geant4 11.4.1 release at `G4EmDNAChemistry_option3.cc:96-666`; because that source tree has no VCS metadata, no commit hash is asserted. Reaction-data container behavior was also checked in `G4DNAMolecularReactionTable.hh:65-167` and `.cc:56-135,219-317`; derived kinetic parameters and scheduler behavior are not part of this transcription.
 
 ## B.6 Examples [V names]
 `examples/extended/medical/dna/`: `dnaphysics`, `mfp`, `range`, `slowing`, `spower`, `wvalue`, `microdosimetry`, `chem1-6`, `scavenger`, `UHDR`.
@@ -233,8 +234,8 @@ Data transcribed in `data/chemistry/` (provenance and line numbers inside the fi
    The exact `G4MoleculeTable` key for the hydroxyl radical is `°OH`, and for the hydroperoxyl radical it is `HO2°`
    (`CH:94,123`). The Rust identifiers `Species::OH` and `Species::HO2` reflect Rust's identifier syntax;
    `chemistry_name()` and the chemistry TOML retain the C++ keys. ASCII `OH` and `HO2` are legacy input spellings only.
-7. **Not implemented** (not reachable with option2 events): `Double/Triple/QuadrupleIonisation_DissociationDecay` displacer cases, `H2O(B)/H3Op(B)/OHm(B)`/`NoneM`
-   bookkeeping configurations (chemistry, M7), which are outside the 15-member Rust `Species` set. `ExtendLowEnergyLimit(0.025 eV)` of the Sanche model in `ConstructProcess` (option3 chemistry, `:692`) is unreachable
+7. **Not implemented** (not reachable with option2 events): `Double/Triple/QuadrupleIonisation_DissociationDecay` displacer cases. The `H2O(B)/H3Op(B)/OHm(B)`/`NoneM`
+   bookkeeping configurations are now represented as M7 reaction-table bulk participants, still outside the 15-member Rust `Species` set; their runtime behavior is not implemented. `ExtendLowEnergyLimit(0.025 eV)` of the Sanche model in `ConstructProcess` (option3 chemistry, `:692`) is unreachable
    with solvation active (E <= 7.4 eV is always solvated, B.7.2).
 
 ### B.7.7 M6 reference-run lifecycle reading [V, M6 B]

@@ -48,7 +48,7 @@ impl ReactionParticipant {
     pub fn from_name(name: &str) -> Option<Self> {
         Species::from_chemistry_name(name)
             .map(Self::Mobile)
-            .or_else(|| match name {
+            .or(match name {
                 "H2O(B)" => Some(Self::Bulk(BulkParticipant::H2OB)),
                 "H3Op(B)" => Some(Self::Bulk(BulkParticipant::H3OpB)),
                 "OHm(B)" => Some(Self::Bulk(BulkParticipant::OHmB)),
@@ -327,13 +327,23 @@ fn validate_intent(
     order: RateOrder,
     set_reaction_type: bool,
 ) -> Result<(), ChemistryError> {
-    let valid = match (order, intent, set_reaction_type) {
-        (RateOrder::Bimolecular, KineticIntent::PartiallyDiffusionControlled, true) => true,
-        (RateOrder::Bimolecular, KineticIntent::TotallyDiffusionControlled, false) => true,
-        (RateOrder::FirstOrder, KineticIntent::FirstOrder, false) => true,
-        (RateOrder::FirstOrder, KineticIntent::PseudoFirstOrder, false) => true,
-        _ => false,
-    };
+    let valid = matches!(
+        (order, intent, set_reaction_type),
+        (
+            RateOrder::Bimolecular,
+            KineticIntent::PartiallyDiffusionControlled,
+            true
+        ) | (
+            RateOrder::Bimolecular,
+            KineticIntent::TotallyDiffusionControlled,
+            false
+        ) | (RateOrder::FirstOrder, KineticIntent::FirstOrder, false)
+            | (
+                RateOrder::FirstOrder,
+                KineticIntent::PseudoFirstOrder,
+                false
+            )
+    );
     if valid {
         Ok(())
     } else {

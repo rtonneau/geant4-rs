@@ -435,8 +435,16 @@ fn reaction_table_equals_the_cpp_extraction() {
                 .map(|participant| participant.chemistry_name())
                 .collect::<Vec<_>>()
         };
-        assert_eq!(names(&reaction.reactants), expected["reactants"]);
-        assert_eq!(names(&reaction.products), expected["products"]);
+        let expected_names = |field: &str| {
+            expected[field]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|name| name.as_str().unwrap())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(names(&reaction.reactants), expected_names("reactants"));
+        assert_eq!(names(&reaction.products), expected_names("products"));
         match reaction.rate {
             ObservedRate::Bimolecular { m3_per_mol_s } => {
                 assert_eq!(expected["rate_order"], "bimolecular");
