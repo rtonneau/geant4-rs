@@ -6,3 +6,12 @@
 .work/sessions/.pending-seeds.json*
 .work/sessions/*/.write-payload.md
 .work/sessions/*/.changelog-payload.md
+.VSCodeCounter/2026-10-16_19-15-11/details.md
+.VSCodeCounter/2026-10-16_19-15-11/diff-details.md
+.VSCodeCounter/2026-10-16_19-15-11/diff.csv
+.VSCodeCounter/2026-10-16_19-15-11/diff.md
+.VSCodeCounter/2026-10-16_19-15-11/diff.txt
+.VSCodeCounter/2026-10-16_19-15-11/results.csv
+.VSCodeCounter/2026-10-16_19-15-11/results.json
+.VSCodeCounter/2026-10-16_19-15-11/results.md
+.VSCodeCounter/2026-10-16_19-15-11/results.txt
