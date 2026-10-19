@@ -148,14 +148,39 @@
         "ticket": "04-document-option3-reactions",
         "commit": "2553983"
       }
+    },
+    {
+      "at": "2026-10-19T17:05:34.063Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-19T17:11:09.545Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
     }
   ],
-  "current_phase": "finish-pending",
+  "current_phase": "finished",
   "git": {
     "branch": "feat/m7-option3-reaction-table",
     "base_branch": "main",
     "branch_created_at": "2026-10-17T19:57:56.393Z",
     "pr_url": null
   },
-  "ship_mode": "inline"
+  "ship_mode": "inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 3,
+    "path": ".work/changelog/2026-10-17__m7-option3-reaction-table.md",
+    "written_at": "2026-10-19T17:05:34.050Z"
+  },
+  "finished_at": "2026-10-19T17:11:09.545Z"
 }
