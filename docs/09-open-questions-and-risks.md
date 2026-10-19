@@ -89,6 +89,117 @@ Q12 (atomic de-excitation disabled), Q13 (Geant4 elastic rotation), Q17 (Meesung
 
 RR-001 adds only a new `physchem_prechem` snapshot action and output mode plus the ignored `m6_prechem_counts_and_rms_match_geant4` consumer. Its post-zero-step capture uses `G4ITStepProcessor2.cc:110-185`'s merged/cleaned list before the next IRT initialization; runtime guards reject a wrong stage/time. The code compiles and links against Geant4 11.4.1; runtime behavior is **awaiting the user's run**, not validated by compilation. Only new `physchem_prechem.csv` and `provenance_m6_prechem.toml` are requested. M6 closes only after their provenance/boundary checks and the unchanged numerical criteria pass; M7 consumption remains gated.
 
+### N2 and the 900 keV spatial diagnostic contract (frozen 2026-10-19)
+
+**Q21/R14 ordering limitation retained after N2.** The source trace in docs/02
+B.7.9 establishes the one-solvation/one-e_aq handoff, positions, fixed 1 ps births,
+parent and track ID assignment, delayed insertion, reverse main-list processing,
+daughter merging, and killed-electron removal. No source-proven model defect was
+found. The correspondence between physical cascade event order and molecular
+insertion/processing order has not been traced at runtime. Current Rust records
+lack physical track and parent IDs; history IDs and internal event indices must
+not be described as equivalent to Geant4 track IDs. Diagnostic identity is local
+to one implementation, seed and history. This update supersedes earlier
+statements that N2 was outside the audit; it does not close the ordering risk.
+
+**Five boundaries, in the fixed reporting order below.** All radii are measured
+from the common primary origin, with the primary along +z; no recentering on a
+history centroid or mother is allowed. Physical sites retain their physical
+stage meaning; the molecular boundaries have global time 1 ps and no pulse
+delay. Record births and deaths without changing model draws or scheduling.
+
+| Boundary | Included population and observation meaning |
+|---|---|
+| 1. Chemistry-producing physical sites | Each actual excitation, ionisation or attachment handoff site, plus each terminal solvation origin **before** its electron displacement, classified by process/state. Exclude elastic/vibrational interactions and no-op ionisations that create no water; preserve an excitation handoff if the model creates water despite zero deposit. Attachment is counted once. |
+| 2. Solvated-electron creation | Direct e_aq births from terminal physical electrons at the displaced position, alive at creation, before any electron-hole recombination. Auto-ionisation daughters belong to boundary 4. |
+| 3. Pre-decay water states | Initial excited, ionised and attached H2O at its inserted position, before any decay/recombination action. Record the initial configuration and source event; do not count H2Ovib conversion as a second physical water birth. `fStopButAlive` water is extant, not killed. |
+| 4. Post-dissociation products | All actual daughter births, including auto-ionisation e_aq and daughters of recombined H2Ovib, at mother plus product displacement and before later consumption of that daughter. Accumulate birth records over the zero-time passes; this is not a fictitious global snapshot with recombination switched off. Exclude direct solvation births already in boundary 2. |
+| 5. Post-recombination survivors | All alive shared species after all water decay/recombination passes and daughter merges, before option3 IRT reactions or positive-time diffusion. Exclude killed electrons and water mothers. This is the stage-matched M6 boundary, not the historical post-contact-reaction `physchem` snapshot. |
+
+The boundary-4 birth tally and boundary-5 survivor tally overlap by design and
+must never be summed as a population. Decay and recombination interleave, so
+these five populations are not five consecutive global instants. If a boundary
+cannot be observed without perturbing the scheduler, report the source/hook
+limitation and stop that instrumentation; do not substitute a later snapshot.
+
+**Long-form record contract.** Each row identifies implementation, seed, history,
+boundary, process/state or species category, track/entity ID, parent ID and its
+physical/molecular namespace, source-event ordinal, creation ordinal, and (where
+applicable) zero-time pass and processing ordinal. Carry time/stage and
+alive/stopped/killed semantics explicitly; inapplicable identifiers use an
+explicit missing value, never a guessed cross-implementation match. Preserve
+lineage in diagnostic records even where the production species type does not.
+Rows may aggregate only entities sharing the declared identity key; complete
+per-history/category summaries must remain reconstructible without counting an
+entity twice. Include explicit empty categories/history coverage, so zero births
+are distinguishable from missing data. Stable IDs must not depend on pointers
+or worker scheduling.
+
+Required additive statistics are `count`, `sum_r2_nm2`, `sum_z_nm`, `sum_z2_nm2`,
+and `sum_x2_plus_y2_nm2`, together with `max_radius_nm` and radial-bin counts.
+Fix radial edges to **`10^(k/2)` nm for `k = 0..16`**, from 1 nm to 100 mm.
+There are 18 bins: underflow `[0, 1)`, 16 half-open interior bins
+`[10^(k/2), 10^((k+1)/2))` for `k = 0..15`, and overflow `[10^8, infinity)` nm.
+An exact upper edge belongs to the next bin, including overflow at 100 mm.
+Bin totals equal count; moments are finite, squared moments nonnegative, and
+`sum_r2 = sum_z2 + sum_x2_plus_y2` within floating-point roundoff. Empty rows have
+zero moments/bin counts and no physical maximum (a documented zero sentinel is
+permitted). Radial quantiles are bin-bounded estimates, not exact positions.
+
+**Primary estimand.** Let `N_I` and `S_I` be the total count and summed squared
+origin radius for implementation `I`, pooling all histories and the fixed seven
+shared boundary-5 species: e_aq, OH, H3Op, H, H2, OHm, Oxy. The sole primary is
+`R = sqrt(S_Rust / N_Rust) / sqrt(S_Geant4 / N_Geant4)`. This is particle-pooled
+RMS, not the mean of per-history or per-species RMS values. Species counts and
+RMS, per-history RMS, radial distributions/quantiles, maxima, mean z,
+longitudinal RMS and transverse RMS are secondary diagnostics. A positive finite
+pooled count and radius are required for a ratio; undefined quantities are
+reported, never silently replaced with zero or dropped to obtain an interval.
+
+**Sampling and inference.** Use 900,000 eV, five independent seeds with 40
+histories each in **each** implementation (200 histories per implementation).
+Freeze the seed list and deterministic analysis seed in the implementation and
+run request before generating diagnostic samples; record both in provenance and
+the report. Matching numeric seed/history labels across implementations provide
+no pairing. Perform exactly **20,000** hierarchical bootstrap replicates: for
+each implementation independently, draw five seed groups with replacement,
+then draw that group's original number of whole histories with replacement
+within each selected group. A history carries all its boundaries and species
+together to preserve their covariance. Use the same resampled histories for all
+statistics within a replicate and recompute ratios from summed counts/moments.
+Use the 2.5% and 97.5% bootstrap percentiles for the primary 95% interval, with
+linear interpolation at sorted rank `(B - 1) p` (zero-based, `B = 20000`).
+
+For localization, pool each boundary's included population as defined above and
+compute its RMS ratio `R_b`. For each bootstrap replicate `j`, form
+`M_j = max_b |log(R_b,j) - log(R_b)|` over the **five** boundaries. With `q` the
+95th percentile of `M`, report simultaneous intervals
+`[exp(log(R_b) - q), exp(log(R_b) + q)]`. An undefined boundary ratio must be
+reported as a diagnostic failure, not removed from the simultaneous family.
+The earliest boundary in the fixed reporting order whose simultaneous interval
+excludes 1.0 is the **first detected divergence**. Different populations and
+interleaved operations prevent treating that label as proof of causation or as
+proof that earlier boundaries are equivalent. Interpret it with the N2 trace.
+
+**Precision-only expansion and interpretation.** For primary interval `[L, U]`
+and observed ratio `R`, define relative half-width `h = (U - L) / (2 R)`.
+The target is at most **four percentage points** (`h <= 0.04`, report `100 h`).
+If `h > 0.04`, expand every seed uniformly to 80 histories, then to 160 if still
+needed, in both implementations. Each level is a complete reproducible sample;
+never concatenate reruns with duplicate seed/history identities. Do not expand
+because of the effect's sign, magnitude or significance. Stop at **800 histories
+per implementation** (five x 160) even if the target is unmet, and report the
+achieved precision and sample level. The primary residual is statistically
+detected when its 95% interval excludes 1.0; inclusion of 1.0 is inconclusive,
+not equivalence. These bootstrap intervals are diagnostic and do not assert
+exact sequential coverage under the precision-based stopping rule. The existing
+20% M6 RMS gate is unchanged and is not this investigation's equivalence margin.
+
+No behavior correction, replacement reference, Geant4 execution, or M6 closure
+decision follows from this contract. A source-proven defect is documented for a
+separate fix. New diagnostic files and provenance must preserve all existing
+evidence; the implementation session ends awaiting the project lead's data.
+
 ## Decisions confirmed 2026-10-16 (gps roadmap session)
 - **Q24 CLOSED.** The `g4rs_ref physchem` crash is fixed (IRT time-step model set explicitly, snapshot at the first scheduler step with `dt > 0`, secondaries transported, atomic de-excitation off); see `validation/geant4/BUILD_NOTES.md` section 5 (issues G-K). Reference data: `validation/reference/physchem.csv`, `provenance_m6.toml`. The **M6 gate is still open**: `1000 eV H2O2: z = 111.6` (docs/08, seed `m6-comparison-report`).
 - **Snapshot interpretation corrected by the M6 audit.** The callback above is after zero-time chemistry, not just after dissociation (Q25/R17). This does not reopen the lifecycle crash or alter the committed reference, original gate tolerances, or M6 closure requirement.

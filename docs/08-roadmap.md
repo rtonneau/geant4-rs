@@ -476,6 +476,44 @@ the named `history` and `physchem_a` tests each pass with `-- --exact`.
 cascade count identity. Logs `01-low-energy.log` through `06-workspace.log` and all build/test
 artifacts are under `.scratch/tests/2026-10-17__m6-n1-thermalisation-audit/`.
 
+### N2 lifecycle audit and spatial diagnostic contract (2026-10-19)
+
+**N2 source audit complete; the 900 keV spatial residual remains unresolved.**
+The direct Geant4 11.4.1 source trace in docs/02 B.7.9 finds one alive e_aq per
+terminal solvation, at the displaced position and global 1 ps, with the physical
+electron killed and its full kinetic energy deposited. Rust preserves those
+semantics. Water states enter at their physical interaction positions; initial
+molecules enter delayed lists, while dissociation daughters enter secondary
+lists and join after the zero-time pass. Recombination kills an electron before
+survivor scoring. The source proves these local operations and the reverse
+main-list processing rule; it does **not** prove a runtime mapping from Rust's
+LIFO cascade event order to Geant4's physical-event/molecule-insertion order.
+
+Geant4 retains physical and molecular parent/track IDs; current Rust records
+retain history IDs and internal event/vector indices only. Diagnostic IDs and
+creation/processing ordinals will expose each implementation's lifecycle, without
+claiming eventwise pairing between different RNG engines. Geant4's molecular
+`BuildTrack` consumes direction uniforms during creation; Rust's conversion of
+an already displaced solvation event consumes no RNG. This is a stream/record
+representation difference, not source evidence for a spatial defect.
+
+This verdict supersedes the earlier historical statements that N2 was outside
+the audit. Q21/R14 retain the untraced ordering assumption. No physical model,
+chemistry schedule, reference data, generator mode or M6 criterion is changed by
+this audit; the stage-matched gate's recorded pass and project-lead closure
+decision remain as before.
+
+The preregistered investigation in docs/09 observes chemistry-producing physical
+sites, solvated-electron creation, pre-decay water states, dissociation products
+at birth, and final post-recombination/pre-IRT survivors. It compares independent
+900 keV samples with five seeds x 40 histories, 20,000 hierarchical bootstrap
+replicates, and a precision-only uniform expansion to 80 then 160 histories per
+seed (at most 800 histories per implementation). The sole primary estimand is
+the ratio of pooled origin RMS across all seven shared final survivor species;
+simultaneous boundary intervals identify the **first detected divergence**, not
+its cause. Diagnostic implementation and the new user-run Geant4 request are
+subsequent tickets; no new run or spatial inference is claimed here.
+
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.
 Tests: V9, V10, unit tests for reaction selection and boundaries. Acceptance: V9 for A+B and A+A over three D/R/k sets; IRT vs SBS agreement on a TDC case within 3 sigma.
