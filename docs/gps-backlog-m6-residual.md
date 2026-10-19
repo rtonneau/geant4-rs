@@ -78,3 +78,43 @@ docs/08 and docs/09 (Q21/R14) once it is given; it does not take it. Do not loos
 further change to the Rust model, if the review finds a defect, is a separate seed with its own tests.
 
 **Requires.** `m6-residual-rust-audit`. The decision itself belongs to the project lead.
+
+## m6-900kev-spatial-rms-investigation
+
+**Goal.** Determine whether the common +12.1% to +13.5% Rust excess in the 900 keV
+pre-IRT survivor RMS radius is a statistical fluctuation, a broader physical track, a
+solvation or dissociation displacement difference, or spatially biased recombination
+selection. The current RR-001 aggregate has only 20 Geant4 histories and no per-history
+spatial moments, so it cannot provide an uncertainty for the RMS estimator or localise the
+stage where the difference appears.
+
+**Tasks.**
+1. Complete the N2 source audit from terminal electron through `e_aq` creation, checking the
+   position handoff, time and survivor status, and the relationship between transport track
+   order and molecule creation order in Rust and Geant4 11.4.1. Change no model unless the
+   source comparison proves a defect.
+2. Add a new, separately named Geant4 generator mode; do not modify `physchem_prechem` or any
+   committed reference. At 900 keV it records per-history count and `sum_r2_nm2`, maximum
+   radius, preregistered logarithmic radial bins, and longitudinal/transverse moments at the
+   physical-interaction, solvation, pre-decay water-state, post-dissociation and post-
+   recombination survivor boundaries. Keep the existing option2/option3 configuration and
+   stage semantics.
+3. Add the equivalent Rust diagnostic and a paired ignored consumer. Preregister the
+   statistical analysis and criteria before any new Geant4 data exist: compare the pooled
+   RMS with a bootstrap or batch confidence interval, the per-history RMS distribution,
+   radial quantiles/bins, maxima, and longitudinal versus transverse extent. Use an initial
+   design of five independent seeds and 40 histories per seed; a pilot may increase the
+   count based only on estimator precision, never to force agreement.
+4. Compile-check the generator, document its schema and build/run recipe, and append a new
+   `RUN_REQUESTS.md` entry. The agent never runs the Geant4 executable. The project lead runs
+   it and commits new data and provenance; a later close-gate seed consumes the result.
+
+**Acceptance.** The committed diagnostic and preregistered comparison can distinguish where
+the spatial scale first diverges and whether the observed 900 keV excess exceeds the
+measured sampling variation. The result either identifies a source-proven defect for a
+separate fix seed or records a quantified residual with confidence intervals and explicit
+limits. Existing tolerances and reference files remain unchanged; this investigation does
+not silently reopen or close M6.
+
+**Requires.** `m6-residual-rust-audit`. It is independent of the project lead's formal
+`m6-close-gate` decision and may run after closure as a residual-risk investigation.
