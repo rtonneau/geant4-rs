@@ -125,6 +125,30 @@
         "ticket": "03-instrument-rust-spatial-boundaries",
         "commit": "9d24b0b"
       }
+    },
+    {
+      "at": "2026-10-20T16:10:23.722Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-add-geant4-spatial-diagnostic-mode.md",
+        "03-implement/04-add-geant4-spatial-diagnostic-mode/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-add-geant4-spatial-diagnostic-mode"
+      }
+    },
+    {
+      "at": "2026-10-20T16:17:11.476Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-add-geant4-spatial-diagnostic-mode/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-add-geant4-spatial-diagnostic-mode",
+        "commit": "6a70b55"
+      }
     }
   ],
   "current_phase": "ship",
@@ -134,5 +158,5 @@
     "branch_created_at": "2026-10-19T20:47:27.403Z",
     "pr_url": null
   },
-  "ship_mode": "subagent+inline"
+  "ship_mode": "inline"
 }
