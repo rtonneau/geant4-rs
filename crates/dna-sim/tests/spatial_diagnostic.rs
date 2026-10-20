@@ -1,4 +1,4 @@
-//! Synthetic validation of the preregistered schema and inference, without physics runs.
+//! Validation of the preregistered schema, inference and observational instrumentation.
 //! Numeric tolerances below (1e-12) test arithmetic, not an M6 scientific acceptance margin.
 
 use dna_core::rng::{HistoryRng, RngStreams, Stage};
@@ -7,6 +7,329 @@ use dna_core::vec3::Vec3;
 use dna_sim::spatial_diagnostic::*;
 use std::collections::BTreeMap;
 use std::io::Cursor;
+
+fn physics_table() -> dna_physics::table::ProcessTable {
+    dna_physics::table::ProcessTable::option2_electron(
+        &dna_data::datadir::DataDir::new(dna_data::datadir::repo_data_dir()).unwrap(),
+        dna_physics::models::ElasticRotation::Geant4,
+    )
+    .unwrap()
+}
+
+#[test]
+fn spatial_diagnostic_preserves_transport_chemistry_rng_and_lineage() {
+    use dna_core::physchem::{PhysChemEvent, PhysChemKind, PhysChemSite};
+    use dna_core::units::Energy;
+    use dna_physics::models::ProcessKind;
+    use dna_physics::transport::{HistoryObserver, Primary, TransportConfig, transport_electron};
+
+    #[derive(Default)]
+    struct Events(Vec<PhysChemEvent>);
+    impl HistoryObserver for Events {
+        fn on_physchem(&mut self, event: &PhysChemEvent) {
+            self.0.push(*event);
+        }
+    }
+    struct Observed {
+        events: Events,
+        sites: Vec<PhysChemSite>,
+        spatial: RustSpatialObserver,
+    }
+    impl HistoryObserver for Observed {
+        fn on_physchem(&mut self, event: &PhysChemEvent) {
+            self.events.on_physchem(event);
+        }
+        fn on_physchem_site(&mut self, site: &PhysChemSite) {
+            self.sites.push(*site);
+            self.spatial.on_physchem_site(site);
+        }
+    }
+    let table = physics_table();
+    let engine = dna_chemistry::PhysChemEngine::option3().unwrap();
+    let streams = RngStreams::new(DIAGNOSTIC_SEEDS[0]);
+    for history in 0..8 {
+        let primary = Primary {
+            energy: Energy::from_ev(1_000.0),
+            position: Vec3::ZERO,
+            direction: Vec3::new(0.0, 0.0, 1.0),
+            history_id: history,
+        };
+        let mut plain_rng = streams.stream(history, Stage::Physics).unwrap();
+        let mut observed_rng = plain_rng.clone();
+        let mut events = Events::default();
+        let mut observed = Observed {
+            events: Events::default(),
+            sites: Vec::new(),
+            spatial: RustSpatialObserver::new(DIAGNOSTIC_SEEDS[0], history),
+        };
+        let plain = transport_electron(
+            &table,
+            &TransportConfig::default(),
+            primary,
+            &mut plain_rng,
+            &mut events,
+        )
+        .unwrap();
+        let measured = transport_electron(
+            &table,
+            &TransportConfig::default(),
+            primary,
+            &mut observed_rng,
+            &mut observed,
+        )
+        .unwrap();
+        assert_eq!(plain, measured);
+        assert_eq!(events.0, observed.events.0);
+        assert_eq!(format!("{plain:?}"), format!("{measured:?}"));
+        for _ in 0..64 {
+            assert_eq!(
+                plain_rng.uniform_open01().to_bits(),
+                observed_rng.uniform_open01().to_bits()
+            );
+        }
+        assert_eq!(observed.sites.len(), events.0.len());
+        assert_eq!(
+            observed.sites.len() as u64,
+            plain.counts.get(ProcessKind::Excitation) + plain.counts.get(ProcessKind::Ionisation)
+                - plain.quirks.ionisation_noop_below_binding
+                + plain.counts.get(ProcessKind::Attachment)
+                + plain.solvations
+        );
+        let mut track_parents = BTreeMap::new();
+        for (ordinal, site) in observed.sites.iter().enumerate() {
+            assert_eq!(site.source_event, ordinal as u64);
+            assert_eq!(site.event, events.0[ordinal]);
+            assert_eq!(site.event.parent_history, history);
+            if let Some(parent) = site.parent_track_id {
+                assert!(parent < site.physical_track_id);
+            } else {
+                assert_eq!(site.physical_track_id, 0);
+            }
+            if let Some(previous) =
+                track_parents.insert(site.physical_track_id, site.parent_track_id)
+            {
+                assert_eq!(previous, site.parent_track_id);
+            }
+            if site.event.kind != PhysChemKind::Solvation {
+                assert_eq!(site.origin, site.event.position);
+            }
+        }
+        assert_eq!(track_parents.len() as u64, plain.n_tracks);
+        let mut plain_rng = streams.stream(history, Stage::PhysChem).unwrap();
+        let mut observed_rng = plain_rng.clone();
+        let plain = engine.convert_history(&events.0, &mut plain_rng).unwrap();
+        let measured = engine
+            .convert_history_with_observer(&events.0, &mut observed_rng, &mut observed.spatial)
+            .unwrap();
+        assert_eq!(plain, measured);
+        assert_eq!(
+            format!("{plain:?}"),
+            format!("{measured:?}"),
+            "round-trip float formatting must be bitwise unchanged"
+        );
+        for _ in 0..64 {
+            assert_eq!(
+                plain_rng.uniform_open01().to_bits(),
+                observed_rng.uniform_open01().to_bits()
+            );
+        }
+        let rows = observed.spatial.finish().unwrap();
+        let live: Vec<_> = rows
+            .iter()
+            .filter(|r| r.boundary == Boundary::FinalSurvivors && r.moments.count == 1)
+            .collect();
+        assert_eq!(live.len(), plain.species.len());
+        for (row, species) in live.iter().zip(&plain.species) {
+            assert_eq!(row.category, Category::Species(species.species));
+            assert_eq!(
+                row.moments,
+                SpatialMoments::from_position(species.position).unwrap()
+            );
+            let birth = rows
+                .iter()
+                .find(|r| {
+                    r.identity.entity == row.identity.entity
+                        && matches!(
+                            r.boundary,
+                            Boundary::SolvatedElectronCreation | Boundary::DissociationProducts
+                        )
+                })
+                .unwrap();
+            assert_eq!(birth.identity, row.identity);
+        }
+        for site in &observed.sites {
+            let physical = rows
+                .iter()
+                .find(|r| {
+                    r.boundary == Boundary::PhysicalSites
+                        && r.identity.source_event == Some(site.source_event)
+                })
+                .unwrap();
+            assert_eq!(
+                physical.moments,
+                SpatialMoments::from_position(site.origin).unwrap()
+            );
+            let boundary = if site.event.kind == PhysChemKind::Solvation {
+                Boundary::SolvatedElectronCreation
+            } else {
+                Boundary::PreDecayWater
+            };
+            let molecular = rows
+                .iter()
+                .find(|r| {
+                    r.boundary == boundary && r.identity.source_event == Some(site.source_event)
+                })
+                .unwrap();
+            assert_eq!(
+                molecular.identity.parent,
+                Some(EntityId {
+                    namespace: Namespace::Physical,
+                    id: site.physical_track_id as i64,
+                })
+            );
+            assert_eq!(
+                molecular.moments,
+                SpatialMoments::from_position(site.event.position).unwrap()
+            );
+        }
+        let births = rows
+            .iter()
+            .filter(|r| {
+                r.moments.count == 1
+                    && r.category == Category::Species(Species::e_aq)
+                    && matches!(
+                        r.boundary,
+                        Boundary::SolvatedElectronCreation | Boundary::DissociationProducts
+                    )
+            })
+            .count();
+        assert_eq!(
+            births as u64 - plain.stats.recombinations,
+            plain.stats.species_counts[Species::e_aq.index()]
+        );
+        DiagnosticDataset::from_records(
+            rows,
+            Implementation::Rust,
+            &SamplePlan::new(BTreeMap::from([(DIAGNOSTIC_SEEDS[0], vec![history])])).unwrap(),
+        )
+        .unwrap();
+    }
+}
+
+#[test]
+fn spatial_diagnostic_preserves_retests_and_killed_birth_identity() {
+    use dna_core::physchem::{PhysChemEvent, PhysChemKind, PhysChemSite};
+    use dna_core::units::Energy;
+    use dna_physics::transport::HistoryObserver;
+    let events: Vec<_> = [
+        PhysChemKind::Ionisation,
+        PhysChemKind::Ionisation,
+        PhysChemKind::Solvation,
+    ]
+    .into_iter()
+    .map(|kind| PhysChemEvent {
+        kind,
+        level_or_shell: 0,
+        position: Vec3::new(0.0, 0.0, 10.0),
+        deposited_energy: Energy::from_ev(0.0),
+        parent_history: 0,
+    })
+    .collect();
+    let mut observer = RustSpatialObserver::new(10, 0);
+    for (i, event) in events.iter().enumerate() {
+        observer.on_physchem_site(&PhysChemSite {
+            event: *event,
+            source_event: i as u64,
+            physical_track_id: 0,
+            parent_track_id: None,
+            origin: event.position,
+        });
+    }
+    let engine = dna_chemistry::PhysChemEngine::option3().unwrap();
+    let mut rng = RngStreams::new(10).stream(0, Stage::PhysChem).unwrap();
+    let mut plain_rng = rng.clone();
+    let plain = engine.convert_history(&events, &mut plain_rng).unwrap();
+    let measured = engine
+        .convert_history_with_observer(&events, &mut rng, &mut observer)
+        .unwrap();
+    assert_eq!(plain, measured);
+    assert_eq!(plain.stats.recombinations, 1);
+    assert_eq!(
+        plain_rng.uniform_open01().to_bits(),
+        rng.uniform_open01().to_bits()
+    );
+    let rows = observer.finish().unwrap();
+    assert!(
+        rows.iter()
+            .any(|r| r.boundary == Boundary::DissociationProducts
+                && r.identity.zero_time_pass == Some(1))
+    );
+    assert!(
+        rows.iter()
+            .any(|r| r.boundary == Boundary::SolvatedElectronCreation
+                && r.identity.entity.unwrap().id == 2)
+    );
+    assert!(!rows.iter().any(|r| r.boundary == Boundary::FinalSurvivors
+        && r.identity.entity.is_some_and(|id| id.id == 2)));
+    for row in rows
+        .iter()
+        .filter(|r| r.boundary == Boundary::DissociationProducts && r.moments.count == 1)
+    {
+        assert_eq!(
+            row.identity.parent,
+            Some(EntityId {
+                namespace: Namespace::Molecular,
+                id: row.identity.source_event.unwrap() as i64,
+            })
+        );
+        assert!(row.identity.creation_ordinal.unwrap() >= events.len() as u64);
+    }
+}
+
+#[test]
+fn spatial_diagnostic_normal_summaries_and_csv_are_thread_independent() {
+    use dna_sim::config::RunConfig;
+    use dna_sim::run::{run_physchem_summary, run_physchem_summary_with_diagnostics};
+    let table = physics_table();
+    let engine = dna_chemistry::PhysChemEngine::option3().unwrap();
+    let mut config = RunConfig::new(1_000.0, 12);
+    config.master_seed = DIAGNOSTIC_SEEDS[0];
+    config.threads = Some(1);
+    config.batch_size = 4;
+    let baseline =
+        serde_json::to_vec(&run_physchem_summary(&table, &engine, &config).unwrap()).unwrap();
+    let mut first_csv = None;
+    for threads in [1, 4] {
+        config.threads = Some(threads);
+        config.batch_size = if threads == 1 { 4 } else { 7 };
+        let mut writer = CsvSpatialDiagnosticWriter::new(Vec::new()).unwrap();
+        let result =
+            run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer))
+                .unwrap();
+        assert_eq!(serde_json::to_vec(&result).unwrap(), baseline);
+        assert_eq!(
+            serde_json::to_vec(&run_physchem_summary(&table, &engine, &config).unwrap()).unwrap(),
+            baseline
+        );
+        let csv = writer.into_inner();
+        DiagnosticDataset::read_csv(
+            Cursor::new(&csv),
+            Implementation::Rust,
+            &SamplePlan::uniform(&[config.master_seed], config.n_histories).unwrap(),
+        )
+        .unwrap();
+        if let Some(expected) = &first_csv {
+            assert_eq!(&csv, expected);
+        } else {
+            first_csv = Some(csv);
+        }
+    }
+    config.direction = [1.0, 0.0, 0.0];
+    let mut writer = CsvSpatialDiagnosticWriter::new(Vec::new()).unwrap();
+    assert!(
+        run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer)).is_err()
+    );
+}
 
 fn assert_close(actual: f64, expected: f64) {
     assert!(
@@ -151,6 +474,28 @@ fn spatial_diagnostic_schema_round_trips_records_and_streamed_dataset() {
         Boundary::ALL.map(|b| b.categories().len()),
         [12, 1, 11, 7, 7]
     );
+}
+
+#[test]
+fn spatial_diagnostic_single_implementation_precision_is_descriptive_and_reproducible() {
+    let plan = small_plan();
+    let data = dataset(
+        constant_records(Implementation::Rust, &plan, [2.0; 5]),
+        Implementation::Rust,
+        &plan,
+    );
+    let precision = data.pooled_rms_precision().unwrap();
+    assert_eq!(precision, data.pooled_rms_precision().unwrap());
+    assert_eq!(precision.pooled_rms_nm, 2.0);
+    assert_eq!(precision.lower_nm, 2.0);
+    assert_eq!(precision.upper_nm, 2.0);
+    assert_eq!(precision.relative_half_width, 0.0);
+    let empty = dataset(
+        records(Implementation::Rust, &plan, |_, _, _, _| vec![]),
+        Implementation::Rust,
+        &plan,
+    );
+    assert!(empty.pooled_rms_precision().is_err());
 }
 
 #[test]

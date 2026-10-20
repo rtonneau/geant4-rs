@@ -9,6 +9,8 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum SimError {
     #[error(transparent)]
+    SpatialDiagnostic(#[from] crate::spatial_diagnostic::DiagnosticError),
+    #[error(transparent)]
     Physics(#[from] PhysicsError),
     #[error(transparent)]
     Core(#[from] DnaError),

@@ -162,6 +162,40 @@ pub struct EventDecay {
     pub decay_energy: Energy,
 }
 
+/// A daughter birth in the actual zero-time decay schedule.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DissociationBirth {
+    /// Index in the input physical event slice.
+    pub source_event: usize,
+    /// Stable slot before killed electrons are removed; not the final survivor index.
+    pub species_index: usize,
+    /// Zero-based Rust pass. Recombined H2Ovib decays immediately in this engine,
+    /// so this is not an asserted Geant4 scheduler-step correspondence.
+    pub zero_time_pass: u64,
+    /// Zero-based water action ordinal across all passes, including unsuccessful retests.
+    pub processing_ordinal: u64,
+}
+
+/// Read-only observations of the conversion lifecycle; callbacks receive no RNG.
+/// Initial water and direct-electron callbacks precede every decay/recombination.
+/// Daughter callbacks record births, while survivor callbacks omit killed electrons.
+pub trait PhysChemObserver {
+    fn on_solvated_electron(
+        &mut self,
+        _source_event: usize,
+        _species_index: usize,
+        _species: &SpeciesInstance,
+    ) {
+    }
+    fn on_water(&mut self, _source_event: usize, _event: &PhysChemEvent) {}
+    fn on_dissociation_product(&mut self, _birth: DissociationBirth, _species: &SpeciesInstance) {}
+    fn on_survivor(&mut self, _species_index: usize, _species: &SpeciesInstance) {}
+}
+
+/// Production conversion has no diagnostic allocations or records.
+pub struct NoPhysChemObserver;
+impl PhysChemObserver for NoPhysChemObserver {}
+
 /// Index of an event kind in [`PhysChemStats::events`] and [`PhysChemStats::species_produced_by_event`].
 fn event_kind_index(kind: PhysChemKind) -> usize {
     match kind {
@@ -349,6 +383,17 @@ impl PhysChemEngine {
         events: &[PhysChemEvent],
         rng: &mut R,
     ) -> Result<HistoryChemistry, ChemistryError> {
+        self.convert_history_with_observer(events, rng, &mut NoPhysChemObserver)
+    }
+
+    /// The same conversion with optional observations; species ordering and RNG draws
+    /// are shared with [`Self::convert_history`], including every zero-time pass.
+    pub fn convert_history_with_observer<R: Rng + ?Sized, O: PhysChemObserver + ?Sized>(
+        &self,
+        events: &[PhysChemEvent],
+        rng: &mut R,
+        observer: &mut O,
+    ) -> Result<HistoryChemistry, ChemistryError> {
         let rec = &self.params.recombination;
         let radius_nm = rec.search_radius.nm();
         let mut stats = PhysChemStats::new(&self.channels);
@@ -357,7 +402,11 @@ impl PhysChemEngine {
         let mut grid = ElectronGrid::new(radius_nm);
 
         // 1. the solvated electrons exist when the chemical stage starts
-        for ev in events.iter().filter(|e| e.kind == PhysChemKind::Solvation) {
+        for (source_event, ev) in events
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| e.kind == PhysChemKind::Solvation)
+        {
             stats.events[3] += 1;
             let id = species.len() as u32;
             species.push(SpeciesInstance {
@@ -365,6 +414,7 @@ impl PhysChemEngine {
                 position: ev.position,
                 time: self.params.birth_time,
             });
+            observer.on_solvated_electron(source_event, id as usize, &species[id as usize]);
             alive.push(true);
             grid.insert(id, ev.position);
             stats.species_produced_by_event[3][Species::e_aq.index()] += 1;
@@ -378,6 +428,7 @@ impl PhysChemEngine {
                 continue;
             }
             pending.push((i, self.channels.state_index(ev.kind, ev.level_or_shell)?));
+            observer.on_water(i, ev);
             stats.events[event_kind_index(ev.kind)] += 1;
         }
         pending.sort_unstable_by(|a, b| b.1.cmp(&a.1).then(b.0.cmp(&a.0)));
@@ -387,6 +438,8 @@ impl PhysChemEngine {
         let mut born: Vec<SpeciesInstance> = Vec::new();
         let mut nearest_at_start: Vec<Option<f64>> = Vec::with_capacity(pending.len());
         let mut first_pass = true;
+        let mut zero_time_pass = 0;
+        let mut next_processing_ordinal = 0;
         while !pending.is_empty() {
             // FindReactant of every pending ionised molecule, on the electrons alive at the pass start
             nearest_at_start.clear();
@@ -399,6 +452,8 @@ impl PhysChemEngine {
             }));
             let mut retested = Vec::new();
             for (&(i, state_index), &nearest) in pending.iter().zip(&nearest_at_start) {
+                let processing_ordinal = next_processing_ordinal;
+                next_processing_ordinal += 1;
                 let ev = &events[i];
                 let mut si = state_index;
                 if ev.kind == PhysChemKind::Ionisation {
@@ -426,6 +481,17 @@ impl PhysChemEngine {
                 scratch.clear();
                 let state = &self.channels.states()[si];
                 let (ci, decay_energy) = self.decay(state, ev.position, rng, &mut scratch);
+                for (offset, inst) in scratch.iter().enumerate() {
+                    observer.on_dissociation_product(
+                        DissociationBirth {
+                            source_event: i,
+                            species_index: species.len() + born.len() + offset,
+                            zero_time_pass,
+                            processing_ordinal,
+                        },
+                        inst,
+                    );
+                }
                 stats.channel_counts[si][ci] += 1;
                 stats.decay_energy_ev += decay_energy.ev();
                 let event_index = event_kind_index(ev.kind);
@@ -460,12 +526,21 @@ impl PhysChemEngine {
             // bounded by the number of e_aq plus one.
             pending = retested;
             first_pass = false;
+            zero_time_pass += 1;
         }
 
         let species: Vec<SpeciesInstance> = species
             .into_iter()
             .zip(alive)
-            .filter_map(|(s, a)| a.then_some(s))
+            .enumerate()
+            .filter_map(|(i, (s, a))| {
+                if a {
+                    observer.on_survivor(i, &s);
+                    Some(s)
+                } else {
+                    None
+                }
+            })
             .collect();
         for s in &species {
             stats.species_counts[s.species.index()] += 1;

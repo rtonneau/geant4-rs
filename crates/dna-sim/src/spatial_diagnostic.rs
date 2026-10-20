@@ -22,9 +22,12 @@
 //! and limitations of the physical-to-molecular ordering correspondence are in
 //! `docs/02-cpp-reference-inventory.md`, B.7.9.
 
+use dna_chemistry::engine::{DissociationBirth, PhysChemObserver};
+use dna_core::physchem::{PhysChemEvent, PhysChemKind, PhysChemSite};
 use dna_core::rng::{HistoryRng, RngStreams, Stage};
-use dna_core::species::Species;
+use dna_core::species::{Species, SpeciesInstance};
 use dna_core::vec3::Vec3;
+use dna_physics::transport::HistoryObserver;
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{BufRead, Write};
 use std::str::FromStr;
@@ -220,6 +223,274 @@ pub struct Identity {
     /// Birth/processing pass metadata when applicable; both fields must be present together.
     pub zero_time_pass: Option<u64>,
     pub processing_ordinal: Option<u64>,
+}
+
+/// Receiver of complete history blocks in deterministic run order.
+pub trait SpatialDiagnosticSink: Send {
+    fn write_history(&mut self, records: &[DiagnosticRecord]) -> Result<(), DiagnosticError>;
+}
+
+/// Streaming long-form CSV; one header even when several seed runs share a writer.
+pub struct CsvSpatialDiagnosticWriter<W: Write> {
+    writer: W,
+}
+
+impl<W: Write> CsvSpatialDiagnosticWriter<W> {
+    pub fn new(mut writer: W) -> Result<Self, DiagnosticError> {
+        writeln!(writer, "{}", csv_header())?;
+        Ok(Self { writer })
+    }
+
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
+}
+
+impl<W: Write + Send> SpatialDiagnosticSink for CsvSpatialDiagnosticWriter<W> {
+    fn write_history(&mut self, records: &[DiagnosticRecord]) -> Result<(), DiagnosticError> {
+        for record in records {
+            writeln!(self.writer, "{}", record.csv_row()?)?;
+        }
+        Ok(())
+    }
+}
+
+fn event_category(event: &PhysChemEvent) -> Category {
+    match event.kind {
+        PhysChemKind::Excitation => Category::Excitation(event.level_or_shell),
+        PhysChemKind::Ionisation => Category::Ionisation(event.level_or_shell),
+        PhysChemKind::Attachment => Category::Attachment,
+        PhysChemKind::Solvation => Category::Solvation,
+    }
+}
+
+/// Observer for a single transport followed by its physicochemical conversion.
+///
+/// Physical IDs are Rust creation-order track IDs (primary 0). Initial molecular
+/// IDs/creation ordinals are source-event indices; daughter IDs follow all initial
+/// entities in actual decay birth order. This gives one molecular namespace without
+/// pretending Rust species slots or creation order equal Geant4 IT track IDs.
+/// Survivor rows retain the *birth* identity/pass, even after dead slots are removed.
+/// Positions assume the run's common primary origin (zero) and direction (+z).
+/// Observation errors are deferred to [`Self::finish`], never fed into model draws.
+pub struct RustSpatialObserver {
+    seed: u64,
+    history: u64,
+    sites: Vec<PhysChemSite>,
+    species_identities: Vec<Identity>,
+    next_daughter: u64,
+    records: Vec<DiagnosticRecord>,
+    error: Option<DiagnosticError>,
+}
+
+impl RustSpatialObserver {
+    pub fn new(seed: u64, history: u64) -> Self {
+        Self {
+            seed,
+            history,
+            sites: Vec::new(),
+            species_identities: Vec::new(),
+            next_daughter: 0,
+            records: Vec::new(),
+            error: None,
+        }
+    }
+
+    fn record(
+        &mut self,
+        boundary: Boundary,
+        category: Category,
+        identity: Identity,
+        position: Vec3,
+        state: LifeState,
+    ) {
+        if self.error.is_some() {
+            return;
+        }
+        let result = SpatialMoments::from_position(position).and_then(|moments| {
+            let record = DiagnosticRecord {
+                implementation: Implementation::Rust,
+                seed: self.seed,
+                history: self.history,
+                boundary,
+                category,
+                identity,
+                stage: boundary.stage(),
+                time_ps: (boundary != Boundary::PhysicalSites).then_some(1.0),
+                state,
+                moments,
+            };
+            record.validate()?;
+            Ok(record)
+        });
+        match result {
+            Ok(record) => self.records.push(record),
+            Err(error) => self.error = Some(error),
+        }
+    }
+
+    fn initial_identity(&mut self, source_event: usize) -> Option<Identity> {
+        let Some(site) = self.sites.get(source_event) else {
+            self.error = Some(invalid("molecular observation has no physical source site"));
+            return None;
+        };
+        Some(Identity {
+            entity: Some(EntityId {
+                namespace: Namespace::Molecular,
+                id: source_event as i64,
+            }),
+            physical_track_id: Some(site.physical_track_id as i64),
+            parent: Some(EntityId {
+                namespace: Namespace::Physical,
+                id: site.physical_track_id as i64,
+            }),
+            source_event: Some(source_event as u64),
+            creation_ordinal: Some(source_event as u64),
+            ..Identity::default()
+        })
+    }
+
+    fn retain_birth(&mut self, index: usize, identity: Identity) {
+        if index != self.species_identities.len() {
+            self.error = Some(invalid("noncontiguous species birth slots"));
+            return;
+        }
+        self.species_identities.push(identity);
+    }
+
+    /// Finish one history and supply every absent category explicitly.
+    pub fn finish(mut self) -> Result<Vec<DiagnosticRecord>, DiagnosticError> {
+        if let Some(error) = self.error {
+            return Err(error);
+        }
+        let populated: BTreeSet<_> = self
+            .records
+            .iter()
+            .map(|r| (r.boundary, r.category))
+            .collect();
+        for boundary in Boundary::ALL {
+            for category in boundary.categories() {
+                if !populated.contains(&(boundary, category)) {
+                    self.records.push(DiagnosticRecord::empty(
+                        Implementation::Rust,
+                        self.seed,
+                        self.history,
+                        boundary,
+                        category,
+                    ));
+                }
+            }
+        }
+        Ok(self.records)
+    }
+}
+
+impl HistoryObserver for RustSpatialObserver {
+    fn on_physchem_site(&mut self, site: &PhysChemSite) {
+        if site.event.parent_history != self.history || site.source_event != self.sites.len() as u64
+        {
+            self.error = Some(invalid("physical source history/ordinal mismatch"));
+            return;
+        }
+        self.sites.push(*site);
+        let identity = Identity {
+            entity: Some(EntityId {
+                namespace: Namespace::Event,
+                id: site.source_event as i64,
+            }),
+            physical_track_id: Some(site.physical_track_id as i64),
+            parent: site.parent_track_id.map(|id| EntityId {
+                namespace: Namespace::Physical,
+                id: id as i64,
+            }),
+            source_event: Some(site.source_event),
+            creation_ordinal: Some(site.source_event),
+            ..Identity::default()
+        };
+        let state = match site.event.kind {
+            PhysChemKind::Solvation | PhysChemKind::Attachment => LifeState::Killed,
+            _ => LifeState::Alive,
+        };
+        self.record(
+            Boundary::PhysicalSites,
+            event_category(&site.event),
+            identity,
+            site.origin,
+            state,
+        );
+    }
+}
+
+impl PhysChemObserver for RustSpatialObserver {
+    fn on_solvated_electron(
+        &mut self,
+        source_event: usize,
+        species_index: usize,
+        species: &SpeciesInstance,
+    ) {
+        let Some(identity) = self.initial_identity(source_event) else {
+            return;
+        };
+        self.retain_birth(species_index, identity);
+        self.record(
+            Boundary::SolvatedElectronCreation,
+            Category::Species(species.species),
+            identity,
+            species.position,
+            LifeState::Alive,
+        );
+    }
+
+    fn on_water(&mut self, source_event: usize, event: &PhysChemEvent) {
+        let Some(identity) = self.initial_identity(source_event) else {
+            return;
+        };
+        self.record(
+            Boundary::PreDecayWater,
+            event_category(event),
+            identity,
+            event.position,
+            LifeState::Stopped,
+        );
+    }
+
+    fn on_dissociation_product(&mut self, birth: DissociationBirth, species: &SpeciesInstance) {
+        let Some(mut identity) = self.initial_identity(birth.source_event) else {
+            return;
+        };
+        identity.parent = identity.entity;
+        let ordinal = self.sites.len() as u64 + self.next_daughter;
+        self.next_daughter += 1;
+        identity.entity = Some(EntityId {
+            namespace: Namespace::Molecular,
+            id: ordinal as i64,
+        });
+        identity.creation_ordinal = Some(ordinal);
+        identity.zero_time_pass = Some(birth.zero_time_pass);
+        identity.processing_ordinal = Some(birth.processing_ordinal);
+        self.retain_birth(birth.species_index, identity);
+        self.record(
+            Boundary::DissociationProducts,
+            Category::Species(species.species),
+            identity,
+            species.position,
+            LifeState::Alive,
+        );
+    }
+
+    fn on_survivor(&mut self, species_index: usize, species: &SpeciesInstance) {
+        let Some(&identity) = self.species_identities.get(species_index) else {
+            self.error = Some(invalid("survivor has no observed birth"));
+            return;
+        };
+        self.record(
+            Boundary::FinalSurvivors,
+            Category::Species(species.species),
+            identity,
+            species.position,
+            LifeState::Alive,
+        );
+    }
 }
 
 /// The 17 edges `10^(k/2)` nm, `k = 0..16`.
@@ -922,6 +1193,38 @@ impl DiagnosticDataset {
         })
     }
 
+    /// Precision of this implementation's final pooled RMS component, with the same
+    /// frozen hierarchical resampling as the comparison. This is descriptive only:
+    /// the four-percentage-point expansion rule requires the Rust/Geant4 ratio.
+    pub fn pooled_rms_precision(&self) -> Result<RmsPrecision, DiagnosticError> {
+        let summary = self.summarize()?;
+        let boundary = Boundary::FinalSurvivors;
+        let pooled_rms_nm = RadiusTotals::from(summary.boundaries[boundary.index()].moments)
+            .positive_rms()
+            .ok_or_else(|| invalid("undefined final pooled RMS"))?;
+        let groups = self.bootstrap_groups();
+        let stream = u64::from(self.implementation == Implementation::Geant4);
+        let mut rng = RngStreams::new(ANALYSIS_SEED)
+            .stream(stream, Stage::Physics)
+            .expect("fixed analysis stream is valid");
+        let mut samples = Vec::with_capacity(BOOTSTRAP_REPLICATES);
+        for _ in 0..BOOTSTRAP_REPLICATES {
+            samples.push(
+                resample(&groups, &mut rng)?[boundary.index()]
+                    .positive_rms()
+                    .ok_or_else(|| invalid("undefined resampled final pooled RMS"))?,
+            );
+        }
+        let lower_nm = percentile(&samples, 0.025)?;
+        let upper_nm = percentile(&samples, 0.975)?;
+        Ok(RmsPrecision {
+            pooled_rms_nm,
+            lower_nm,
+            upper_nm,
+            relative_half_width: (upper_nm - lower_nm) / pooled_rms_nm / 2.0,
+        })
+    }
+
     fn bootstrap_groups(&self) -> Vec<Vec<[RadiusTotals; 5]>> {
         self.plan
             .groups
@@ -989,6 +1292,15 @@ pub struct ImplementationSummary {
     pub boundaries: [PopulationSummary; 5],
     pub categories: BTreeMap<(Boundary, Category), PopulationSummary>,
     pub histories: Vec<HistorySummary>,
+}
+
+/// Descriptive one-implementation precision, not a Rust/Geant4 comparison interval.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RmsPrecision {
+    pub pooled_rms_nm: f64,
+    pub lower_nm: f64,
+    pub upper_nm: f64,
+    pub relative_half_width: f64,
 }
 
 /// Positive finite interval on the Rust/Geant4 RMS ratio.

@@ -42,6 +42,7 @@ use crate::models::{FinalState, ProcessKind, Quirks, SANCHE_LEVELS, Secondary};
 use crate::physchem::{PhysChemEvent, PhysChemKind};
 use crate::sampling::uniform;
 use crate::table::ProcessTable;
+use dna_core::physchem::PhysChemSite;
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;
 use rand::Rng;
@@ -247,6 +248,8 @@ pub trait HistoryObserver {
     fn on_solvation(&mut self, _event: &SolvationEvent) {}
     /// Physicochemical events in order of occurrence (after the interaction that caused them).
     fn on_physchem(&mut self, _event: &PhysChemEvent) {}
+    /// Same handoff, with stable physical lineage and the undisplaced physical site.
+    fn on_physchem_site(&mut self, _site: &PhysChemSite) {}
 }
 
 /// Observer that ignores everything.
@@ -352,6 +355,25 @@ struct Track {
     direction: Vec3,
     position: Vec3,
     generation: u32,
+    id: u64,
+    parent_id: Option<u64>,
+}
+
+fn emit_physchem(
+    observer: &mut (impl HistoryObserver + ?Sized),
+    event: PhysChemEvent,
+    track: &Track,
+    ordinal: &mut u64,
+) {
+    observer.on_physchem(&event);
+    observer.on_physchem_site(&PhysChemSite {
+        event,
+        source_event: *ordinal,
+        physical_track_id: track.id,
+        parent_track_id: track.parent_id,
+        origin: track.position,
+    });
+    *ordinal += 1;
 }
 
 /// Transport one electron and its cascade until the stack is empty. `rng` is the history's
@@ -392,6 +414,7 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
     let mut steps = 0u64;
     let mut end_position = primary.position;
     let mut termination = Termination::Completed;
+    let mut physchem_ordinal = 0;
 
     let mut stack: Vec<Track> = Vec::with_capacity(64);
     stack.push(Track {
@@ -399,6 +422,8 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
         direction: start_direction,
         position: primary.position,
         generation: 0,
+        id: 0,
+        parent_id: None,
     });
 
     'history: while let Some(mut track) = stack.pop() {
@@ -440,13 +465,18 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                     energy: s.deposit,
                     r_mean_nm: s.r_mean_nm,
                 });
-                observer.on_physchem(&PhysChemEvent {
-                    kind: PhysChemKind::Solvation,
-                    level_or_shell: 0,
-                    position: track.position + s.displacement_nm,
-                    deposited_energy: s.deposit,
-                    parent_history: primary.history_id,
-                });
+                emit_physchem(
+                    observer,
+                    PhysChemEvent {
+                        kind: PhysChemKind::Solvation,
+                        level_or_shell: 0,
+                        position: track.position + s.displacement_nm,
+                        deposited_energy: s.deposit,
+                        parent_history: primary.history_id,
+                    },
+                    &track,
+                    &mut physchem_ordinal,
+                );
                 break 'track;
             }
 
@@ -509,28 +539,44 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                 final_state: &fs,
             });
             match process {
-                ProcessKind::Excitation => observer.on_physchem(&PhysChemEvent {
-                    kind: PhysChemKind::Excitation,
-                    level_or_shell: fs.channel as u8,
-                    position: track.position,
-                    deposited_energy: fs.local_deposit,
-                    parent_history: primary.history_id,
-                }),
-                ProcessKind::Ionisation if !fs.quirks.ionisation_noop_below_binding => observer
-                    .on_physchem(&PhysChemEvent {
-                        kind: PhysChemKind::Ionisation,
+                ProcessKind::Excitation => emit_physchem(
+                    observer,
+                    PhysChemEvent {
+                        kind: PhysChemKind::Excitation,
                         level_or_shell: fs.channel as u8,
                         position: track.position,
                         deposited_energy: fs.local_deposit,
                         parent_history: primary.history_id,
-                    }),
-                ProcessKind::Attachment => observer.on_physchem(&PhysChemEvent {
-                    kind: PhysChemKind::Attachment,
-                    level_or_shell: 0,
-                    position: track.position,
-                    deposited_energy: fs.local_deposit,
-                    parent_history: primary.history_id,
-                }),
+                    },
+                    &track,
+                    &mut physchem_ordinal,
+                ),
+                ProcessKind::Ionisation if !fs.quirks.ionisation_noop_below_binding => {
+                    emit_physchem(
+                        observer,
+                        PhysChemEvent {
+                            kind: PhysChemKind::Ionisation,
+                            level_or_shell: fs.channel as u8,
+                            position: track.position,
+                            deposited_energy: fs.local_deposit,
+                            parent_history: primary.history_id,
+                        },
+                        &track,
+                        &mut physchem_ordinal,
+                    )
+                }
+                ProcessKind::Attachment => emit_physchem(
+                    observer,
+                    PhysChemEvent {
+                        kind: PhysChemKind::Attachment,
+                        level_or_shell: 0,
+                        position: track.position,
+                        deposited_energy: fs.local_deposit,
+                        parent_history: primary.history_id,
+                    },
+                    &track,
+                    &mut physchem_ordinal,
+                ),
                 _ => {}
             }
             if first_step.is_none() {
@@ -549,6 +595,8 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                         direction: s.direction,
                         position: track.position,
                         generation: track.generation + 1,
+                        id: n_secondaries,
+                        parent_id: Some(track.id),
                     });
                 } else {
                     untracked_secondaries.add(s.energy.ev());

@@ -513,3 +513,100 @@ fn m6_recombination_ordering_ablation() {
         }
     }
 }
+
+/// Diagnostic production sample, never an M6 acceptance gate. Run explicitly with
+/// `cargo test --release -p dna-sim m6_spatial_diagnostic_900kev -- --ignored --nocapture`.
+/// Output defaults to the session scratch directory; an optional
+/// DNA_SPATIAL_DIAGNOSTIC_CSV path must also be inside that directory. Existing
+/// files are never replaced. Geant4 is neither required nor invoked.
+#[test]
+#[ignore = "900 keV spatial diagnostic: five preregistered seeds x 40 complete histories"]
+fn m6_spatial_diagnostic_900kev() {
+    use dna_sim::run::run_physchem_summary_with_diagnostics;
+    use dna_sim::spatial_diagnostic::{
+        ANALYSIS_SEED, BOOTSTRAP_REPLICATES, Boundary, CsvSpatialDiagnosticWriter,
+        DIAGNOSTIC_SEEDS, DiagnosticDataset, Implementation, SamplePlan,
+    };
+    use std::io::{BufReader, BufWriter, Write};
+
+    let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../.scratch/tests/2026-10-19__m6-900kev-spatial-rms-investigation");
+    std::fs::create_dir_all(&scratch).unwrap();
+    let scratch = scratch.canonicalize().unwrap();
+    let output = std::env::var_os("DNA_SPATIAL_DIAGNOSTIC_CSV")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| scratch.join("spatial_rust_900kev_40.csv"));
+    let parent = output
+        .parent()
+        .expect("CSV output requires a parent directory")
+        .canonicalize()
+        .unwrap();
+    assert!(
+        parent.starts_with(&scratch),
+        "diagnostic artifacts must stay in session scratch"
+    );
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&output)
+        .expect("choose a new scratch CSV path; never overwrite existing evidence");
+    let mut writer = CsvSpatialDiagnosticWriter::new(BufWriter::new(file)).unwrap();
+    let table = ProcessTable::option2_electron(
+        &DataDir::new(repo_data_dir()).unwrap(),
+        ElasticRotation::Geant4,
+    )
+    .unwrap();
+    let engine = PhysChemEngine::option3().unwrap();
+    let plan = SamplePlan::production(40).unwrap();
+    for seed in DIAGNOSTIC_SEEDS {
+        let mut config = RunConfig::new(900_000.0, 40);
+        config.master_seed = seed;
+        // A full 900 keV cascade has many entity rows; hold only two histories.
+        config.batch_size = 2;
+        run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer)).unwrap();
+        println!("Completed Rust spatial diagnostic seed {seed}: 40 histories at 900000 eV");
+    }
+    writer.into_inner().flush().unwrap();
+    let dataset = DiagnosticDataset::read_csv(
+        BufReader::new(std::fs::File::open(&output).unwrap()),
+        Implementation::Rust,
+        &plan,
+    )
+    .unwrap();
+    let summary = dataset.summarize().unwrap();
+    let precision = dataset.pooled_rms_precision().unwrap();
+    println!("CSV: {}", output.display());
+    println!(
+        "Seeds: {DIAGNOSTIC_SEEDS:?}; histories/seed: 40; analysis seed: {ANALYSIS_SEED}; bootstrap replicates: {BOOTSTRAP_REPLICATES}"
+    );
+    println!(
+        "Rust component of primary estimand (pooled seven-species survivor RMS): {:.9} nm; 95% component interval [{:.9}, {:.9}] nm; achieved component relative half-width: {:.6} percentage points",
+        precision.pooled_rms_nm,
+        precision.lower_nm,
+        precision.upper_nm,
+        100.0 * precision.relative_half_width
+    );
+    println!(
+        "Primary Rust/Geant4 ratio and its achieved precision: unavailable until the independent Geant4 diagnostic exists. Rust-only precision does not trigger sample expansion."
+    );
+    for boundary in Boundary::ALL {
+        println!(
+            "Secondary pooled {}: {:?}",
+            boundary.name(),
+            summary.boundaries[boundary.index()]
+        );
+    }
+    for ((boundary, category), population) in &summary.categories {
+        println!(
+            "Secondary {} / {}: {population:?}",
+            boundary.name(),
+            category.name()
+        );
+    }
+    for history in &summary.histories {
+        println!(
+            "Secondary seed {} history {}: {:?}",
+            history.seed, history.history, history.boundaries
+        );
+    }
+}
