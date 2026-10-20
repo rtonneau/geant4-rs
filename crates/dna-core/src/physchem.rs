@@ -52,6 +52,21 @@ pub struct PhysChemEvent {
     pub parent_history: u64,
 }
 
+/// Observational physical handoff metadata, separate from the production event/CSV.
+///
+/// IDs are local to one Rust history: primary track 0, secondary tracks in creation
+/// order (not LIFO tracking order). They have no exact Geant4 track-ID counterpart.
+/// The source ordinal counts only actual chemistry handoffs, starting at zero.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PhysChemSite {
+    pub event: PhysChemEvent,
+    pub source_event: u64,
+    pub physical_track_id: u64,
+    pub parent_track_id: Option<u64>,
+    /// Physical interaction site before any solvation displacement, in nm.
+    pub origin: Vec3,
+}
+
 /// Header line of the CSV written by `dna-sim` (`PhysChemEvent::csv_row` gives the rows).
 pub const PHYSCHEM_CSV_HEADER: &str =
     "parent_history,kind,level_or_shell,x_nm,y_nm,z_nm,deposited_energy_eV";

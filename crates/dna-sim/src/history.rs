@@ -3,13 +3,14 @@
 
 use crate::config::RunConfig;
 use crate::error::SimError;
+use dna_core::physchem::PhysChemSite;
 use dna_core::rng::{RngStreams, Stage};
 use dna_core::vec3::Vec3;
 use dna_physics::models::ProcessKind;
 use dna_physics::physchem::PhysChemEvent;
 use dna_physics::table::ProcessTable;
 use dna_physics::transport::{
-    HistoryObserver, HistoryOutcome, SolvationEvent, StepEvent, transport_electron,
+    HistoryObserver, HistoryOutcome, NoObserver, SolvationEvent, StepEvent, transport_electron,
 };
 
 /// Lower edge of the secondary-energy histogram, eV.
@@ -210,6 +211,28 @@ pub fn run_history(
     spectrum_edges: &[f64],
     radial_edges: &[f64],
 ) -> Result<HistoryResult, SimError> {
+    run_history_with_observer(
+        table,
+        config,
+        streams,
+        id,
+        spectrum_edges,
+        radial_edges,
+        &mut NoObserver,
+    )
+}
+
+/// Run the same scored history with an additional observational receiver.
+/// Both receivers see the same transport calls; physics is executed exactly once.
+pub fn run_history_with_observer(
+    table: &ProcessTable,
+    config: &RunConfig,
+    streams: &RngStreams,
+    id: u64,
+    spectrum_edges: &[f64],
+    radial_edges: &[f64],
+    observer: &mut (impl HistoryObserver + ?Sized),
+) -> Result<HistoryResult, SimError> {
     let mut rng = streams.stream(id, Stage::Physics)?;
     let primary = config.primary(id);
     let mut obs = HistoryObserverSet::new(
@@ -218,7 +241,32 @@ pub fn run_history(
         primary.position,
         config.record_physchem,
     );
-    let outcome = transport_electron(table, &config.transport(), primary, &mut rng, &mut obs)?;
+    struct Observers<'a, O: ?Sized>(&'a mut HistoryObserverSet, &'a mut O);
+    impl<O: HistoryObserver + ?Sized> HistoryObserver for Observers<'_, O> {
+        fn on_interaction(&mut self, event: &StepEvent<'_>) {
+            self.0.on_interaction(event);
+            self.1.on_interaction(event);
+        }
+        fn on_solvation(&mut self, event: &SolvationEvent) {
+            self.0.on_solvation(event);
+            self.1.on_solvation(event);
+        }
+        fn on_physchem(&mut self, event: &PhysChemEvent) {
+            self.0.on_physchem(event);
+            self.1.on_physchem(event);
+        }
+        fn on_physchem_site(&mut self, site: &PhysChemSite) {
+            self.0.on_physchem_site(site);
+            self.1.on_physchem_site(site);
+        }
+    }
+    let outcome = transport_electron(
+        table,
+        &config.transport(),
+        primary,
+        &mut rng,
+        &mut Observers(&mut obs, observer),
+    )?;
     Ok(HistoryResult {
         id,
         outcome,

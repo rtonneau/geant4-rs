@@ -319,3 +319,64 @@ boundary and completeness checks run first. A passing stage-matched gate is requ
 a failure leaves the gate open and Q21/R14's scheduler projection under investigation. The original
 post-reaction reference/gate stays unchanged and is not expected to pass Rust M6.
 
+## M6 900 keV five-boundary spatial diagnostic (RR-002, awaiting data)
+
+The additive mode is `physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...>`. It is
+fixed at a 900 keV electron from the origin along +z and retains option2 physics, option3 chemistry,
+IRT selection, the full secondary cascade, liquid water and fluo/Auger-off settings. The initial run is:
+
+```bash
+g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_geant4_900kev_40.csv 40 20261021,20261022,20261023,20261024,20261025
+```
+
+The mode refuses overwrite. It writes provenance comments, the exact Ticket 02 long-form header,
+contiguous `(seed,history)` blocks, and a final `# complete: true` marker only after all requested runs
+return. The boundaries are `physical_sites` (chemistry-producing excitation, ionisation, attachment
+and terminal-electron sites), `solvated_electron_creation`, `pre_decay_water`,
+`dissociation_products` (births across interleaved zero-time passes), and `final_survivors` (alive
+after recombination/decay and before IRT/diffusion). Entity rows have count 1; an absent category has
+one explicit count-0 row. Namespaces, track/parent IDs where available, source/creation ordinals and
+daughter pass/processing ordinals preserve within-implementation lineage. Optional values are `NA`.
+
+Moment columns are `count,sum_r2_nm2,sum_z_nm,sum_z2_nm2,sum_x2_plus_y2_nm2,max_radius_nm`. The 17
+edges are `10^(k/2)` nm for `k=0..16` (1 nm through 100 mm), giving 18 half-open bins: underflow,
+sixteen finite intervals and overflow. Positions remain relative to the primary origin. Runtime guards
+require zero-step global 1 ps semantics, no preceding intermolecular reaction, complete lineage,
+recognized water states and a final snapshot per event. Require exit 0, five completion lines, the
+final marker, exact five x 40 coverage and strict parsing. Never commit a partial or smoke CSV.
+
+The matching provenance is `provenance_m6_spatial_900kev_40.toml`; besides nonempty
+`geant4_commit`, `generator`, `date`, `compiler`, and `platform`, it requires:
+
+```toml
+geant4_version = "11.4.1"
+g4emlow_version = "8.8"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+chemistry_time_step_model = "IRT"
+diagnostic_stage = "global_1_ps_pre_irt"
+fluo_auger = "off"
+primary_energy_eV = 900000
+seeds = [20261021, 20261022, 20261023, 20261024, 20261025]
+histories_per_seed = 40
+analysis_seed = 20261026
+bootstrap_replicates = 20000
+generator_dirty = false
+command_line = "g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_geant4_900kev_40.csv 40 20261021,20261022,20261023,20261024,20261025"
+```
+
+After both files are committed, run:
+
+```bash
+cargo test --release -p dna-sim --test physchem_reference m6_900kev_spatial_diagnostic -- --ignored --exact --nocapture
+```
+
+The consumer generates an independent Rust sample and uses 20,000 hierarchical bootstrap replicates,
+resampling seed groups then histories while keeping all boundaries together. The sole primary is the
+Rust/Geant4 pooled seven-species final-survivor RMS ratio. It reports a 95% primary interval,
+simultaneous maximum-log-deviation boundary intervals, first detected divergence (not causation), and
+secondary category, per-history, radial, maximum, longitudinal and transverse summaries. If primary
+relative half-width `(U-L)/(2R)` exceeds 0.04, request complete 80-history samples in both
+implementations, then 160; stop at five x 160 regardless of significance. This diagnostic changes
+neither the existing 20% M6 gate nor M6's closure state.
+

@@ -513,3 +513,277 @@ fn m6_recombination_ordering_ablation() {
         }
     }
 }
+
+/// Diagnostic production sample, never an M6 acceptance gate. Run explicitly with
+/// `cargo test --release -p dna-sim m6_spatial_diagnostic_900kev -- --ignored --nocapture`.
+/// Output defaults to the session scratch directory; an optional
+/// DNA_SPATIAL_DIAGNOSTIC_CSV path must also be inside that directory. Existing
+/// files are never replaced. Geant4 is neither required nor invoked.
+#[test]
+#[ignore = "900 keV spatial diagnostic: five preregistered seeds x 40 complete histories"]
+fn m6_spatial_diagnostic_900kev() {
+    use dna_sim::run::run_physchem_summary_with_diagnostics;
+    use dna_sim::spatial_diagnostic::{
+        ANALYSIS_SEED, BOOTSTRAP_REPLICATES, Boundary, CsvSpatialDiagnosticWriter,
+        DIAGNOSTIC_SEEDS, DiagnosticDataset, Implementation, SamplePlan,
+    };
+    use std::io::{BufReader, BufWriter, Write};
+
+    let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../.scratch/tests/2026-10-19__m6-900kev-spatial-rms-investigation");
+    std::fs::create_dir_all(&scratch).unwrap();
+    let scratch = scratch.canonicalize().unwrap();
+    let output = std::env::var_os("DNA_SPATIAL_DIAGNOSTIC_CSV")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| scratch.join("spatial_rust_900kev_40.csv"));
+    let parent = output
+        .parent()
+        .expect("CSV output requires a parent directory")
+        .canonicalize()
+        .unwrap();
+    assert!(
+        parent.starts_with(&scratch),
+        "diagnostic artifacts must stay in session scratch"
+    );
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&output)
+        .expect("choose a new scratch CSV path; never overwrite existing evidence");
+    let mut writer = CsvSpatialDiagnosticWriter::new(BufWriter::new(file)).unwrap();
+    let table = ProcessTable::option2_electron(
+        &DataDir::new(repo_data_dir()).unwrap(),
+        ElasticRotation::Geant4,
+    )
+    .unwrap();
+    let engine = PhysChemEngine::option3().unwrap();
+    let plan = SamplePlan::production(40).unwrap();
+    for seed in DIAGNOSTIC_SEEDS {
+        let mut config = RunConfig::new(900_000.0, 40);
+        config.master_seed = seed;
+        // A full 900 keV cascade has many entity rows; hold only two histories.
+        config.batch_size = 2;
+        run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer)).unwrap();
+        println!("Completed Rust spatial diagnostic seed {seed}: 40 histories at 900000 eV");
+    }
+    writer.into_inner().flush().unwrap();
+    let dataset = DiagnosticDataset::read_csv(
+        BufReader::new(std::fs::File::open(&output).unwrap()),
+        Implementation::Rust,
+        &plan,
+    )
+    .unwrap();
+    let summary = dataset.summarize().unwrap();
+    let precision = dataset.pooled_rms_precision().unwrap();
+    println!("CSV: {}", output.display());
+    println!(
+        "Seeds: {DIAGNOSTIC_SEEDS:?}; histories/seed: 40; analysis seed: {ANALYSIS_SEED}; bootstrap replicates: {BOOTSTRAP_REPLICATES}"
+    );
+    println!(
+        "Rust component of primary estimand (pooled seven-species survivor RMS): {:.9} nm; 95% component interval [{:.9}, {:.9}] nm; achieved component relative half-width: {:.6} percentage points",
+        precision.pooled_rms_nm,
+        precision.lower_nm,
+        precision.upper_nm,
+        100.0 * precision.relative_half_width
+    );
+    println!(
+        "Primary Rust/Geant4 ratio and its achieved precision: unavailable until the independent Geant4 diagnostic exists. Rust-only precision does not trigger sample expansion."
+    );
+    for boundary in Boundary::ALL {
+        println!(
+            "Secondary pooled {}: {:?}",
+            boundary.name(),
+            summary.boundaries[boundary.index()]
+        );
+    }
+    for ((boundary, category), population) in &summary.categories {
+        println!(
+            "Secondary {} / {}: {population:?}",
+            boundary.name(),
+            category.name()
+        );
+    }
+    for history in &summary.histories {
+        println!(
+            "Secondary seed {} history {}: {:?}",
+            history.seed, history.history, history.boundaries
+        );
+    }
+}
+
+/// RR-002 consumer for the five-boundary 900 keV diagnostic. Geant4 data and
+/// provenance are produced only by the project lead; Rust is generated locally
+/// from the same frozen five-seed x 40-history design when this test is invoked.
+#[test]
+#[ignore = "RR-002: awaiting spatial_geant4_900kev_40.csv and provenance_m6_spatial_900kev_40.toml"]
+fn m6_900kev_spatial_diagnostic() {
+    use dna_sim::run::run_physchem_summary_with_diagnostics;
+    use dna_sim::spatial_diagnostic::{
+        Boundary, CsvSpatialDiagnosticWriter, DIAGNOSTIC_SEEDS, DiagnosticDataset, Implementation,
+        PrecisionDecision, SamplePlan, analyze,
+    };
+    use std::io::{BufReader, BufWriter, Cursor, Write};
+
+    const CSV_NAME: &str = "spatial_geant4_900kev_40.csv";
+    const PROVENANCE_NAME: &str = "provenance_m6_spatial_900kev_40.toml";
+    const COMMAND: &str = "g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_geant4_900kev_40.csv 40 20261021,20261022,20261023,20261024,20261025";
+    let csv_path = reference_dir().join(CSV_NAME);
+    let provenance_path = reference_dir().join(PROVENANCE_NAME);
+    assert!(
+        csv_path.is_file() && provenance_path.is_file(),
+        "RR-002 awaiting data: {CSV_NAME} and {PROVENANCE_NAME}; project lead must run Geant4 and commit both complete new files"
+    );
+
+    let provenance: toml::Value = toml::from_str(
+        &std::fs::read_to_string(&provenance_path)
+            .unwrap_or_else(|e| panic!("cannot read {PROVENANCE_NAME}: {e}")),
+    )
+    .unwrap_or_else(|e| panic!("invalid {PROVENANCE_NAME}: {e}"));
+    for (key, expected) in [
+        ("geant4_version", "11.4.1"),
+        ("g4emlow_version", "8.8"),
+        ("physics_constructor", "G4EmDNAPhysics_option2"),
+        ("chemistry_constructor", "G4EmDNAChemistry_option3"),
+        ("chemistry_time_step_model", "IRT"),
+        ("diagnostic_stage", "global_1_ps_pre_irt"),
+        ("fluo_auger", "off"),
+    ] {
+        assert_eq!(provenance[key].as_str(), Some(expected), "{key}");
+    }
+    assert_eq!(provenance["primary_energy_eV"].as_integer(), Some(900_000));
+    assert_eq!(provenance["histories_per_seed"].as_integer(), Some(40));
+    assert_eq!(provenance["analysis_seed"].as_integer(), Some(20261026));
+    assert_eq!(
+        provenance["bootstrap_replicates"].as_integer(),
+        Some(20_000)
+    );
+    assert_eq!(provenance["command_line"].as_str(), Some(COMMAND));
+    assert!(provenance["generator_dirty"].as_bool().is_some());
+    for key in ["geant4_commit", "generator", "date", "compiler", "platform"] {
+        assert!(
+            provenance[key]
+                .as_str()
+                .is_some_and(|value| !value.is_empty()),
+            "missing provenance field {key}"
+        );
+    }
+    let seeds: Vec<_> = provenance["seeds"]
+        .as_array()
+        .expect("provenance seeds must be an array")
+        .iter()
+        .map(|value| value.as_integer().expect("seed must be an integer") as u64)
+        .collect();
+    assert_eq!(seeds, DIAGNOSTIC_SEEDS);
+
+    let geant4_text = std::fs::read_to_string(&csv_path).unwrap();
+    let comments: Vec<_> = geant4_text
+        .lines()
+        .filter(|line| line.starts_with('#'))
+        .collect();
+    for marker in [
+        "mode physchem_spatial_diagnostic",
+        "primary_energy_eV: 900000",
+        "global_time_ps: 1; chemical_reactions: 0",
+        "histories_per_seed: 40; expected_seed_count: 5",
+        "complete: true; seeds: 20261021,20261022,20261023,20261024,20261025; histories_per_seed: 40",
+    ] {
+        assert!(
+            comments.iter().any(|line| line.contains(marker)),
+            "incomplete or wrong-stage Geant4 CSV: missing marker '{marker}'"
+        );
+    }
+    let geant4_csv = geant4_text
+        .lines()
+        .filter(|line| !line.starts_with('#'))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let plan = SamplePlan::production(40).unwrap();
+    let geant4 =
+        DiagnosticDataset::read_csv(Cursor::new(geant4_csv), Implementation::Geant4, &plan)
+            .expect("RR-002 Geant4 CSV is malformed, partial, or has wrong seed/history coverage");
+
+    let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../.scratch/tests/2026-10-19__m6-900kev-spatial-rms-investigation");
+    std::fs::create_dir_all(&scratch).unwrap();
+    let rust_path = scratch.join("05-spatial-rust-900kev-40-consumer.csv");
+    let rust_file = std::fs::File::create(&rust_path).unwrap();
+    let mut writer = CsvSpatialDiagnosticWriter::new(BufWriter::new(rust_file)).unwrap();
+    let table = ProcessTable::option2_electron(
+        &DataDir::new(repo_data_dir()).unwrap(),
+        ElasticRotation::Geant4,
+    )
+    .unwrap();
+    let engine = PhysChemEngine::option3().unwrap();
+    for seed in DIAGNOSTIC_SEEDS {
+        let mut config = RunConfig::new(900_000.0, 40);
+        config.master_seed = seed;
+        config.batch_size = 2;
+        run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer)).unwrap();
+    }
+    writer.into_inner().flush().unwrap();
+    let rust = DiagnosticDataset::read_csv(
+        BufReader::new(std::fs::File::open(&rust_path).unwrap()),
+        Implementation::Rust,
+        &plan,
+    )
+    .unwrap();
+    let analysis = analyze(&rust, &geant4).unwrap();
+    println!(
+        "Primary pooled survivor RMS ratio Rust/Geant4: {:.9}; 95% interval [{:.9}, {:.9}]; relative half-width {:.3}%",
+        analysis.primary_ratio,
+        analysis.primary_interval.lower,
+        analysis.primary_interval.upper,
+        100.0 * analysis.relative_half_width
+    );
+    println!("Simultaneous five-boundary intervals:");
+    for interval in analysis.boundaries {
+        println!(
+            "  {} ratio {:.9}, interval [{:.9}, {:.9}]",
+            interval.boundary.name(),
+            interval.ratio,
+            interval.interval.lower,
+            interval.interval.upper
+        );
+    }
+    println!("{}", analysis.divergence_statement());
+    println!(
+        "Precision-only decision: {:?}",
+        analysis.precision_decision().unwrap()
+    );
+    for boundary in Boundary::ALL {
+        println!(
+            "Secondary {}: Rust {:?}; Geant4 {:?}",
+            boundary.name(),
+            analysis.rust.boundaries[boundary.index()],
+            analysis.geant4.boundaries[boundary.index()]
+        );
+    }
+    for ((boundary, category), rust_population) in &analysis.rust.categories {
+        println!(
+            "Secondary {} / {}: Rust {:?}; Geant4 {:?}",
+            boundary.name(),
+            category.name(),
+            rust_population,
+            analysis
+                .geant4
+                .categories
+                .get(&(*boundary, *category))
+                .unwrap()
+        );
+    }
+    match analysis.precision_decision().unwrap() {
+        PrecisionDecision::ExpandToHistoriesPerSeed(80) => println!(
+            "More histories required solely by precision: rerun both implementations at 80 histories per seed."
+        ),
+        PrecisionDecision::ExpandToHistoriesPerSeed(160) => println!(
+            "More histories required solely by precision: rerun both implementations at 160 histories per seed."
+        ),
+        PrecisionDecision::TargetReached => println!(
+            "No expansion: primary relative interval half-width is at most 4 percentage points."
+        ),
+        PrecisionDecision::CapReached => println!(
+            "Precision cap reached at 160 histories per seed; report the interval without further expansion."
+        ),
+        decision => panic!("invalid preregistered precision decision: {decision:?}"),
+    }
+}

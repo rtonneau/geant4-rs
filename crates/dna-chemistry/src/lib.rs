@@ -26,10 +26,16 @@ pub use error::ChemistryError;
 /// species, dissociation channels, physicochemical parameters, reactions.
 pub fn option3_data_sha256() -> String {
     let mut hash = dna_core::sha256::Sha256::new();
-    hash.update(species::DEFAULT_SPECIES_TOML.as_bytes());
-    hash.update(channels::DEFAULT_DISSOCIATION_TOML.as_bytes());
-    hash.update(params::DEFAULT_PHYSCHEM_TOML.as_bytes());
-    hash.update(reactions::DEFAULT_REACTIONS_TOML.as_bytes());
+    // `include_str!` retains checkout line endings. Hash the repository's canonical
+    // LF representation so provenance is independent of Git's Windows conversion.
+    for input in [
+        species::DEFAULT_SPECIES_TOML,
+        channels::DEFAULT_DISSOCIATION_TOML,
+        params::DEFAULT_PHYSCHEM_TOML,
+        reactions::DEFAULT_REACTIONS_TOML,
+    ] {
+        hash.update(input.replace("\r\n", "\n").as_bytes());
+    }
     dna_core::sha256::hex(&hash.finalize())
 }
 

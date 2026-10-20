@@ -8,9 +8,12 @@
 
 use crate::config::RunConfig;
 use crate::error::SimError;
-use crate::history::{HistoryResult, radial_edges_nm, run_history, spectrum_edges_ev};
+use crate::history::{
+    HistoryResult, radial_edges_nm, run_history, run_history_with_observer, spectrum_edges_ev,
+};
 use crate::physchem_scoring::{PhysChemScorer, PhysChemSummary};
 use crate::scoring::{RunSummary, Scorer};
+use crate::spatial_diagnostic::{RustSpatialObserver, SpatialDiagnosticSink};
 use dna_chemistry::{PhysChemEngine, option3_data_sha256};
 use dna_core::provenance::Provenance;
 use dna_core::rng::{RngStreams, Stage};
@@ -164,7 +167,29 @@ pub fn run_physchem_summary(
     engine: &PhysChemEngine,
     config: &RunConfig,
 ) -> Result<(RunSummary, PhysChemSummary), SimError> {
+    run_physchem_summary_with_diagnostics(table, engine, config, None)
+}
+
+/// Optional per-history spatial records, emitted in history order. The normal
+/// summaries use exactly the same scored history and conversion as without a sink.
+/// Diagnostic output is bounded by the batch size and does not alter run JSON.
+pub fn run_physchem_summary_with_diagnostics(
+    table: &ProcessTable,
+    engine: &PhysChemEngine,
+    config: &RunConfig,
+    mut sink: Option<&mut dyn SpatialDiagnosticSink>,
+) -> Result<(RunSummary, PhysChemSummary), SimError> {
     config.validate()?;
+    if sink.is_some()
+        && (config.direction[0] != 0.0
+            || config.direction[1] != 0.0
+            || !config.direction[2].is_finite()
+            || config.direction[2] <= 0.0)
+    {
+        return Err(SimError::InvalidConfig(
+            "spatial diagnostics require the primary direction along +z".into(),
+        ));
+    }
     let mut config = config.clone();
     config.record_physchem = true;
     let config = &config;
@@ -177,12 +202,47 @@ pub fn run_physchem_summary(
         let mut start = first;
         while start < end {
             let stop = start.saturating_add(config.batch_size as u64).min(end);
-            for result in run_batch(table, config, &streams, &edges, start, stop)? {
+            let batch: Vec<_> = if sink.is_some() {
+                (0..(stop - start) as usize)
+                    .into_par_iter()
+                    .with_min_len(4)
+                    .map(|k| {
+                        let id = start + k as u64;
+                        let mut observer = RustSpatialObserver::new(config.master_seed, id);
+                        let result = run_history_with_observer(
+                            table,
+                            config,
+                            &streams,
+                            id,
+                            &edges.spectrum,
+                            &edges.radial,
+                            &mut observer,
+                        )?;
+                        Ok((result, Some(observer)))
+                    })
+                    .collect::<Result<_, SimError>>()?
+            } else {
+                run_batch(table, config, &streams, &edges, start, stop)?
+                    .into_iter()
+                    .map(|result| (result, None))
+                    .collect()
+            };
+            for (result, mut observer) in batch {
                 let deposited = result.outcome.ledger.deposited();
                 let mut rng = streams.stream(result.id, Stage::PhysChem)?;
-                let chemistry = engine.convert_history(&result.physchem, &mut rng)?;
+                let chemistry = match observer.as_mut() {
+                    Some(observer) => engine.convert_history_with_observer(
+                        &result.physchem,
+                        &mut rng,
+                        observer,
+                    )?,
+                    None => engine.convert_history(&result.physchem, &mut rng)?,
+                };
                 physics.add(&result);
                 physchem.add(&chemistry, deposited);
+                if let (Some(sink), Some(observer)) = (sink.as_deref_mut(), observer) {
+                    sink.write_history(&observer.finish()?)?;
+                }
             }
             start = stop;
         }

@@ -1,0 +1,219 @@
+{
+  "session_id": "2026-10-19__m6-900kev-spatial-rms-investigation",
+  "feature_name": "m6-900kev-spatial-rms-investigation",
+  "scratch_dir": ".scratch/tests/2026-10-19__m6-900kev-spatial-rms-investigation",
+  "created_at": "2026-10-19T19:17:25.518Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-19T19:17:25.518Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-19T20:27:43.865Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-19T20:27:49.372Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-19T20:47:27.403Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/m6-900kev-spatial-rms",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-19T20:47:27.434Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-audit-n2-and-freeze-diagnostic-contract.md",
+        "02-plan/tickets/02-add-spatial-diagnostic-schema-and-analysis.md",
+        "02-plan/tickets/03-instrument-rust-spatial-boundaries.md",
+        "02-plan/tickets/04-add-geant4-spatial-diagnostic-mode.md",
+        "02-plan/tickets/05-document-and-queue-geant4-run.md"
+      ],
+      "detail": {
+        "tickets": 5
+      }
+    },
+    {
+      "at": "2026-10-19T20:48:53.598Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-audit-n2-and-freeze-diagnostic-contract.md",
+        "03-implement/01-audit-n2-and-freeze-diagnostic-contract/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-n2-and-freeze-diagnostic-contract"
+      }
+    },
+    {
+      "at": "2026-10-19T20:55:46.919Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-audit-n2-and-freeze-diagnostic-contract/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-audit-n2-and-freeze-diagnostic-contract",
+        "commit": "8458bae"
+      }
+    },
+    {
+      "at": "2026-10-19T20:55:53.808Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-add-spatial-diagnostic-schema-and-analysis.md",
+        "03-implement/02-add-spatial-diagnostic-schema-and-analysis/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-add-spatial-diagnostic-schema-and-analysis"
+      }
+    },
+    {
+      "at": "2026-10-20T05:24:03.966Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-add-spatial-diagnostic-schema-and-analysis/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-add-spatial-diagnostic-schema-and-analysis",
+        "commit": "fbef0d6"
+      }
+    },
+    {
+      "at": "2026-10-20T05:24:10.903Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-instrument-rust-spatial-boundaries.md",
+        "03-implement/03-instrument-rust-spatial-boundaries/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-instrument-rust-spatial-boundaries"
+      }
+    },
+    {
+      "at": "2026-10-20T16:09:28.348Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-instrument-rust-spatial-boundaries/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-instrument-rust-spatial-boundaries",
+        "commit": "9d24b0b"
+      }
+    },
+    {
+      "at": "2026-10-20T16:10:23.722Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-add-geant4-spatial-diagnostic-mode.md",
+        "03-implement/04-add-geant4-spatial-diagnostic-mode/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-add-geant4-spatial-diagnostic-mode"
+      }
+    },
+    {
+      "at": "2026-10-20T16:17:11.476Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-add-geant4-spatial-diagnostic-mode/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-add-geant4-spatial-diagnostic-mode",
+        "commit": "6a70b55"
+      }
+    },
+    {
+      "at": "2026-10-20T17:14:46.003Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-document-and-queue-geant4-run.md",
+        "03-implement/05-document-and-queue-geant4-run/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-document-and-queue-geant4-run"
+      }
+    },
+    {
+      "at": "2026-10-20T17:20:21.320Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-document-and-queue-geant4-run/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-document-and-queue-geant4-run",
+        "commit": "5420d04"
+      }
+    },
+    {
+      "at": "2026-10-20T17:24:28.184Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-10-20T17:24:39.799Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/18"
+      }
+    },
+    {
+      "at": "2026-10-20T17:24:39.802Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "test/m6-900kev-spatial-rms",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-19T20:47:27.403Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/18"
+  },
+  "ship_mode": "inline",
+  "changelog": {
+    "bump": "minor",
+    "floor": "minor",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-19__m6-900kev-spatial-rms-investigation.md",
+    "written_at": "2026-10-20T17:24:28.172Z"
+  },
+  "finished_at": "2026-10-20T17:24:39.802Z"
+}
