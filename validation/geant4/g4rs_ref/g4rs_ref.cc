@@ -34,6 +34,8 @@
 //                                         M6 diagnostic: snapshot after all water decays, in the
 //                                         zero-step post-callback before IRT initialization.
 //                                         Existing physchem mode and its output are unchanged.
+//   physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...>
+//                                         M6 five-boundary long-form diagnostic at 900 keV.
 
 #include <algorithm>
 #include <cmath>
@@ -42,6 +44,8 @@
 #include <cstring>
 #include <map>
 #include <limits>
+#include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -84,6 +88,8 @@
 #include "G4MoleculeCounter.hh"
 #include "G4MoleculeCounterManager.hh"
 #include "G4H2O.hh"
+#include "G4ElectronOccupancy.hh"
+#include "G4MoleculeDefinition.hh"
 #include "G4Scheduler.hh"
 #include "G4UserRunAction.hh"
 #include "G4UserTimeStepAction.hh"
@@ -92,9 +98,10 @@ namespace {
 
 // ------------------------------------------------------------------ shared state ---------
 
-enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem };
+enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem, SpatialDiagnostic };
 Mode gMode = Mode::Xs;
-bool IsChemistryMode() { return gMode == Mode::PhysChem || gMode == Mode::PreChem; }
+bool IsChemistryMode() { return gMode == Mode::PhysChem || gMode == Mode::PreChem ||
+                                gMode == Mode::SpatialDiagnostic; }
 G4double gCut = 0.;  // tracking cut (track mode)
 G4double gEnergy = 0.;  // current primary energy
 
@@ -187,6 +194,277 @@ struct PhysChemAccum {
 std::map<std::string, double> gPhysChemEventCount, gPhysChemEventR2;
 bool gChemistryRun = false;
 bool gPreChemCaptured = false;
+
+// Long-form spatial diagnostic state. It is deliberately isolated from the historical
+// physchem modes so their arguments and bytes remain unchanged.
+FILE* gSpatialFile = nullptr;
+long gSpatialSeed = 0;
+long gSpatialHistory = -1;
+unsigned long gSpatialSourceOrdinal = 0;
+unsigned long gSpatialPass = 0;
+unsigned long gSpatialProcessingOrdinal = 0;
+struct PhysicalSite {
+  long track = 0, parent = 0;
+  G4ThreeVector origin;
+  std::string process;
+  unsigned long source = 0;
+  bool assigned = false;
+};
+std::vector<PhysicalSite> gSpatialSites;
+std::set<long> gSpatialKnownMolecules;
+std::map<long, unsigned long> gSpatialMoleculeSource;
+std::map<long, long> gSpatialMoleculePhysicalTrack;
+std::set<std::pair<std::string, std::string>> gSpatialPopulated;
+
+[[noreturn]] void SpatialFailure(const char* message)
+{
+  fprintf(stderr, "physchem_spatial_diagnostic: %s; output is incomplete, do not commit it\n",
+          message);
+  exit(1);
+}
+
+const char* kSpatialHeader =
+    "implementation,seed,history,boundary,category,entity_namespace,entity_id,"
+    "physical_track_id,parent_namespace,parent_id,source_event,creation_ordinal,"
+    "zero_time_pass,processing_ordinal,stage,time_ps,state,count,sum_r2_nm2,sum_z_nm,"
+    "sum_z2_nm2,sum_x2_plus_y2_nm2,max_radius_nm,radial_bin_0,radial_bin_1,radial_bin_2,"
+    "radial_bin_3,radial_bin_4,radial_bin_5,radial_bin_6,radial_bin_7,radial_bin_8,"
+    "radial_bin_9,radial_bin_10,radial_bin_11,radial_bin_12,radial_bin_13,radial_bin_14,"
+    "radial_bin_15,radial_bin_16,radial_bin_17";
+
+int SpatialRadialBin(double r_nm)
+{
+  int bin = 0;
+  while (bin < 17 && r_nm >= std::pow(10., bin / 2.)) ++bin;
+  return bin;
+}
+
+void SpatialRow(const char* boundary, const std::string& category, const char* entityNamespace,
+                long entityId, const char* physicalTrack, const char* parentNamespace,
+                const char* parentId, const char* sourceEvent, unsigned long creationOrdinal,
+                const char* zeroPass, const char* processingOrdinal, const char* stage,
+                const char* state, const G4ThreeVector& position)
+{
+  if (!gSpatialFile) SpatialFailure("row emitted without an open output");
+  const double x = position.x() / nm, y = position.y() / nm, z = position.z() / nm;
+  const double transverse = x * x + y * y, z2 = z * z, r2 = transverse + z2;
+  const double radius = std::sqrt(r2);
+  fprintf(gSpatialFile,
+          "geant4,%ld,%ld,%s,%s,%s,%ld,%s,%s,%s,%s,%lu,%s,%s,%s,%s,%s,1,"
+          "%.17g,%.17g,%.17g,%.17g,%.17g",
+          gSpatialSeed, gSpatialHistory, boundary, category.c_str(), entityNamespace, entityId,
+          physicalTrack, parentNamespace, parentId, sourceEvent, creationOrdinal, zeroPass,
+          processingOrdinal, stage, strcmp(stage, "physical") == 0 ? "NA" : "1", state,
+          r2, z, z2, transverse, radius);
+  const int occupied = SpatialRadialBin(radius);
+  for (int bin = 0; bin < 18; ++bin) fprintf(gSpatialFile, ",%d", bin == occupied ? 1 : 0);
+  fprintf(gSpatialFile, "\n");
+  gSpatialPopulated.insert({boundary, category});
+}
+
+void SpatialEmpty(const char* boundary, const std::string& category, const char* stage)
+{
+  if (gSpatialPopulated.count({boundary, category})) return;
+  fprintf(gSpatialFile, "geant4,%ld,%ld,%s,%s,NA,NA,NA,NA,NA,NA,NA,NA,NA,%s,NA,NA,0,"
+                        "0,0,0,0,0", gSpatialSeed, gSpatialHistory, boundary,
+          category.c_str(), stage);
+  for (int bin = 0; bin < 18; ++bin) fprintf(gSpatialFile, ",0");
+  fprintf(gSpatialFile, "\n");
+}
+
+std::string SpatialSpecies(const G4Molecule* molecule)
+{
+  const std::string name = molecule->GetName();
+  if (name == "H3O^1") return "H3Op";
+  if (name == std::string("\xC2\xB0") + "OH^0") return std::string("\xC2\xB0") + "OH";
+  if (name == "OH^-1") return "OHm";
+  if (name == "e_aq^-1") return "e_aq";
+  if (name == "H^0") return "H";
+  if (name == "H_2^0") return "H2";
+  if (name == std::string("\xC2\xB0") + "O^0") return "Oxy";
+  return "";
+}
+
+std::string SpatialWaterCategory(const G4Molecule* molecule)
+{
+  const auto* occupancy = molecule->GetElectronOccupancy();
+  const auto* ground = molecule->GetDefinition()->GetGroundStateElectronOccupancy();
+  if (!occupancy || !ground) SpatialFailure("water state lacks electron occupancy");
+  const int delta = occupancy->GetTotalOccupancy() - ground->GetTotalOccupancy();
+  if (delta == 1) return "attachment";
+  for (int orbit = 0; orbit < 5; ++orbit) {
+    if (occupancy->GetOccupancy(orbit) < ground->GetOccupancy(orbit)) {
+      const int level = 4 - orbit;
+      return std::string(delta == 0 ? "excitation_" : "ionisation_") +
+             std::to_string(level);
+    }
+  }
+  SpatialFailure("unrecognized pre-decay water state");
+}
+
+PhysicalSite& SpatialAssignSite(long parent, const std::string& category)
+{
+  const bool solvation = category == "solvation";
+  const bool attachment = category == "attachment";
+  const bool excitation = category.rfind("excitation_", 0) == 0;
+  const bool ionisation = category.rfind("ionisation_", 0) == 0;
+  for (auto& site : gSpatialSites) {
+    if (site.assigned || site.track != parent) continue;
+    const bool matches = (solvation && site.process == "e-_G4DNAElectronSolvation") ||
+                         (attachment && site.process == "e-_G4DNAAttachment") ||
+                         (excitation && site.process == "e-_G4DNAExcitation") ||
+                         (ionisation && site.process == "e-_G4DNAIonisation");
+    if (matches) { site.assigned = true; return site; }
+  }
+  SpatialFailure("molecular insertion could not be matched to its physical site");
+}
+
+void SpatialPhysicalRow(PhysicalSite& site, const std::string& category, const char* state)
+{
+  const std::string track = std::to_string(site.track);
+  const std::string parent = site.parent == 0 ? "NA" : std::to_string(site.parent);
+  const std::string source = std::to_string(site.source);
+  SpatialRow("physical_sites", category, "event", (long)site.source, track.c_str(),
+             site.parent == 0 ? "NA" : "physical", parent.c_str(), source.c_str(), site.source,
+             "NA", "NA", "physical", state, site.origin);
+}
+
+void SpatialInitialMolecule(const G4Track* track)
+{
+  const auto* molecule = GetMolecule(track);
+  if (!molecule) SpatialFailure("initial track is not molecular");
+  const long id = track->GetTrackID(), parent = track->GetParentID();
+  const std::string species = SpatialSpecies(molecule);
+  const bool electron = species == "e_aq";
+  const std::string category = electron ? "solvation" : SpatialWaterCategory(molecule);
+  auto& site = SpatialAssignSite(parent, category);
+  SpatialPhysicalRow(site, category, electron ? "killed" :
+                    (category == "attachment" ? "killed" : "alive"));
+  const std::string entity = std::to_string(id), physical = std::to_string(parent);
+  const std::string source = std::to_string(site.source);
+  const unsigned long creation = (unsigned long)(-id - 1);
+  SpatialRow(electron ? "solvated_electron_creation" : "pre_decay_water",
+             electron ? species : category, "molecular", id, physical.c_str(), "physical",
+             physical.c_str(), source.c_str(), creation, "NA", "NA", "physicochemical",
+             electron ? "alive" : "stopped", track->GetPosition());
+  gSpatialKnownMolecules.insert(id);
+  gSpatialMoleculeSource[id] = site.source;
+  gSpatialMoleculePhysicalTrack[id] = parent;
+}
+
+void SpatialDaughter(const G4Track* track, unsigned long processingOrdinal)
+{
+  const auto* molecule = GetMolecule(track);
+  const std::string species = molecule ? SpatialSpecies(molecule) : "";
+  if (species.empty()) return;  // H2Ovib is an intermediate, not a frozen population.
+  const long id = track->GetTrackID(), parent = track->GetParentID();
+  const auto sourceIt = gSpatialMoleculeSource.find(parent);
+  const auto physicalIt = gSpatialMoleculePhysicalTrack.find(parent);
+  if (sourceIt == gSpatialMoleculeSource.end() || physicalIt == gSpatialMoleculePhysicalTrack.end())
+    SpatialFailure("daughter lineage does not reach an initial physical site");
+  gSpatialMoleculeSource[id] = sourceIt->second;
+  gSpatialMoleculePhysicalTrack[id] = physicalIt->second;
+  const std::string entity = std::to_string(id), parentId = std::to_string(parent);
+  const std::string physical = std::to_string(physicalIt->second);
+  const std::string source = std::to_string(sourceIt->second);
+  const unsigned long creation = (unsigned long)(-id - 1);
+  const std::string pass = std::to_string(gSpatialPass);
+  const std::string processing = std::to_string(processingOrdinal);
+  SpatialRow("dissociation_products", species, "molecular", id, physical.c_str(), "molecular",
+             parentId.c_str(), source.c_str(), creation, pass.c_str(), processing.c_str(),
+             "physicochemical", "alive", track->GetPosition());
+}
+
+void SpatialCompleteHistory(G4TrackManyList* tracks)
+{
+  static const char* species[] = {"e_aq", "\xC2\xB0" "OH", "H3Op", "H", "H2", "OHm", "Oxy"};
+  for (const G4Track* track : *tracks) {
+    const auto* molecule = GetMolecule(track);
+    const std::string name = molecule ? SpatialSpecies(molecule) : "";
+    if (name.empty() || track->GetTrackStatus() != fAlive) continue;
+    const std::string parent = std::to_string(track->GetParentID());
+    const auto sourceIt = gSpatialMoleculeSource.find(track->GetTrackID());
+    const auto physicalIt = gSpatialMoleculePhysicalTrack.find(track->GetTrackID());
+    if (sourceIt == gSpatialMoleculeSource.end() || physicalIt == gSpatialMoleculePhysicalTrack.end())
+      SpatialFailure("survivor lineage does not reach an initial physical site");
+    const std::string source = std::to_string(sourceIt->second);
+    const std::string physical = std::to_string(physicalIt->second);
+    SpatialRow("final_survivors", name, "molecular", track->GetTrackID(), physical.c_str(),
+               track->GetParentID() > 0 ? "physical" : "molecular", parent.c_str(), source.c_str(),
+               (unsigned long)(-track->GetTrackID() - 1), "NA", "NA",
+               "physicochemical", "alive", track->GetPosition());
+  }
+  for (int i = 0; i < 5; ++i) {
+    SpatialEmpty("physical_sites", "excitation_" + std::to_string(i), "physical");
+    SpatialEmpty("physical_sites", "ionisation_" + std::to_string(i), "physical");
+    SpatialEmpty("pre_decay_water", "excitation_" + std::to_string(i), "physicochemical");
+    SpatialEmpty("pre_decay_water", "ionisation_" + std::to_string(i), "physicochemical");
+  }
+  SpatialEmpty("physical_sites", "attachment", "physical");
+  SpatialEmpty("physical_sites", "solvation", "physical");
+  SpatialEmpty("pre_decay_water", "attachment", "physicochemical");
+  SpatialEmpty("solvated_electron_creation", "e_aq", "physicochemical");
+  for (const char* name : species) {
+    SpatialEmpty("dissociation_products", name, "physicochemical");
+    SpatialEmpty("final_survivors", name, "physicochemical");
+  }
+}
+
+class SpatialSpeciesAction : public G4UserTimeStepAction {
+ public:
+  void StartProcessing() override { fInitialized = false; }
+  void UserPreTimeStepAction() override
+  {
+    auto* scheduler = G4Scheduler::Instance();
+    if (!fInitialized) {
+      auto* tracks = G4ITTrackHolder::Instance()->GetMainList();
+      if (!tracks || tracks->begin() == tracks->end())
+        SpatialFailure("missing initial molecular track list");
+      if (scheduler->GetTimeStep() != 0. ||
+          std::abs(scheduler->GetGlobalTime() - ps) > 1e-12 * ps)
+        SpatialFailure("initial molecules are not on the global 1 ps zero step");
+      for (const G4Track* track : *tracks) SpatialInitialMolecule(track);
+      fInitialized = true;
+    }
+    if (scheduler->GetTimeStep() > 0.)
+      SpatialFailure("positive chemistry step selected before final snapshot");
+  }
+  void UserReactionAction(const G4Track&, const G4Track&, const std::vector<G4Track*>*) override
+  { SpatialFailure("inter-molecular reaction preceded final snapshot"); }
+  void UserPostTimeStepAction() override
+  {
+    auto* scheduler = G4Scheduler::Instance();
+    auto* tracks = G4ITTrackHolder::Instance()->GetMainList();
+    if (!tracks) SpatialFailure("missing post-step molecular track list");
+    bool hasWater = false;
+    std::map<long, unsigned long> processingByParent;
+    for (const G4Track* track : *tracks) {
+      if (track->GetDefinition() == G4H2O::Definition()) hasWater = true;
+      if (gSpatialKnownMolecules.insert(track->GetTrackID()).second) {
+        const long parent = track->GetParentID();
+        auto inserted = processingByParent.emplace(parent, gSpatialProcessingOrdinal);
+        if (inserted.second) ++gSpatialProcessingOrdinal;
+        // Propagate lineage even for the unreported H2Ovib intermediate.
+        const auto source = gSpatialMoleculeSource.find(parent);
+        const auto physical = gSpatialMoleculePhysicalTrack.find(parent);
+        if (source == gSpatialMoleculeSource.end() || physical == gSpatialMoleculePhysicalTrack.end())
+          SpatialFailure("new molecule has no observed parent lineage");
+        gSpatialMoleculeSource[track->GetTrackID()] = source->second;
+        gSpatialMoleculePhysicalTrack[track->GetTrackID()] = physical->second;
+        SpatialDaughter(track, inserted.first->second);
+      }
+    }
+    if (hasWater) { ++gSpatialPass; return; }
+    if (scheduler->GetTimeStep() != 0. ||
+        std::abs(scheduler->GetGlobalTime() - ps) > 1e-12 * ps)
+      SpatialFailure("final survivors are not on the global 1 ps zero step");
+    SpatialCompleteHistory(tracks);
+    gPreChemCaptured = true;
+    scheduler->Stop();
+  }
+ private:
+  bool fInitialized = false;
+};
 
 [[noreturn]] void PreChemFailure(const char* message)
 {
@@ -425,6 +703,17 @@ class Stepping : public G4UserSteppingAction {
       return;
     }
     G4Track* track = step->GetTrack();
+    if (gMode == Mode::SpatialDiagnostic) {
+      const G4StepPoint* post = step->GetPostStepPoint();
+      const G4VProcess* defining = post->GetProcessDefinedStep();
+      const std::string process = defining ? defining->GetProcessName() : "";
+      if (process == "e-_G4DNAExcitation" || process == "e-_G4DNAIonisation" ||
+          process == "e-_G4DNAAttachment" || process == "e-_G4DNAElectronSolvation") {
+        gSpatialSites.push_back({track->GetTrackID(), track->GetParentID(), post->GetPosition(),
+                                 process, gSpatialSourceOrdinal++, false});
+      }
+      return;
+    }
     if (track->GetTrackID() != 1) return;  // secondaries are killed in the stacking action
     const G4StepPoint* pre = step->GetPreStepPoint();
     const G4StepPoint* post = step->GetPostStepPoint();
@@ -484,7 +773,7 @@ class Stacking : public G4UserStackingAction {
 
 class EventAct : public G4UserEventAction {
  public:
-  void BeginOfEventAction(const G4Event*) override
+  void BeginOfEventAction(const G4Event* event) override
   {
     gL = gEdep = gRem = gNsec = gEsec = 0.;
     gEnd = G4ThreeVector();
@@ -495,6 +784,15 @@ class EventAct : public G4UserEventAction {
       gPhysChemEventCount.clear();
       gPhysChemEventR2.clear();
     }
+    if (gMode == Mode::SpatialDiagnostic) {
+      gSpatialHistory = event->GetEventID();
+      gSpatialSourceOrdinal = gSpatialPass = gSpatialProcessingOrdinal = 0;
+      gSpatialSites.clear();
+      gSpatialKnownMolecules.clear();
+      gSpatialMoleculeSource.clear();
+      gSpatialMoleculePhysicalTrack.clear();
+      gSpatialPopulated.clear();
+    }
   }
   void EndOfEventAction(const G4Event*) override
   {
@@ -503,6 +801,8 @@ class EventAct : public G4UserEventAction {
     if (IsChemistryMode()) {
       if (gMode == Mode::PreChem && !gPreChemCaptured)
         PreChemFailure("event ended without a verified snapshot");
+      if (gMode == Mode::SpatialDiagnostic && !gPreChemCaptured)
+        SpatialFailure("event ended without a verified final snapshot");
       for (const auto& item : gPhysChemEventCount) {
         gPhysChem.sum_count[item.first] += item.second;
         gPhysChem.sum_count2[item.first] += item.second * item.second;
@@ -731,12 +1031,59 @@ void RunPreChem(const char* out, long seed, const std::vector<std::pair<double, 
   if (fclose(f) != 0) PreChemFailure("failed to close output");
 }
 
+std::vector<long> ParseSeeds(const std::string& spec)
+{
+  std::vector<long> seeds;
+  size_t start = 0;
+  while (start < spec.size()) {
+    size_t comma = spec.find(',', start);
+    if (comma == std::string::npos) comma = spec.size();
+    const std::string item = spec.substr(start, comma - start);
+    char* end = nullptr;
+    const long seed = strtol(item.c_str(), &end, 10);
+    if (item.empty() || !end || *end != '\0' || seed <= 0) SpatialFailure("invalid seed list");
+    seeds.push_back(seed);
+    start = comma + 1;
+  }
+  if (seeds.empty()) SpatialFailure("empty seed list");
+  return seeds;
+}
+
+void RunSpatialDiagnostic(const char* out, long histories, const std::vector<long>& seeds)
+{
+  if (histories <= 0 || histories > std::numeric_limits<G4int>::max())
+    SpatialFailure("history count must be a positive G4int");
+  gSpatialFile = fopen(out, "wx");
+  if (!gSpatialFile) SpatialFailure("cannot create output (it may already exist)");
+  fprintf(gSpatialFile, "# generator: g4rs_ref (validation/geant4/g4rs_ref), mode physchem_spatial_diagnostic\n");
+  fprintf(gSpatialFile, "# geant4_version_number: %d (%s)\n", G4VERSION_NUMBER, G4Version.c_str());
+  fprintf(gSpatialFile, "# physics: G4EmDNAPhysics_option2; chemistry: G4EmDNAChemistry_option3; material: G4_WATER; fluo/auger: OFF\n");
+  fprintf(gSpatialFile, "# primary_energy_eV: 900000; primary_origin_nm: 0,0,0; primary_direction: 0,0,1\n");
+  fprintf(gSpatialFile, "# global_time_ps: 1; chemical_reactions: 0; histories_per_seed: %ld; expected_seed_count: %zu\n", histories, seeds.size());
+  fprintf(gSpatialFile, "# boundaries: physical_sites,solvated_electron_creation,pre_decay_water,dissociation_products,final_survivors\n");
+  fprintf(gSpatialFile, "# completion: valid only after every requested BeamOn returns and this file closes successfully\n");
+  fprintf(gSpatialFile, "%s\n", kSpatialHeader);
+  gEnergy = 900000. * eV;
+  for (long seed : seeds) {
+    gSpatialSeed = seed;
+    G4Random::setTheSeed(seed);
+    G4RunManager::GetRunManager()->BeamOn((G4int)histories);
+    if (fflush(gSpatialFile) != 0) SpatialFailure("failed to flush output");
+    fprintf(stderr, "physchem_spatial_diagnostic: seed %ld done (%ld events)\n", seed, histories);
+  }
+  fprintf(gSpatialFile, "# complete: true; seeds: ");
+  for (size_t i = 0; i < seeds.size(); ++i) fprintf(gSpatialFile, "%s%ld", i ? "," : "", seeds[i]);
+  fprintf(gSpatialFile, "; histories_per_seed: %ld\n", histories);
+  if (fclose(gSpatialFile) != 0) SpatialFailure("failed to close output");
+  gSpatialFile = nullptr;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
 {
   if (argc < 3) {
-    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...>\n", argv[0]);
+    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...>\n", argv[0]);
     return 1;
   }
   const std::string mode = argv[1];
@@ -771,6 +1118,13 @@ int main(int argc, char** argv)
     }
     gMode = Mode::PreChem;
   }
+  else if (mode == "physchem_spatial_diagnostic") {
+    if (argc != 5) SpatialFailure("expected output path, histories per seed and seed list");
+    events = atol(argv[3]);
+    ParseSeeds(argv[4]);  // validate before Geant4 initialization
+    if (events <= 0) SpatialFailure("histories per seed must be positive");
+    gMode = Mode::SpatialDiagnostic;
+  }
   else if (mode == "mfp") gMode = Mode::Mfp;
   else if (mode == "track") {
     gMode = Mode::Track;
@@ -801,6 +1155,8 @@ int main(int argc, char** argv)
   if (IsChemistryMode()) {
     G4Scheduler::Instance()->SetEndTime(2. * ps);
     if (gMode == Mode::PreChem) G4Scheduler::Instance()->SetUserAction(new PreChemSpeciesAction());
+    else if (gMode == Mode::SpatialDiagnostic)
+      G4Scheduler::Instance()->SetUserAction(new SpatialSpeciesAction());
     else G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
   }
 
@@ -831,6 +1187,9 @@ int main(int argc, char** argv)
   }
   else if (gMode == Mode::PreChem) {
     RunPreChem(out, seed, ParseSpec(slowSpec));
+  }
+  else if (gMode == Mode::SpatialDiagnostic) {
+    RunSpatialDiagnostic(out, events, ParseSeeds(argv[4]));
   }
   else {
     RunEvents(out, "track", {200., 1e3, 1e4, 1e5, 9e5}, events, seed);
