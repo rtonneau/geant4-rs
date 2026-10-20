@@ -101,6 +101,30 @@
         "ticket": "02-add-spatial-diagnostic-schema-and-analysis",
         "commit": "fbef0d6"
       }
+    },
+    {
+      "at": "2026-10-20T05:24:10.903Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-instrument-rust-spatial-boundaries.md",
+        "03-implement/03-instrument-rust-spatial-boundaries/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-instrument-rust-spatial-boundaries"
+      }
+    },
+    {
+      "at": "2026-10-20T16:09:28.348Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-instrument-rust-spatial-boundaries/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-instrument-rust-spatial-boundaries",
+        "commit": "9d24b0b"
+      }
     }
   ],
   "current_phase": "ship",
