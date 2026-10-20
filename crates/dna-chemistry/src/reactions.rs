@@ -436,6 +436,7 @@ mod tests {
     use dna_core::species::Species;
 
     fn replace_once(source: &str, from: &str, to: &str) -> String {
+        let source = source.replace("\r\n", "\n");
         assert!(source.contains(from), "fixture edit target missing: {from}");
         source.replacen(from, to, 1)
     }

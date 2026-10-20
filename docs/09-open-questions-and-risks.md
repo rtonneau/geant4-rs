@@ -200,6 +200,14 @@ decision follows from this contract. A source-proven defect is documented for a
 separate fix. New diagnostic files and provenance must preserve all existing
 evidence; the implementation session ends awaiting the project lead's data.
 
+**RR-002 status (2026-10-20): awaiting user-run data.** The five-boundary Rust instrumentation and
+Geant4 `physchem_spatial_diagnostic` mode implement the frozen contract above; the C++ target compiled
+and linked against Geant4 11.4.1 but was not executed. The request is for
+`spatial_geant4_900kev_40.csv` and `provenance_m6_spatial_900kev_40.toml`, five seeds x 40 histories.
+The ignored consumer enforces stage, completeness, provenance and the 40/80/160 precision rule before
+reporting a first detected divergence. No result or cause is claimed yet. M6 remains in its prior
+state: this diagnostic neither reopens nor closes it.
+
 ## Decisions confirmed 2026-10-16 (gps roadmap session)
 - **Q24 CLOSED.** The `g4rs_ref physchem` crash is fixed (IRT time-step model set explicitly, snapshot at the first scheduler step with `dt > 0`, secondaries transported, atomic de-excitation off); see `validation/geant4/BUILD_NOTES.md` section 5 (issues G-K). Reference data: `validation/reference/physchem.csv`, `provenance_m6.toml`. The **M6 gate is still open**: `1000 eV H2O2: z = 111.6` (docs/08, seed `m6-comparison-report`).
 - **Snapshot interpretation corrected by the M6 audit.** The callback above is after zero-time chemistry, not just after dissociation (Q25/R17). This does not reopen the lifecycle crash or alter the committed reference, original gate tolerances, or M6 closure requirement.

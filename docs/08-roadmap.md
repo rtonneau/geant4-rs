@@ -514,6 +514,14 @@ simultaneous boundary intervals identify the **first detected divergence**, not
 its cause. Diagnostic implementation and the new user-run Geant4 request are
 subsequent tickets; no new run or spatial inference is claimed here.
 
+**900 keV spatial diagnostic awaiting data (RR-002, 2026-10-20).** The five Rust boundaries and the
+separately named Geant4 `physchem_spatial_diagnostic` mode are implemented; the latter compile-links
+against Geant4 11.4.1 and has not been run by an agent. RR-002 requests five seeds x 40 histories plus
+provenance. The ignored consumer validates completeness and stage, generates the independent Rust
+sample, and reports the preregistered primary and simultaneous intervals with precision-only 80/160
+expansion. This investigation is awaiting project-lead data. It neither reopens nor closes M6 and does
+not alter existing gates, tolerances, modes or evidence.
+
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), IRT incl. partially diffusion-controlled sampling, erfc, box boundary, SBS oracle, ODE test harness. Closes G5, G7.
 Tests: V9, V10, unit tests for reaction selection and boundaries. Acceptance: V9 for A+B and A+A over three D/R/k sets; IRT vs SBS agreement on a TDC case within 3 sigma.

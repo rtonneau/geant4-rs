@@ -185,3 +185,20 @@ if ($LASTEXITCODE -ne 0) { throw 'prechem production failed; do not commit parti
 Check four completion lines, all four requested energies and counts, 28 nonempty data rows, and the
 pre-IRT marker before committing the **new** CSV and `provenance_m6_prechem.toml` (README's fields).
 Do not overwrite any historical CSV/provenance. Then run only the paired ignored test named in RR-001.
+
+## 8. RR-002: 900 keV spatial diagnostic (2026-10-20, user-run only)
+
+The separately named `physchem_spatial_diagnostic` mode was compile-checked but never executed by the
+agent. Configure section 2's recipe into
+`.scratch/tests/2026-10-19__m6-900kev-spatial-rms-investigation/g4rs-ref-build`. MSVC 19.50.35729 and
+Ninja compiled and linked it against installed Geant4 11.4.1.
+
+A plain PowerShell configure selected unavailable NMake, so configuration was repeated inside
+`vcvars64.bat`. Geant4's exported configuration also required Qt5; `QT5_PREFIX`/`Qt5Core_DIR` were
+passed exactly as in section 2. No machine path was added to source or CMake.
+
+The project lead sets section 3's runtime environment and runs the exact RR-002 command in README and
+`RUN_REQUESTS.md`, using new output paths only. Require exit 0, five completion lines, the trailing
+complete marker, exact five x 40 coverage and a nonempty long-form body before committing the CSV and
+provenance. Do not run the paired ignored consumer until both are committed. If a runtime guard fires,
+retain the log and partial scratch output for diagnosis; do not commit it or weaken the guard.

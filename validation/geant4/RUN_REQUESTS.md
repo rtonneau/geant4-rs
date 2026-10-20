@@ -46,6 +46,7 @@ runs them (Geant4 11.4.1, see `BUILD_NOTES.md`) and commits the output.
 | id | seed (gps) | program | command | rng seed, statistics | outputs | provenance | consumer | status |
 |---|---|---|---|---|---|---|---|---|
 | RR-001 | `m6-diagnose-and-fix`, `2026-10-16__m6-diagnose-and-fix` | `g4rs_ref physchem_prechem`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20` (from `validation/geant4/g4rs_ref`, executable on PATH) | 20261020; 20000/2000/200/20 events at 1/10/100/900 keV | `validation/reference/physchem_prechem.csv` (new) | `validation/reference/provenance_m6_prechem.toml` (new; README fields) | `crates/dna-sim/tests/physchem_reference.rs::m6_prechem_counts_and_rms_match_geant4`; `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` | closed 2026-10-17: data `e808b2f`, `ffe4b48`; gate failed 16/28 rows (docs/08 "RR-001 result") |
+| RR-002 | `m6-900kev-spatial-rms-investigation`, `2026-10-19__m6-900kev-spatial-rms-investigation` | `g4rs_ref physchem_spatial_diagnostic`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_geant4_900kev_40.csv 40 20261021,20261022,20261023,20261024,20261025` (from `validation/geant4/g4rs_ref`, executable on PATH) | five independent seeds 20261021..20261025; initially 40 complete 900 keV histories/seed | `validation/reference/spatial_geant4_900kev_40.csv` (new) | `validation/reference/provenance_m6_spatial_900kev_40.toml` (new; README fields) | `crates/dna-sim/tests/physchem_reference.rs::m6_900kev_spatial_diagnostic`; `cargo test --release -p dna-sim --test physchem_reference m6_900kev_spatial_diagnostic -- --ignored --exact --nocapture` | awaiting run; require exit 0, five completion lines, final marker and exact coverage; if primary relative half-width exceeds 0.04 request new complete 80/seed files for both implementations, then 160/seed, never significance-driven |
 
 ### RR-001 purpose and acceptance (2026-10-17)
 
@@ -63,3 +64,16 @@ products, invalid moments or provenance. Every species/energy row retains the or
 15% count limit when both means exceed 0.1/event, and 20% RMS limit; criteria are fixed before the run.
 The paired `m6-close-gate` seed checks this result before declaring closure. A failure leaves Q21/R14
 and any additional cause open; neither the original gate nor its historical evidence is replaced.
+
+### RR-002 purpose and acceptance (2026-10-20)
+
+RR-002 localizes the common 900 keV spatial residual across five lifecycle boundaries. The mode
+compiled and linked against Geant4 11.4.1 but has not been run by an agent. Commit only an exit-0 file
+with all 200 histories, trailing completion marker and matching provenance. The consumer rejects wrong
+stage/settings, malformed rows, duplicate/missing categories and incomplete seed/history blocks.
+
+The frozen 20,000-replicate independent-sample hierarchical bootstrap uses analysis seed 20261026.
+First detected divergence is descriptive, not causal. Sample growth is controlled only by primary
+relative interval half-width: 40 to 80 to 160 histories per seed in both implementations, stopping at
+800 histories each. New levels require new filenames/provenance and complete runs; never append
+duplicate identities. RR-002 records evidence only and neither reopens nor closes M6.
