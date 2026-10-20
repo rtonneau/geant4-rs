@@ -149,9 +149,33 @@
         "ticket": "04-add-geant4-spatial-diagnostic-mode",
         "commit": "6a70b55"
       }
+    },
+    {
+      "at": "2026-10-20T17:14:46.003Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-document-and-queue-geant4-run.md",
+        "03-implement/05-document-and-queue-geant4-run/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-document-and-queue-geant4-run"
+      }
+    },
+    {
+      "at": "2026-10-20T17:20:21.320Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-document-and-queue-geant4-run/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-document-and-queue-geant4-run",
+        "commit": "5420d04"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "test/m6-900kev-spatial-rms",
     "base_branch": "main",
