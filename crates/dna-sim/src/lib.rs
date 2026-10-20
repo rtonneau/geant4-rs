@@ -14,6 +14,7 @@ pub mod history;
 pub mod physchem_scoring;
 pub mod run;
 pub mod scoring;
+pub mod spatial_diagnostic;
 
 pub use config::RunConfig;
 pub use error::SimError;
