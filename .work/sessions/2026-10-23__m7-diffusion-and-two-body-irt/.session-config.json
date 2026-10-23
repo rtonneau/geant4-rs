@@ -181,6 +181,30 @@
         "ticket": "04-tdc-independent-reaction-time",
         "commit": "fb1591c"
       }
+    },
+    {
+      "at": "2026-10-23T12:27:21.201Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-pdc-independent-reaction-time.md",
+        "03-implement/05-pdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-pdc-independent-reaction-time"
+      }
+    },
+    {
+      "at": "2026-10-23T12:35:42.495Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-pdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-pdc-independent-reaction-time",
+        "commit": "82b3430"
+      }
     }
   ],
   "current_phase": "ship",
