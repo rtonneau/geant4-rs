@@ -75,6 +75,40 @@
         "steps": "ship → finish",
         "shipMode": "subagent+inline"
       }
+    },
+    {
+      "at": "2026-10-23T11:51:41.027Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-23T11:51:53.976Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-special-functions.md",
+        "03-implement/01-special-functions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-special-functions"
+      }
+    },
+    {
+      "at": "2026-10-23T12:03:04.308Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-special-functions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-special-functions",
+        "commit": "abd616c"
+      }
     }
   ],
   "current_phase": "ship",
@@ -83,5 +117,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-23T06:41:19.198Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent+inline"
 }
