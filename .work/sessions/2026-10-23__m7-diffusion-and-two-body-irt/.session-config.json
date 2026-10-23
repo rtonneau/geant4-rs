@@ -1,0 +1,299 @@
+{
+  "session_id": "2026-10-23__m7-diffusion-and-two-body-irt",
+  "feature_name": "m7-diffusion-and-two-body-irt",
+  "scratch_dir": ".scratch/tests/2026-10-23__m7-diffusion-and-two-body-irt",
+  "created_at": "2026-10-23T05:53:38.360Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-23T05:53:38.360Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T06:25:52.444Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T06:26:00.372Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T06:40:57.378Z",
+      "event": "auto_started",
+      "phase": "plan",
+      "detail": {
+        "target": "finish",
+        "steps": "write:plan → ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-23T06:41:19.198Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/two-body-irt",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-23T06:41:19.307Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-special-functions.md",
+        "02-plan/tickets/02-molecule-and-diffusion.md",
+        "02-plan/tickets/03-reaction-parameters.md",
+        "02-plan/tickets/04-tdc-independent-reaction-time.md",
+        "02-plan/tickets/05-pdc-independent-reaction-time.md",
+        "02-plan/tickets/06-v9-validation-and-reproducibility.md",
+        "02-plan/tickets/07-document-m7-two-body-irt.md"
+      ],
+      "detail": {
+        "tickets": 7
+      }
+    },
+    {
+      "at": "2026-10-23T07:07:26.362Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-23T11:51:41.027Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-23T11:51:53.976Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-special-functions.md",
+        "03-implement/01-special-functions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-special-functions"
+      }
+    },
+    {
+      "at": "2026-10-23T12:03:04.308Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-special-functions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-special-functions",
+        "commit": "abd616c"
+      }
+    },
+    {
+      "at": "2026-10-23T12:03:12.633Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-molecule-and-diffusion.md",
+        "03-implement/02-molecule-and-diffusion/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-molecule-and-diffusion"
+      }
+    },
+    {
+      "at": "2026-10-23T12:09:17.890Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-molecule-and-diffusion/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-molecule-and-diffusion",
+        "commit": "a43fcaf"
+      }
+    },
+    {
+      "at": "2026-10-23T12:09:25.549Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-reaction-parameters.md",
+        "03-implement/03-reaction-parameters/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-reaction-parameters"
+      }
+    },
+    {
+      "at": "2026-10-23T12:17:28.477Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-reaction-parameters/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-reaction-parameters",
+        "commit": "9da7410"
+      }
+    },
+    {
+      "at": "2026-10-23T12:17:36.764Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-tdc-independent-reaction-time.md",
+        "03-implement/04-tdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-tdc-independent-reaction-time"
+      }
+    },
+    {
+      "at": "2026-10-23T12:27:11.138Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-tdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-tdc-independent-reaction-time",
+        "commit": "fb1591c"
+      }
+    },
+    {
+      "at": "2026-10-23T12:27:21.201Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-pdc-independent-reaction-time.md",
+        "03-implement/05-pdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-pdc-independent-reaction-time"
+      }
+    },
+    {
+      "at": "2026-10-23T12:35:42.495Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-pdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-pdc-independent-reaction-time",
+        "commit": "82b3430"
+      }
+    },
+    {
+      "at": "2026-10-23T12:35:51.534Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-v9-validation-and-reproducibility.md",
+        "03-implement/06-v9-validation-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-v9-validation-and-reproducibility"
+      }
+    },
+    {
+      "at": "2026-10-23T12:46:02.916Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/06-v9-validation-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-v9-validation-and-reproducibility",
+        "commit": "4a7bbcf"
+      }
+    },
+    {
+      "at": "2026-10-23T12:46:16.298Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/07-document-m7-two-body-irt.md",
+        "03-implement/07-document-m7-two-body-irt/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-document-m7-two-body-irt"
+      }
+    },
+    {
+      "at": "2026-10-23T12:53:21.679Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/07-document-m7-two-body-irt/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-document-m7-two-body-irt",
+        "commit": "9dd499a"
+      }
+    },
+    {
+      "at": "2026-10-23T12:53:50.055Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-10-23T12:54:03.763Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/19"
+      }
+    },
+    {
+      "at": "2026-10-23T12:54:03.766Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "feat/two-body-irt",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-23T06:41:19.198Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/19"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "minor",
+    "floor": "minor",
+    "reason": null,
+    "bullets": 3,
+    "path": ".work/changelog/2026-10-23__m7-diffusion-and-two-body-irt.md",
+    "written_at": "2026-10-23T12:53:50.044Z"
+  },
+  "finished_at": "2026-10-23T12:54:03.766Z"
+}

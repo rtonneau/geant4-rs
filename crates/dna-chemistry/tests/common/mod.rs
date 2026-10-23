@@ -4,6 +4,68 @@
 use serde_json::Value;
 use std::path::PathBuf;
 
+use dna_chemistry::irt::ReactionTime;
+use dna_chemistry::molecule::{Molecule, MoleculeId};
+use dna_chemistry::reaction_parameters::TwoBodyReactionParameters;
+use dna_chemistry::reactions::ReactionTable;
+use dna_chemistry::species::SpeciesTable;
+use dna_core::species::SpeciesInstance;
+use dna_core::units::Time;
+use dna_core::vec3::Vec3;
+
+/// Load the real option3 inputs, without synthetic rate or species overrides.
+pub fn option3_parameters(reaction_id: u16) -> TwoBodyReactionParameters {
+    TwoBodyReactionParameters::derive(
+        ReactionTable::option3().unwrap().get(reaction_id).unwrap(),
+        &SpeciesTable::option3().unwrap(),
+    )
+    .unwrap()
+}
+
+/// Two distinct molecules at the M6-to-M7 time boundary, with positions in nm.
+pub fn isolated_pair(
+    parameters: TwoBodyReactionParameters,
+    distance: f64,
+    history_id: u64,
+) -> [Molecule; 2] {
+    std::array::from_fn(|i| {
+        Molecule::new(
+            MoleculeId(2 * history_id + i as u64),
+            SpeciesInstance {
+                species: parameters.reactants()[i],
+                position: Vec3::new(if i == 0 { 0.0 } else { distance }, 0.0, 0.0),
+                time: Time::from_ps(1.0),
+            },
+        )
+    })
+}
+
+/// Lossless test encoding: variant tag plus raw binary64 elapsed-time bits.
+/// Non-reaction is explicit, never encoded as infinity, NaN, or a negative time.
+pub fn reaction_time_bits(outcome: ReactionTime) -> (u8, u64) {
+    match outcome {
+        ReactionTime::Immediate => (0, 0),
+        ReactionTime::After(time) => {
+            assert!(time.ps().is_finite() && time.ps() > 0.0);
+            (1, time.ps().to_bits())
+        }
+        ReactionTime::NoReaction => (2, 0),
+    }
+}
+
+pub fn position_bits(position: Vec3) -> [u64; 3] {
+    assert!(
+        [position.x, position.y, position.z]
+            .into_iter()
+            .all(f64::is_finite)
+    );
+    [
+        position.x.to_bits(),
+        position.y.to_bits(),
+        position.z.to_bits(),
+    ]
+}
+
 /// Geant4 11.4.1 `G4MoleculeTable` keys represented by `Species`, in C++ creation order.
 pub const CPP_SPECIES_KEYS: [&str; 15] = [
     "H3Op", "°OH", "OHm", "e_aq", "H", "H2", "H2O2", "HO2°", "HO2m", "Oxy", "Om", "O2", "O2m",

@@ -34,3 +34,15 @@ _Avoid_: reservoir species, ordinary species
 **Observed reaction rate**:
 The `k_obs` literal encoded by `G4EmDNAChemistry_option3` for a reaction, expressed according to that reaction's order. It is source data, unlike the activation-controlled rate `k_act` derived later by a selected reaction model.
 _Avoid_: treating `k_act` as a source-table constant
+
+**Isolated two-body system**:
+A chemistry system containing exactly one candidate reactant pair, either A+B or A+A, whose diffusion and possible reaction are studied without competition from any other molecule or reaction channel.
+_Avoid_: many-species chemistry system, reaction scheduler
+
+**Independent reaction-time outcome**:
+The result of sampling one isolated reactant pair: an immediate reaction, a reaction at a finite positive time, or no eventual reaction. Numerical sampling failure is an error rather than a physical no-reaction outcome.
+_Avoid_: encoding no reaction or numerical failure as a negative time
+
+**Molecule identity**:
+A stable identifier for one individual mobile molecule within a chemistry history. Two molecules may have the same species but must have different identities; a molecule cannot form a reaction pair with itself.
+_Avoid_: using species equality as molecule identity

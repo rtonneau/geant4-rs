@@ -1,5 +1,11 @@
 # I. Open questions and risks
 
+## M7 isolated two-body IRT (ticket 07)
+- **Scope boundary:** only unbounded free diffusion and independent two-body option3 IRT outcomes are implemented. There is no many-species scheduler, reaction-product/site placement, SBS, ODE, finite-volume boundary, or Geant4 comparison. The 72-row reaction table is validated source data, not a runnable reaction network.
+- **Model fidelity:** charged TDC uses Geant4 11.4.1's signed Onsager effective-distance mapping. V9 supports this as a fidelity test of that source prescription, not a general exact electrostatic first-passage claim. Neutral PDC is sampled; charged PDC is rejected as unsupported.
+- **Numerical policy:** explicit outcomes and typed invalid-domain/convergence failures replace C++ negative-time/error sentinels; open-(0,1) uniforms exclude the theoretical endpoints. The PDC cap is 10,000 rejected proposals. These deliberate differences are recorded under ADR 0003 and in docs/04.
+- **Validation limits:** V9 fixes three cases, N=100,000 per case, six dimensionless time points, 18 CDF/survival comparisons plus three no-reaction masses, with absolute pointwise 3-sigma bounds. This is not simultaneous 99.73% coverage and does not establish SBS, ODE or Geant4 agreement. The 1/2/8-thread claim is for the fixed 1,024-history two-body/diffusion workload and exact output bits only.
+
 ## Open questions (owner: project lead unless stated)
 - **Q1 RESOLVED (user):** limit primary energy to <= 1 MeV initially. Electron beams > 1 MeV are rejected with a typed error; the 1-10 MeV question (D.1 a/b/c) moves to M11.
 - **Q2** Electron option(s) to support: recommendation option2 first (default in chem6; includes vib/attach), option4/6 only on demand.
