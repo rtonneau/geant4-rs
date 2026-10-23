@@ -5,6 +5,40 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A runtime reaction input is outside its physical finite domain.
+    #[error("reaction {reaction_id}: invalid {field} = {value}")]
+    InvalidReactionParameter {
+        reaction_id: u16,
+        field: &'static str,
+        value: f64,
+    },
+    /// An isolated pair cannot diffuse relative to itself.
+    #[error("reaction {reaction_id}: zero total diffusivity")]
+    ZeroTotalDiffusivity { reaction_id: u16 },
+    /// Two-body IRT requires bimolecular TDC or PDC kinetics.
+    #[error("reaction {reaction_id}: unsupported reaction order or kinetic intent")]
+    UnsupportedReactionOrder { reaction_id: u16 },
+    /// Bulk participants require the separate first-order scheduler.
+    #[error("reaction {reaction_id}: bulk reactant is unsupported by two-body IRT")]
+    BulkReactionParticipant { reaction_id: u16 },
+    /// Supplied properties do not describe the source reaction's reactants.
+    #[error("reaction {reaction_id}: species properties do not match reactants")]
+    ReactionSpeciesMismatch { reaction_id: u16 },
+    /// Finite positive activation rates require a sub-diffusion-limited observed rate.
+    #[error(
+        "reaction {reaction_id}: observed rate {observed} must be below diffusion rate {diffusion} nm^3/ps"
+    )]
+    InvalidPdcRate {
+        reaction_id: u16,
+        observed: f64,
+        diffusion: f64,
+    },
+    /// Finite input arithmetic left the representable physical domain.
+    #[error("reaction {reaction_id}: arithmetic domain failure in {operation}")]
+    ReactionParameterDomain {
+        reaction_id: u16,
+        operation: &'static str,
+    },
     /// A reaction pair names the same physical molecule twice.
     #[error("reaction pair contains molecule {id:?} twice")]
     DuplicateMoleculeId { id: MoleculeId },

@@ -17,6 +17,7 @@ pub mod engine;
 pub mod error;
 pub mod molecule;
 pub mod params;
+pub mod reaction_parameters;
 pub mod reactions;
 pub mod species;
 // The private kernels gain production callers in the following IRT tickets.
