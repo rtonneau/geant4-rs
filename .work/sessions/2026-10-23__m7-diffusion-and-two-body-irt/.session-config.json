@@ -205,6 +205,30 @@
         "ticket": "05-pdc-independent-reaction-time",
         "commit": "82b3430"
       }
+    },
+    {
+      "at": "2026-10-23T12:35:51.534Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-v9-validation-and-reproducibility.md",
+        "03-implement/06-v9-validation-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-v9-validation-and-reproducibility"
+      }
+    },
+    {
+      "at": "2026-10-23T12:46:02.916Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/06-v9-validation-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-v9-validation-and-reproducibility",
+        "commit": "4a7bbcf"
+      }
     }
   ],
   "current_phase": "ship",
