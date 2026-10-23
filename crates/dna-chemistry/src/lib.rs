@@ -1,5 +1,7 @@
-//! The Geant4-DNA physicochemical stage for liquid water (milestone M6, part A): from the events of the
-//! physical stage to the chemical species that the chemical stage (M7) starts from.
+//! Geant4-DNA chemistry primitives for liquid water. M6 converts physical
+//! events to species at the 1 ps boundary; the implemented M7 slice adds free
+//! unbounded diffusion and an isolated two-body option3 IRT sampler. These
+//! kernels do not implement complete chemical evolution.
 //!
 //! * [`species`]: species table (diffusion coefficient, charge, radius) from `data/chemistry/species_option3.toml`.
 //! * [`channels`]: decay channels of the excited / ionised / attached water molecule
@@ -8,7 +10,11 @@
 //! * [`params`]: birth time, auto-ionisation electron, electron-hole recombination (Onsager radius).
 //! * [`engine`]: [`PhysChemEngine::convert_history`], the stage for one history.
 //!
-//! M7 free diffusion and molecule identity live here without changing the M6 `dna-core` records.
+//! [`diffusion`] advances positions in infinite 3-D space. [`molecule`]
+//! provides stable identity and rejects self-pairs. [`reaction_parameters`]
+//! derives validated TDC/PDC parameters, and [`irt`] samples one pair's elapsed
+//! reaction-time outcome. Callers own RNG streams; integrated histories use
+//! `Stage::Chemistry`. The M6 `dna-core` records are unchanged.
 
 pub mod channels;
 pub mod diffusion;
@@ -21,8 +27,6 @@ pub mod params;
 pub mod reaction_parameters;
 pub mod reactions;
 pub mod species;
-// The private kernels gain production callers in the following IRT tickets.
-#[allow(dead_code)]
 pub(crate) mod special;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
