@@ -514,13 +514,29 @@ simultaneous boundary intervals identify the **first detected divergence**, not
 its cause. Diagnostic implementation and the new user-run Geant4 request are
 subsequent tickets; no new run or spatial inference is claimed here.
 
-**900 keV spatial diagnostic awaiting data (RR-002, 2026-10-20).** The five Rust boundaries and the
-separately named Geant4 `physchem_spatial_diagnostic` mode are implemented; the latter compile-links
-against Geant4 11.4.1 and has not been run by an agent. RR-002 requests five seeds x 40 histories plus
-provenance. The ignored consumer validates completeness and stage, generates the independent Rust
-sample, and reports the preregistered primary and simultaneous intervals with precision-only 80/160
-expansion. This investigation is awaiting project-lead data. It neither reopens nor closes M6 and does
-not alter existing gates, tolerances, modes or evidence.
+**RR-002 conclusion: the 900 keV pooled RMS residual was not reproduced at the required precision
+(2026-10-23).** The preregistered five-boundary diagnostic was run independently in Geant4 11.4.1 and
+Rust with seeds 20261021--20261025. The initial 40-histories-per-seed level did not meet the precision
+stopping rule, so both implementations were rerun with new, complete 80-histories-per-seed artifacts:
+400 histories per implementation and 800 histories across the comparison. The scientific model,
+simulation seeds, analysis seed 20261026, 20,000 hierarchical bootstrap replicates, primary estimand
+and acceptance rule were unchanged.
+
+Both runs exited 0 with exact five-seed coverage and complete-output markers. The primary
+Rust/Geant4 pooled seven-species final-survivor RMS ratio was **0.981740457**, with a 95% interval of
+**[0.949564151, 1.015007983]**. Its relative interval half-width was **3.333%**, satisfying the
+preregistered <= 4% precision target; the 160-histories-per-seed expansion was therefore not run.
+Because the interval includes 1.0, RR-002 found no statistically resolved primary RMS difference.
+This is not an equivalence proof: the frozen contract defines interval exclusion as detection and
+interval inclusion as inconclusive. It does show that RR-001's common +12.1% to +13.5% Rust excess
+was not reproduced in the larger independent sample and provides no evidence for changing the
+scientific model, M6 tolerances or reference data.
+
+The 80-history CSVs and matching provenance were intentionally retained as local-only artifacts under
+`.scratch/rr-002-80/`; they were not promoted to `validation/reference/` and are not durable committed
+reference evidence. RR-002 records diagnostic evidence only and neither reopens nor closes M6. The N2
+source audit remains complete, while Q21/R14's broader runtime-order correspondence remains a separate
+documented limitation.
 
 ## M7 Chemistry: reaction network, diffusion, IRT
 Scope: species/reaction TOML loaders (option3 table, script-checked against C++), free unbounded diffusion and an isolated two-body option3 IRT kernel with TDC and neutral PDC. The many-species scheduler, SBS oracle, ODE test harness, reaction products/site placement and finite boundaries are deferred. M7 is not closed; G5/G7 closure criteria remain outstanding.

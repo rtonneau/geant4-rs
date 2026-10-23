@@ -319,7 +319,7 @@ boundary and completeness checks run first. A passing stage-matched gate is requ
 a failure leaves the gate open and Q21/R14's scheduler projection under investigation. The original
 post-reaction reference/gate stays unchanged and is not expected to pass Rust M6.
 
-## M6 900 keV five-boundary spatial diagnostic (RR-002, awaiting data)
+## M6 900 keV five-boundary spatial diagnostic (RR-002, completed locally)
 
 The additive mode is `physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...>`. It is
 fixed at a 900 keV electron from the origin along +z and retains option2 physics, option3 chemistry,
@@ -379,4 +379,18 @@ secondary category, per-history, radial, maximum, longitudinal and transverse su
 relative half-width `(U-L)/(2R)` exceeds 0.04, request complete 80-history samples in both
 implementations, then 160; stop at five x 160 regardless of significance. This diagnostic changes
 neither the existing 20% M6 gate nor M6's closure state.
+
+### RR-002 result (2026-10-23)
+
+The precision-only rule expanded the comparison to new, complete 80-histories-per-seed artifacts for
+both implementations (seeds 20261021--20261025; 400 histories each). Geant4 and the Rust consumer
+both exited 0 with exact coverage. With the frozen analysis seed 20261026 and 20,000 hierarchical
+bootstrap replicates, the primary Rust/Geant4 pooled final-survivor RMS ratio was 0.981740457, with a
+95% interval of [0.949564151, 1.015007983] and a 3.333% relative interval half-width. The <= 4%
+precision target was reached, so the 160-history level was not run. The interval includes 1.0: no
+primary difference was statistically resolved, although the result is not an equivalence proof.
+
+The 80-history CSVs and provenance were kept under `.scratch/rr-002-80/` as local-only artifacts and
+were not promoted to `validation/reference/`. The commands and 40/80/160 procedure above remain the
+reproduction contract; the authoritative scientific interpretation is in `docs/08-roadmap.md`.
 
