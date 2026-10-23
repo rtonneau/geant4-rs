@@ -74,12 +74,54 @@ fn uncapped_step_diffuses_independently_and_only_checks_endpoint_contact() {
         positions,
         [d(1.0); 2],
         Length::from_nm(1.0),
-        Time::from_ps(1.0 / 32.0),
+        Time::from_ps(0.04),
         &mut rng,
     )
     .unwrap();
     assert!(!step.reacted);
-    assert!(!step.capped); // Equality with the boundary did not shorten the step.
+    assert!(!step.capped);
+    assert_eq!(rng.consumed(), 8);
+}
+
+#[test]
+fn observation_boundary_equality_invokes_bridge_but_endpoint_contact_skips_it() {
+    let positions = [Vec3::ZERO, Vec3::new(2.0, 0.0, 0.0)];
+    let boundary = Time::from_ps(1.0 / 32.0);
+    assert_eq!(
+        adaptive_time_step(Length::from_nm(2.0), Length::from_nm(1.0), [d(1.0); 2]).unwrap(),
+        boundary
+    );
+
+    // Equal displacements preserve separation. The ninth draw decides the
+    // bridge at the observation boundary, even when it equals the adaptive step.
+    for (draw, reacted) in [(1e-15, true), (1e-10, false)] {
+        let mut rng = ScriptedRng::new(&[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, draw]);
+        let step = step_tdc_pair(
+            positions,
+            [d(1.0); 2],
+            Length::from_nm(1.0),
+            boundary,
+            &mut rng,
+        )
+        .unwrap();
+        assert_eq!(step.elapsed, boundary);
+        assert!(step.capped);
+        assert_eq!(step.reacted, reacted);
+        assert_eq!(rng.consumed(), 9);
+    }
+
+    let mut rng = ScriptedRng::new(&[0.05, 1e-15, 0.5, 0.25, 0.05, 0.5, 0.5, 0.25]);
+    let step = step_tdc_pair(
+        positions,
+        [d(1.0); 2],
+        Length::from_nm(1.0),
+        boundary,
+        &mut rng,
+    )
+    .unwrap();
+    assert_eq!(step.elapsed, boundary);
+    assert!(step.capped);
+    assert!(step.reacted);
     assert_eq!(rng.consumed(), 8);
 }
 

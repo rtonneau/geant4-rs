@@ -46,7 +46,7 @@ pub struct SbsStep {
     pub positions: [Vec3; 2],
     pub elapsed: Time,
     pub reacted: bool,
-    /// True only when the observation boundary strictly shortened the step.
+    /// True when the observation boundary is at or before the adaptive step.
     pub capped: bool,
 }
 
@@ -82,8 +82,9 @@ pub fn adaptive_time_step(
 /// draws. Initial contact reacts immediately without draws; a separated pair
 /// with zero remaining time stays unchanged. Each mobile particle consumes
 /// four uniforms via [`diffuse`]. Endpoint contact needs no further draw.
-/// Only a strictly capped, positive step with separated endpoints consumes a
-/// bridge uniform, accepted inclusively at `u <= exp(-(r_pre-R)(r_post-R)/(D dt))`.
+/// A positive step with separated endpoints consumes a bridge uniform only
+/// when it ends at the observation boundary, including exact equality with
+/// the adaptive step. It accepts at `u <= exp(-(r_pre-R)(r_post-R)/(D dt))`.
 /// Here `D = D_A + D_B` and `r_post` preserves the documented source quirk.
 /// Reaction times are step endpoints; this function does not interpolate them.
 pub fn step_tdc_pair(
@@ -112,7 +113,7 @@ pub fn step_tdc_pair(
         positions,
         elapsed: Time::from_ps(adaptive.ps().min(remaining.ps())),
         reacted: adaptive.ps() == 0.0,
-        capped: remaining.ps() < adaptive.ps(),
+        capped: remaining.ps() <= adaptive.ps(),
     };
     if result.reacted || result.elapsed.ps() == 0.0 {
         return Ok(result);
