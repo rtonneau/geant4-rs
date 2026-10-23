@@ -21,6 +21,9 @@ pub enum ChemistryError {
     /// The isolated sampler does not support these reaction kinetics.
     #[error("reaction {reaction_id}: unsupported IRT kinetics")]
     UnsupportedIrtKinetics { reaction_id: u16 },
+    /// The selected PDC continuum event exhausted its rejection budget.
+    #[error("reaction {reaction_id}: PDC sampling did not converge after {attempts} attempts")]
+    IrtConvergence { reaction_id: u16, attempts: usize },
     /// A runtime reaction input is outside its physical finite domain.
     #[error("reaction {reaction_id}: invalid {field} = {value}")]
     InvalidReactionParameter {
