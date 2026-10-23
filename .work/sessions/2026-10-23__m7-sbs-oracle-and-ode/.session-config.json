@@ -194,6 +194,30 @@
         "ticket": "02-irt-sbs-statistical-oracle",
         "commit": "1efe887"
       }
+    },
+    {
+      "at": "2026-10-23T21:21:21.214Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-v10-lsoda-well-mixed-oracle.md",
+        "03-implement/03-v10-lsoda-well-mixed-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-v10-lsoda-well-mixed-oracle"
+      }
+    },
+    {
+      "at": "2026-10-23T21:23:56.843Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-v10-lsoda-well-mixed-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-v10-lsoda-well-mixed-oracle",
+        "commit": "1b0171b"
+      }
     }
   ],
   "current_phase": "ship",
