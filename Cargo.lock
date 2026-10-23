@@ -115,6 +115,7 @@ dependencies = [
  "dna-core",
  "rand 0.10.3",
  "rayon",
+ "rsoda",
  "serde",
  "serde_json",
  "thiserror",
@@ -451,6 +452,11 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+
+[[package]]
+name = "rsoda"
+version = "0.1.0"
+source = "git+https://github.com/rtonneau/rsoda?rev=ae76eee69d6d494be9253eaee819c77ee962c934#ae76eee69d6d494be9253eaee819c77ee962c934"
 
 [[package]]
 name = "rustix"

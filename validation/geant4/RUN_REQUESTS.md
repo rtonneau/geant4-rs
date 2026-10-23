@@ -52,6 +52,7 @@ artifacts when its result is recorded in the durable project documentation.
 |---|---|---|---|---|---|---|---|---|
 | RR-001 | `m6-diagnose-and-fix`, `2026-10-16__m6-diagnose-and-fix` | `g4rs_ref physchem_prechem`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20` (from `validation/geant4/g4rs_ref`, executable on PATH) | 20261020; 20000/2000/200/20 events at 1/10/100/900 keV | `validation/reference/physchem_prechem.csv` (new) | `validation/reference/provenance_m6_prechem.toml` (new; README fields) | `crates/dna-sim/tests/physchem_reference.rs::m6_prechem_counts_and_rms_match_geant4`; `cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture` | closed 2026-10-17: data `e808b2f`, `ffe4b48`; gate failed 16/28 rows (docs/08 "RR-001 result") |
 | RR-002 | `m6-900kev-spatial-rms-investigation`, `2026-10-19__m6-900kev-spatial-rms-investigation` | `g4rs_ref physchem_spatial_diagnostic`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | initial command: `g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_geant4_900kev_40.csv 40 20261021,20261022,20261023,20261024,20261025` | five independent seeds 20261021..20261025; expanded from 40 to 80 complete 900 keV histories/seed | local-only `.scratch/rr-002-80/spatial_geant4_900kev_80_local.csv` and matching Rust CSV | local-only `.scratch/rr-002-80/provenance_m6_spatial_900kev_80_local.toml` | `crates/dna-sim/tests/physchem_reference.rs::m6_900kev_spatial_diagnostic`; matching 80-history streaming ignored consumer | completed 2026-10-23: both exits 0 and exact five x 80 coverage; ratio 0.981740457, 95% interval [0.949564151, 1.015007983], relative half-width 3.333% <= 4%; no 160/seed expansion; artifacts not promoted to committed references |
+| RR-003 | `m7-sbs-oracle-and-ode`, `2026-10-23__m7-sbs-oracle-and-ode` | `g4rs_ref two_body_h_h`, source `validation/geant4/g4rs_ref/g4rs_ref.cc` | `g4rs_ref two_body_h_h ../../reference/two_body_h_h.csv 202610231 100000` | seed 202610231; 100,000 independent H+H pairs; r0=0.2 nm; tau 0.25,0.5,1,2,4,16 | `validation/reference/two_body_h_h.csv` (new) | `validation/reference/provenance_m7_two_body_h_h.toml` (new; README fields) | `crates/dna-chemistry/tests/geant4_two_body.rs::m7_irt_survival_matches_geant4_sbs`; `cargo test --release -p dna-chemistry --test geant4_two_body m7_irt_survival_matches_geant4_sbs -- --ignored --exact --nocapture` | awaiting clean committed rerun; an explicitly authorized 2026-10-23 scratch run exposed and diagnosed two generator defects and is not reference evidence |
 
 ### RR-001 purpose and acceptance (2026-10-17)
 
@@ -90,3 +91,20 @@ the 160-history level was not run. Because the interval includes 1.0, no primary
 statistically resolved; this is not an equivalence proof. RR-001's +12.1% to +13.5% excess was not
 reproduced. The completed 80-history artifacts remained local-only and were not promoted to committed
 reference evidence; the full scientific interpretation is in `docs/08-roadmap.md`.
+
+### RR-003 purpose and acceptance (2026-10-23)
+
+RR-003 tests the executable Geant4 11.4.1 option3 SBS H+H survival curve against the fixed-seed Rust
+IRT sampler at the six V9 times. The CSV must have exactly six ordered rows, 100,000 covered pairs per
+row, monotonic reacted counts, the requested seed and the trailing completion marker. Provenance must
+fix Geant4 11.4.1, G4EMLOW 8.8, option3, SBS, reaction id 1, r0=0.2 nm, the exact tau family, seed,
+sample count and command, plus nonempty generator commit, compiler, platform and date fields.
+
+The frozen pointwise rule is
+`|F_IRT-F_G4| <= 3*sqrt(2*F_V9*(1-F_V9)/100000)` at every one of the six points. It was inherited
+unchanged from the V9/IRT-SBS comparison and was not fitted to Geant4 output. The first authorized
+scratch run preceded this request entry, so the project does not claim retrospective preregistration.
+That run found a canonical-name callback defect (`H` versus `H^0`) and Windows seed overflow; its CSVs
+remain diagnostic-only. RR-003 stays open until the corrected generator is committed, the exact clean
+command above produces new reference data and provenance, and the paired close-gate test records the
+expected pass or failure without changing tolerances.

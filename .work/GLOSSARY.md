@@ -43,6 +43,10 @@ _Avoid_: many-species chemistry system, reaction scheduler
 The result of sampling one isolated reactant pair: an immediate reaction, a reaction at a finite positive time, or no eventual reaction. Numerical sampling failure is an error rather than a physical no-reaction outcome.
 _Avoid_: encoding no reaction or numerical failure as a negative time
 
+**Step-by-step (SBS) oracle**:
+A validation-only Rust implementation of the Geant4 11.4.1 adaptive molecular encounter stepper and Smoluchowski reaction model for an isolated totally diffusion-controlled pair. It is independently implemented from the C++ source and is not the production chemistry scheduler.
+_Avoid_: fixed-step Brownian oracle, production SBS engine
+
 **Molecule identity**:
 A stable identifier for one individual mobile molecule within a chemistry history. Two molecules may have the same species but must have different identities; a molecule cannot form a reaction pair with itself.
 _Avoid_: using species equality as molecule identity

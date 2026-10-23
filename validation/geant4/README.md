@@ -394,3 +394,55 @@ The 80-history CSVs and provenance were kept under `.scratch/rr-002-80/` as loca
 were not promoted to `validation/reference/`. The commands and 40/80/160 procedure above remain the
 reproduction contract; the authoritative scientific interpretation is in `docs/08-roadmap.md`.
 
+## M7 H+H two-body SBS reference (RR-003, awaiting clean data)
+
+`two_body_h_h <out.csv> <seed> <pairs>` injects two neutral H molecules at +/-0.1 nm at time zero,
+uses `G4EmDNAChemistry_option3` with the SBS time-step model and observes option3 reaction id 1 at
+tau `[0.25, 0.5, 1, 2, 4, 16]`. The corresponding observation times use
+`0.19705088916617716 ps * tau`. The mode refuses overwrite and accepts only positive seeds representable
+by the platform `long`; overflow is rejected instead of silently changing the seed.
+
+After the smoke procedure in `BUILD_NOTES.md` section 9, run from `validation/geant4/g4rs_ref` with
+the built executable on `PATH`:
+
+```powershell
+g4rs_ref two_body_h_h ../../reference/two_body_h_h.csv 202610231 100000 *> "$env:TEMP/two_body_h_h_production.log"
+if ($LASTEXITCODE -ne 0) { throw 'two-body production failed; do not commit partial output' }
+```
+
+The CSV header is
+`tau,observation_time_ps,total_pairs,reacted_count,surviving_count`. Require six ordered rows, exact
+100,000-pair coverage in every row, monotonic reacted counts, the requested seed and the trailing
+`# complete: true` marker. Never reuse a smoke path or overwrite an existing reference.
+
+Create `validation/reference/provenance_m7_two_body_h_h.toml` with these exact contract fields and
+real nonempty values for the final five metadata fields:
+
+```toml
+geant4_version = "11.4.1"
+g4emlow_version = "8.8"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+time_step_model = "SBS"
+reaction_id = 1
+initial_separation_nm = 0.2
+pairs = 100000
+seed = 202610231
+tau = [0.25, 0.5, 1.0, 2.0, 4.0, 16.0]
+command_line = "g4rs_ref two_body_h_h ../../reference/two_body_h_h.csv 202610231 100000"
+generator_commit = "<commit containing the corrected generator>"
+generator_dirty = false
+compiler = "<compiler and version>"
+platform = "<OS and version>"
+generated_at = "<YYYY-MM-DD>"
+```
+
+Only after both new files are committed, run the paired close-gate command:
+
+```bash
+cargo test --release -p dna-chemistry --test geant4_two_body m7_irt_survival_matches_geant4_sbs -- --ignored --exact --nocapture
+```
+
+The consumer validates provenance and exact CSV coverage before generating the fixed-seed Rust IRT
+sample. At each point it applies the unchanged V9 pointwise combined-binomial three-sigma rule. A
+failure is evidence about the Geant4 executable semantics; it must be recorded, not tuned away.
+

@@ -26,6 +26,8 @@ pub mod molecule;
 pub mod params;
 pub mod reaction_parameters;
 pub mod reactions;
+/// Validation-only step-by-step oracle; not a production chemistry scheduler.
+pub mod sbs;
 pub(crate) mod special;
 pub mod species;
 
