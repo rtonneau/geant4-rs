@@ -36,6 +36,9 @@
 //                                         Existing physchem mode and its output are unchanged.
 //   physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...>
 //                                         M6 five-boundary long-form diagnostic at 900 keV.
+//   two_body_h_h <out.csv> <seed> <pairs>
+//                                         M7: isolated option3 H+H SBS survival curve from
+//                                         r0=0.2 nm at the six pre-registered tau values.
 
 #include <algorithm>
 #include <cmath>
@@ -56,6 +59,7 @@
 #include "G4EmParameters.hh"
 #include "G4Electron.hh"
 #include "G4Event.hh"
+#include "G4Geantino.hh"
 #include "G4GeometryManager.hh"
 #include "G4LogicalVolume.hh"
 #include "G4LossTableManager.hh"
@@ -84,7 +88,9 @@
 #include "G4RunManager.hh"
 #include "G4DNAChemistryManager.hh"
 #include "G4ITTrackHolder.hh"
+#include "G4ITGun.hh"
 #include "G4Molecule.hh"
+#include "G4MoleculeTable.hh"
 #include "G4MoleculeCounter.hh"
 #include "G4MoleculeCounterManager.hh"
 #include "G4H2O.hh"
@@ -98,10 +104,10 @@ namespace {
 
 // ------------------------------------------------------------------ shared state ---------
 
-enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem, SpatialDiagnostic };
+enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem, SpatialDiagnostic, TwoBodyHH };
 Mode gMode = Mode::Xs;
 bool IsChemistryMode() { return gMode == Mode::PhysChem || gMode == Mode::PreChem ||
-                                gMode == Mode::SpatialDiagnostic; }
+                                gMode == Mode::SpatialDiagnostic || gMode == Mode::TwoBodyHH; }
 G4double gCut = 0.;  // tracking cut (track mode)
 G4double gEnergy = 0.;  // current primary energy
 
@@ -194,6 +200,67 @@ struct PhysChemAccum {
 std::map<std::string, double> gPhysChemEventCount, gPhysChemEventR2;
 bool gChemistryRun = false;
 bool gPreChemCaptured = false;
+
+// Isolated H+H reference state. TIME_SCALE_PS is the independently registered V9 value
+// (r0-sigma)^2/(4*D_rel), with option3 reaction id 1 and r0=0.2 nm.
+constexpr G4double kTwoBodyTau[] = {0.25, 0.5, 1., 2., 4., 16.};
+constexpr G4double kTwoBodyTimeScalePs = 0.19705088916617716;
+constexpr size_t kTwoBodyPoints = sizeof(kTwoBodyTau) / sizeof(kTwoBodyTau[0]);
+long gTwoBodyCompleted = 0;
+long gTwoBodyReacted[kTwoBodyPoints] = {};
+long gTwoBodySurviving[kTwoBodyPoints] = {};
+bool gTwoBodyDidReact = false;
+size_t gTwoBodyNextPoint = 0;
+
+[[noreturn]] void TwoBodyFailure(const char* message)
+{
+  fprintf(stderr, "two_body_h_h: %s; output is incomplete, do not commit it\n", message);
+  exit(1);
+}
+
+class TwoBodyGun : public G4ITGun {
+ public:
+  void DefineTracks() override
+  {
+    auto* configuration = G4MoleculeTable::Instance()->GetConfiguration("H");
+    if (!configuration) TwoBodyFailure("option3 H configuration is unavailable");
+    PushTrack((new G4Molecule(configuration))->BuildTrack(0., G4ThreeVector(-0.1 * nm, 0., 0.)));
+    PushTrack((new G4Molecule(configuration))->BuildTrack(0., G4ThreeVector( 0.1 * nm, 0., 0.)));
+  }
+};
+
+class TwoBodyAction : public G4UserTimeStepAction {
+ public:
+  void StartProcessing() override
+  {
+    gTwoBodyDidReact = false;
+    gTwoBodyNextPoint = 0;
+  }
+  void UserReactionAction(const G4Track& trackA, const G4Track& trackB,
+                          const std::vector<G4Track*>*) override
+  {
+    const auto* a = GetMolecule(&trackA);
+    const auto* b = GetMolecule(&trackB);
+    if (a && b && a->GetName() == "H" && b->GetName() == "H") gTwoBodyDidReact = true;
+  }
+  void UserPostTimeStepAction() override
+  {
+    const G4double now = G4Scheduler::Instance()->GetGlobalTime() / ps;
+    while (gTwoBodyNextPoint < kTwoBodyPoints &&
+           now + 16. * std::numeric_limits<G4double>::epsilon() * std::max(1., now) >=
+               kTwoBodyTau[gTwoBodyNextPoint] * kTwoBodyTimeScalePs) {
+      if (gTwoBodyDidReact) ++gTwoBodyReacted[gTwoBodyNextPoint];
+      else ++gTwoBodySurviving[gTwoBodyNextPoint];
+      ++gTwoBodyNextPoint;
+    }
+  }
+  void EndProcessing() override
+  {
+    if (gTwoBodyNextPoint != kTwoBodyPoints)
+      TwoBodyFailure("scheduler ended before every observation was recorded");
+    ++gTwoBodyCompleted;
+  }
+};
 
 // Long-form spatial diagnostic state. It is deliberately isolated from the historical
 // physchem modes so their arguments and bytes remain unchanged.
@@ -675,7 +742,8 @@ class Gun : public G4VUserPrimaryGeneratorAction {
  public:
   Gun() : fGun(new G4ParticleGun(1))
   {
-    fGun->SetParticleDefinition(G4Electron::Definition());
+    if (gMode == Mode::TwoBodyHH) fGun->SetParticleDefinition(G4Geantino::Definition());
+    else fGun->SetParticleDefinition(G4Electron::Definition());
     // along +z like the Rust runs (RunConfig default); the elastic model of Geant4 depends
     // (slightly) on the direction through CLHEP orthogonal(), see docs/09 Q13
     fGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
@@ -684,7 +752,7 @@ class Gun : public G4VUserPrimaryGeneratorAction {
   ~Gun() override { delete fGun; }
   void GeneratePrimaries(G4Event* ev) override
   {
-    fGun->SetParticleEnergy(gEnergy);
+    fGun->SetParticleEnergy(gMode == Mode::TwoBodyHH ? 1. * eV : gEnergy);
     fGun->GeneratePrimaryVertex(ev);
   }
 
@@ -827,6 +895,10 @@ class Actions : public G4VUserActionInitialization {
  public:
   void Build() const override
   {
+    if (gMode == Mode::TwoBodyHH) {
+      static TwoBodyGun twoBodyGun;
+      G4DNAChemistryManager::Instance()->SetGun(&twoBodyGun);
+    }
     SetUserAction(new Gun);
     SetUserAction(new Stepping);
     SetUserAction(new Stacking);
@@ -1078,12 +1150,45 @@ void RunSpatialDiagnostic(const char* out, long histories, const std::vector<lon
   gSpatialFile = nullptr;
 }
 
+void RunTwoBodyHH(const char* out, long seed, long pairs)
+{
+  if (seed <= 0) TwoBodyFailure("seed must be positive");
+  if (pairs <= 0 || pairs > std::numeric_limits<G4int>::max())
+    TwoBodyFailure("pair count must be a positive G4int");
+  FILE* f = fopen(out, "wx");
+  if (!f) TwoBodyFailure("cannot create output (it may already exist)");
+  fprintf(f, "# generator: g4rs_ref (validation/geant4/g4rs_ref), mode two_body_h_h\n");
+  fprintf(f, "# geant4_version_number: %d (%s)\n", G4VERSION_NUMBER, G4Version.c_str());
+  fprintf(f, "# chemistry: G4EmDNAChemistry_option3; timestep_model: SBS; reaction_id: 1\n");
+  fprintf(f, "# reactants: H+H; initial_separation_nm: 0.2; seed: %ld; pairs: %ld\n",
+          seed, pairs);
+  fprintf(f, "# completion: valid only when complete=true and every row has total_pairs=pairs\n");
+  fprintf(f, "tau,observation_time_ps,total_pairs,reacted_count,surviving_count\n");
+
+  gTwoBodyCompleted = 0;
+  std::fill(gTwoBodyReacted, gTwoBodyReacted + kTwoBodyPoints, 0L);
+  std::fill(gTwoBodySurviving, gTwoBodySurviving + kTwoBodyPoints, 0L);
+  G4Random::setTheSeed(seed);
+  G4RunManager::GetRunManager()->BeamOn((G4int)pairs);
+  if (gTwoBodyCompleted != pairs) TwoBodyFailure("incomplete chemistry history count");
+  for (size_t i = 0; i < kTwoBodyPoints; ++i) {
+    if (gTwoBodyReacted[i] + gTwoBodySurviving[i] != pairs)
+      TwoBodyFailure("incomplete observation coverage");
+    fprintf(f, "%.17g,%.17g,%ld,%ld,%ld\n", kTwoBodyTau[i],
+            kTwoBodyTau[i] * kTwoBodyTimeScalePs, pairs,
+            gTwoBodyReacted[i], gTwoBodySurviving[i]);
+  }
+  fprintf(f, "# complete: true; seed: %ld; pairs: %ld; rows: %zu\n",
+          seed, pairs, kTwoBodyPoints);
+  if (fclose(f) != 0) TwoBodyFailure("failed to close output");
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
 {
   if (argc < 3) {
-    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...>\n", argv[0]);
+    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...> | two_body_h_h <out.csv> <seed> <pairs>\n", argv[0]);
     return 1;
   }
   const std::string mode = argv[1];
@@ -1125,6 +1230,19 @@ int main(int argc, char** argv)
     if (events <= 0) SpatialFailure("histories per seed must be positive");
     gMode = Mode::SpatialDiagnostic;
   }
+  else if (mode == "two_body_h_h") {
+    if (argc != 5) TwoBodyFailure("expected output path, seed and pair count");
+    char* seedEnd = nullptr;
+    char* pairEnd = nullptr;
+    seed = strtol(argv[3], &seedEnd, 10);
+    events = strtol(argv[4], &pairEnd, 10);
+    if (!seedEnd || *seedEnd != '\0' || seed <= 0)
+      TwoBodyFailure("seed must be a positive integer");
+    if (!pairEnd || *pairEnd != '\0' || events <= 0 ||
+        events > std::numeric_limits<G4int>::max())
+      TwoBodyFailure("pair count must be a positive G4int");
+    gMode = Mode::TwoBodyHH;
+  }
   else if (mode == "mfp") gMode = Mode::Mfp;
   else if (mode == "track") {
     gMode = Mode::Track;
@@ -1146,17 +1264,27 @@ int main(int argc, char** argv)
   // chem6 sets "/process/chem/TimeStepModel IRT" before /run/initialize. The default is Unknown:
   // no step model is registered and G4Scheduler::Process crashes in G4ITModelManager::Initialize
   // (Q24). It must be set before the physics list is constructed (ConstructProcess reads it).
-  if (IsChemistryMode()) param->SetTimeStepModel(G4ChemTimeStepModel::IRT);
+  if (IsChemistryMode())
+    param->SetTimeStepModel(gMode == Mode::TwoBodyHH ? G4ChemTimeStepModel::SBS
+                                                    : G4ChemTimeStepModel::IRT);
 
   G4Random::setTheSeed(seed);
   rm->Initialize();
   // EndTime must exceed the 1 ps species birth time for StartProcessing to be entered; the user
   // action records the initial list and calls Stop() before the first chemistry step.
   if (IsChemistryMode()) {
-    G4Scheduler::Instance()->SetEndTime(2. * ps);
+    G4Scheduler::Instance()->SetEndTime(gMode == Mode::TwoBodyHH
+                                            ? kTwoBodyTau[kTwoBodyPoints - 1] *
+                                                  kTwoBodyTimeScalePs * ps
+                                            : 2. * ps);
     if (gMode == Mode::PreChem) G4Scheduler::Instance()->SetUserAction(new PreChemSpeciesAction());
     else if (gMode == Mode::SpatialDiagnostic)
       G4Scheduler::Instance()->SetUserAction(new SpatialSpeciesAction());
+    else if (gMode == Mode::TwoBodyHH) {
+      G4Scheduler::Instance()->SetUserAction(new TwoBodyAction());
+      for (G4double tau : kTwoBodyTau)
+        G4Scheduler::Instance()->AddWatchedTime(tau * kTwoBodyTimeScalePs * ps);
+    }
     else G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
   }
 
@@ -1190,6 +1318,9 @@ int main(int argc, char** argv)
   }
   else if (gMode == Mode::SpatialDiagnostic) {
     RunSpatialDiagnostic(out, events, ParseSeeds(argv[4]));
+  }
+  else if (gMode == Mode::TwoBodyHH) {
+    RunTwoBodyHH(out, seed, events);
   }
   else {
     RunEvents(out, "track", {200., 1e3, 1e4, 1e5, 9e5}, events, seed);
