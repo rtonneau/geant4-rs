@@ -218,9 +218,33 @@
         "ticket": "03-v10-lsoda-well-mixed-oracle",
         "commit": "1b0171b"
       }
+    },
+    {
+      "at": "2026-10-23T21:32:42.651Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-document-oracles-and-open-gate.md",
+        "03-implement/06-document-oracles-and-open-gate/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-document-oracles-and-open-gate"
+      }
+    },
+    {
+      "at": "2026-10-23T21:37:34.669Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/06-document-oracles-and-open-gate/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-document-oracles-and-open-gate",
+        "commit": "991c02f"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "test/m7-sbs-oracle-and-ode",
     "base_branch": "main",
