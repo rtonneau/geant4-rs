@@ -202,3 +202,24 @@ The project lead sets section 3's runtime environment and runs the exact RR-002 
 complete marker, exact five x 40 coverage and a nonempty long-form body before committing the CSV and
 provenance. Do not run the paired ignored consumer until both are committed. If a runtime guard fires,
 retain the log and partial scratch output for diagnosis; do not commit it or weaken the guard.
+
+## 9. RR-003: H+H two-body SBS reference (2026-10-23)
+
+Build the corrected `two_body_h_h` mode with sections 1-3. Its reaction callback must recognize
+Geant4's canonical neutral-hydrogen name `H^0`; its CLI must reject an overflowing seed. A historical
+scratch CSV produced before those checks is diagnostic-only and must not be promoted.
+
+From `validation/geant4/g4rs_ref`, first use a new temporary path:
+
+```powershell
+g4rs_ref two_body_h_h "$env:TEMP/two_body_h_h_smoke_seed1_n1000.csv" 1 1000 *> "$env:TEMP/two_body_h_h_smoke_seed1_n1000.log"
+if ($LASTEXITCODE -ne 0) { throw 'two-body smoke failed; retain log and do not run production' }
+```
+
+Require six ordered data rows, exact 1,000-pair coverage, monotonic reacted counts, a nonzero reaction
+count by tau 16, seed 1 in the completion marker and exit 0. Then run the exact RR-003 production
+command from `README.md`; it normally completes in seconds after Geant4 initialization. Require exit
+0, six rows, exact 100,000-pair coverage, seed 202610231, monotonic counts and the final completion
+marker. Do not commit the smoke CSV or any partial output. Write the specified provenance using the
+clean generator commit and `generator_dirty = false`, commit both new reference files, and only then
+run the ignored close-gate test.

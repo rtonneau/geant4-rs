@@ -41,6 +41,7 @@
 //                                         r0=0.2 nm at the six pre-registered tau values.
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -241,7 +242,7 @@ class TwoBodyAction : public G4UserTimeStepAction {
   {
     const auto* a = GetMolecule(&trackA);
     const auto* b = GetMolecule(&trackB);
-    if (a && b && a->GetName() == "H" && b->GetName() == "H") gTwoBodyDidReact = true;
+    if (a && b && a->GetName() == "H^0" && b->GetName() == "H^0") gTwoBodyDidReact = true;
   }
   void UserPostTimeStepAction() override
   {
@@ -1234,11 +1235,15 @@ int main(int argc, char** argv)
     if (argc != 5) TwoBodyFailure("expected output path, seed and pair count");
     char* seedEnd = nullptr;
     char* pairEnd = nullptr;
+    errno = 0;
     seed = strtol(argv[3], &seedEnd, 10);
+    const bool seedOutOfRange = errno == ERANGE;
+    errno = 0;
     events = strtol(argv[4], &pairEnd, 10);
-    if (!seedEnd || *seedEnd != '\0' || seed <= 0)
+    const bool pairsOutOfRange = errno == ERANGE;
+    if (!seedEnd || *seedEnd != '\0' || seedOutOfRange || seed <= 0)
       TwoBodyFailure("seed must be a positive integer");
-    if (!pairEnd || *pairEnd != '\0' || events <= 0 ||
+    if (!pairEnd || *pairEnd != '\0' || pairsOutOfRange || events <= 0 ||
         events > std::numeric_limits<G4int>::max())
       TwoBodyFailure("pair count must be a positive G4int");
     gMode = Mode::TwoBodyHH;
