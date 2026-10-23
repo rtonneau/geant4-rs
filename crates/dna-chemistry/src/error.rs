@@ -4,6 +4,13 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A numerical kernel received an argument outside its finite domain.
+    #[error("{function} requires {domain}; received {value}")]
+    SpecialFunctionDomain {
+        function: &'static str,
+        value: f64,
+        domain: &'static str,
+    },
     /// A data file cannot be parsed as TOML of the expected shape.
     #[error("cannot parse {file}: {message}")]
     Parse { file: &'static str, message: String },

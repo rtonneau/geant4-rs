@@ -18,6 +18,9 @@ pub mod error;
 pub mod params;
 pub mod reactions;
 pub mod species;
+// The private kernels gain production callers in the following IRT tickets.
+#[allow(dead_code)]
+pub(crate) mod special;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
 pub use error::ChemistryError;
