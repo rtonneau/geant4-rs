@@ -12,7 +12,40 @@
       "files": [
         "01-grill/resume.md"
       ]
+    },
+    {
+      "at": "2026-10-23T13:01:50.557Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T13:02:17.044Z",
+      "event": "changelog_written",
+      "phase": "plan-not-started",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-10-23T13:02:23.809Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
     }
   ],
-  "current_phase": "grill"
+  "current_phase": "finished",
+  "changelog": {
+    "bump": "minor",
+    "floor": "minor",
+    "reason": null,
+    "bullets": 1,
+    "path": ".work/changelog/2026-10-19__m6-close-gate.md",
+    "written_at": "2026-10-23T13:02:17.041Z"
+  },
+  "finished_at": "2026-10-23T13:02:23.809Z"
 }
