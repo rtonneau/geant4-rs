@@ -157,6 +157,30 @@
         "ticket": "03-reaction-parameters",
         "commit": "9da7410"
       }
+    },
+    {
+      "at": "2026-10-23T12:17:36.764Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-tdc-independent-reaction-time.md",
+        "03-implement/04-tdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-tdc-independent-reaction-time"
+      }
+    },
+    {
+      "at": "2026-10-23T12:27:11.138Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-tdc-independent-reaction-time/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-tdc-independent-reaction-time",
+        "commit": "fb1591c"
+      }
     }
   ],
   "current_phase": "ship",
