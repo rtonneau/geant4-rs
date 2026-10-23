@@ -1,0 +1,77 @@
+{
+  "session_id": "2026-10-23__m7-diffusion-and-two-body-irt",
+  "feature_name": "m7-diffusion-and-two-body-irt",
+  "scratch_dir": ".scratch/tests/2026-10-23__m7-diffusion-and-two-body-irt",
+  "created_at": "2026-10-23T05:53:38.360Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-23T05:53:38.360Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T06:25:52.444Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T06:26:00.372Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T06:40:57.378Z",
+      "event": "auto_started",
+      "phase": "plan",
+      "detail": {
+        "target": "finish",
+        "steps": "write:plan → ship → finish",
+        "shipMode": "subagent+inline"
+      }
+    },
+    {
+      "at": "2026-10-23T06:41:19.198Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/two-body-irt",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-23T06:41:19.307Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-special-functions.md",
+        "02-plan/tickets/02-molecule-and-diffusion.md",
+        "02-plan/tickets/03-reaction-parameters.md",
+        "02-plan/tickets/04-tdc-independent-reaction-time.md",
+        "02-plan/tickets/05-pdc-independent-reaction-time.md",
+        "02-plan/tickets/06-v9-validation-and-reproducibility.md",
+        "02-plan/tickets/07-document-m7-two-body-irt.md"
+      ],
+      "detail": {
+        "tickets": 7
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "feat/two-body-irt",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-23T06:41:19.198Z",
+    "pr_url": null
+  }
+}
