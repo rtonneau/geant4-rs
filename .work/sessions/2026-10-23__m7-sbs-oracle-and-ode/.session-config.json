@@ -78,6 +78,74 @@
         "ticket": "01-source-faithful-sbs-kernel",
         "commit": "bd3b2b1"
       }
+    },
+    {
+      "at": "2026-10-23T20:10:33.106Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-irt-sbs-statistical-oracle.md",
+        "03-implement/02-irt-sbs-statistical-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-irt-sbs-statistical-oracle"
+      }
+    },
+    {
+      "at": "2026-10-23T20:20:28.988Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-irt-sbs-statistical-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-irt-sbs-statistical-oracle",
+        "reason": "Pre-registered IRT/SBS comparison fails at tau=0.25: CDF residual 0.001360 exceeds the fixed combined 3-sigma bound 0.000632; the other five points pass."
+      }
+    },
+    {
+      "at": "2026-10-23T20:29:25.085Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-irt-sbs-statistical-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-irt-sbs-statistical-oracle",
+        "reason": "Equality bridge rule is implemented and its deterministic regression passes, but tau=0.25 observation time is one ULP above the adaptive step, so the unchanged 100,000-pair comparison still fails: residual 0.001360 > bound 0.000632."
+      }
+    },
+    {
+      "at": "2026-10-23T20:40:29.808Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T20:43:27.869Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-geant4-two-body-reference-mode.md",
+        "03-implement/04-geant4-two-body-reference-mode/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-geant4-two-body-reference-mode"
+      }
+    },
+    {
+      "at": "2026-10-23T20:57:12.156Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-geant4-two-body-reference-mode/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-geant4-two-body-reference-mode",
+        "commit": "efd367c"
+      }
     }
   ],
   "current_phase": "ship",
@@ -87,5 +155,5 @@
     "branch_created_at": "2026-10-23T20:02:20.029Z",
     "pr_url": null
   },
-  "ship_mode": "subagent+inline"
+  "ship_mode": "inline"
 }
