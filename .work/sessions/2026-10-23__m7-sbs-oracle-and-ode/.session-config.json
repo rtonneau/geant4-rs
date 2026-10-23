@@ -1,0 +1,66 @@
+{
+  "session_id": "2026-10-23__m7-sbs-oracle-and-ode",
+  "feature_name": "m7-sbs-oracle-and-ode",
+  "scratch_dir": ".scratch/tests/2026-10-23__m7-sbs-oracle-and-ode",
+  "created_at": "2026-10-23T14:19:05.995Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-23T14:19:05.995Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T19:59:16.862Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T19:59:19.696Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-23T20:02:20.029Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/m7-sbs-oracle-and-ode",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-23T20:02:20.059Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-source-faithful-sbs-kernel.md",
+        "02-plan/tickets/02-irt-sbs-statistical-oracle.md",
+        "02-plan/tickets/03-v10-lsoda-well-mixed-oracle.md",
+        "02-plan/tickets/04-geant4-two-body-reference-mode.md",
+        "02-plan/tickets/05-preregister-geant4-comparison.md",
+        "02-plan/tickets/06-document-oracles-and-open-gate.md"
+      ],
+      "detail": {
+        "tickets": 6
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "test/m7-sbs-oracle-and-ode",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-23T20:02:20.029Z",
+    "pr_url": null
+  }
+}
