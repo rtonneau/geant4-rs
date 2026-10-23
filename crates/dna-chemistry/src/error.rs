@@ -1,9 +1,24 @@
 //! Errors of the physicochemical stage.
 
+use crate::molecule::MoleculeId;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A reaction pair names the same physical molecule twice.
+    #[error("reaction pair contains molecule {id:?} twice")]
+    DuplicateMoleculeId { id: MoleculeId },
+    /// A free-diffusion input is negative or non-finite.
+    #[error(
+        "diffusion requires finite position and non-negative finite diffusivity and time; {field} = {value}"
+    )]
+    InvalidDiffusionInput { field: &'static str, value: f64 },
+    /// The diffusion width cannot be represented as a finite number.
+    #[error("non-finite diffusion scale {value}")]
+    NonFiniteDiffusionScale { value: f64 },
+    /// A sampled position cannot be represented as a finite number.
+    #[error("non-finite diffusion output on {axis}: {value}")]
+    NonFiniteDiffusionOutput { axis: &'static str, value: f64 },
     /// A numerical kernel received an argument outside its finite domain.
     #[error("{function} requires {domain}; received {value}")]
     SpecialFunctionDomain {

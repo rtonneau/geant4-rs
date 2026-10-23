@@ -8,13 +8,14 @@
 //! * [`params`]: birth time, auto-ionisation electron, electron-hole recombination (Onsager radius).
 //! * [`engine`]: [`PhysChemEngine::convert_history`], the stage for one history.
 //!
-//! No diffusion and no reactions here (M7). The crate depends on `dna-core` only: the event and species
-//! records are `dna-core` types (docs/03).
+//! M7 free diffusion and molecule identity live here without changing the M6 `dna-core` records.
 
 pub mod channels;
+pub mod diffusion;
 pub mod displacer;
 pub mod engine;
 pub mod error;
+pub mod molecule;
 pub mod params;
 pub mod reactions;
 pub mod species;
