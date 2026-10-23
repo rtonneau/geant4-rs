@@ -133,6 +133,30 @@
         "ticket": "02-molecule-and-diffusion",
         "commit": "a43fcaf"
       }
+    },
+    {
+      "at": "2026-10-23T12:09:25.549Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-reaction-parameters.md",
+        "03-implement/03-reaction-parameters/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-reaction-parameters"
+      }
+    },
+    {
+      "at": "2026-10-23T12:17:28.477Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-reaction-parameters/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-reaction-parameters",
+        "commit": "9da7410"
+      }
     }
   ],
   "current_phase": "ship",
