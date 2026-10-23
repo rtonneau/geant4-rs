@@ -15,6 +15,7 @@ pub mod diffusion;
 pub mod displacer;
 pub mod engine;
 pub mod error;
+pub mod irt;
 pub mod molecule;
 pub mod params;
 pub mod reaction_parameters;

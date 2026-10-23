@@ -5,6 +5,22 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A molecule supplied to isolated IRT has a non-finite coordinate.
+    #[error("molecule {id:?}: invalid IRT {field} = {value}")]
+    InvalidIrtInput {
+        id: MoleculeId,
+        field: &'static str,
+        value: f64,
+    },
+    /// Finite IRT inputs produced unrepresentable sampling arithmetic.
+    #[error("reaction {reaction_id}: IRT arithmetic domain failure in {operation}")]
+    IrtDomain {
+        reaction_id: u16,
+        operation: &'static str,
+    },
+    /// The isolated sampler does not support these reaction kinetics.
+    #[error("reaction {reaction_id}: unsupported IRT kinetics")]
+    UnsupportedIrtKinetics { reaction_id: u16 },
     /// A runtime reaction input is outside its physical finite domain.
     #[error("reaction {reaction_id}: invalid {field} = {value}")]
     InvalidReactionParameter {
