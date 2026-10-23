@@ -146,6 +146,30 @@
         "ticket": "04-geant4-two-body-reference-mode",
         "commit": "efd367c"
       }
+    },
+    {
+      "at": "2026-10-23T21:10:07.583Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-preregister-geant4-comparison.md",
+        "03-implement/05-preregister-geant4-comparison/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-preregister-geant4-comparison"
+      }
+    },
+    {
+      "at": "2026-10-23T21:15:13.233Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-preregister-geant4-comparison/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-preregister-geant4-comparison",
+        "commit": "53643e9"
+      }
     }
   ],
   "current_phase": "ship",
