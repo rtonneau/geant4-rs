@@ -65,6 +65,16 @@
       "detail": {
         "tickets": 7
       }
+    },
+    {
+      "at": "2026-10-23T07:07:26.362Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "subagent+inline"
+      }
     }
   ],
   "current_phase": "ship",
