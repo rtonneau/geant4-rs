@@ -622,13 +622,15 @@ fn m6_900kev_spatial_diagnostic() {
         Boundary, CsvSpatialDiagnosticWriter, DIAGNOSTIC_SEEDS, DiagnosticDataset, Implementation,
         PrecisionDecision, SamplePlan, analyze,
     };
-    use std::io::{BufReader, BufWriter, Cursor, Write};
+    use std::fs::File;
+    use std::io::{BufRead, BufReader, BufWriter, Write};
 
-    const CSV_NAME: &str = "spatial_geant4_900kev_40.csv";
-    const PROVENANCE_NAME: &str = "provenance_m6_spatial_900kev_40.toml";
-    const COMMAND: &str = "g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_geant4_900kev_40.csv 40 20261021,20261022,20261023,20261024,20261025";
-    let csv_path = reference_dir().join(CSV_NAME);
-    let provenance_path = reference_dir().join(PROVENANCE_NAME);
+    const CSV_NAME: &str = "spatial_geant4_900kev_80_local.csv";
+    const PROVENANCE_NAME: &str = "provenance_m6_spatial_900kev_80_local.toml";
+    const COMMAND: &str = "build-msvc-e\\g4rs_ref.exe physchem_spatial_diagnostic ..\\..\\..\\.scratch\\rr-002-80\\spatial_geant4_900kev_80_local.csv 80 20261021,20261022,20261023,20261024,20261025";
+    let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.scratch/rr-002-80");
+    let csv_path = scratch.join(CSV_NAME);
+    let provenance_path = scratch.join(PROVENANCE_NAME);
     assert!(
         csv_path.is_file() && provenance_path.is_file(),
         "RR-002 awaiting data: {CSV_NAME} and {PROVENANCE_NAME}; project lead must run Geant4 and commit both complete new files"
@@ -651,7 +653,7 @@ fn m6_900kev_spatial_diagnostic() {
         assert_eq!(provenance[key].as_str(), Some(expected), "{key}");
     }
     assert_eq!(provenance["primary_energy_eV"].as_integer(), Some(900_000));
-    assert_eq!(provenance["histories_per_seed"].as_integer(), Some(40));
+    assert_eq!(provenance["histories_per_seed"].as_integer(), Some(80));
     assert_eq!(provenance["analysis_seed"].as_integer(), Some(20261026));
     assert_eq!(
         provenance["bootstrap_replicates"].as_integer(),
@@ -675,37 +677,33 @@ fn m6_900kev_spatial_diagnostic() {
         .collect();
     assert_eq!(seeds, DIAGNOSTIC_SEEDS);
 
-    let geant4_text = std::fs::read_to_string(&csv_path).unwrap();
-    let comments: Vec<_> = geant4_text
+    let comments: Vec<_> = BufReader::new(File::open(&csv_path).unwrap())
         .lines()
+        .map_while(Result::ok)
         .filter(|line| line.starts_with('#'))
         .collect();
     for marker in [
         "mode physchem_spatial_diagnostic",
         "primary_energy_eV: 900000",
         "global_time_ps: 1; chemical_reactions: 0",
-        "histories_per_seed: 40; expected_seed_count: 5",
-        "complete: true; seeds: 20261021,20261022,20261023,20261024,20261025; histories_per_seed: 40",
+        "histories_per_seed: 80; expected_seed_count: 5",
+        "complete: true; seeds: 20261021,20261022,20261023,20261024,20261025; histories_per_seed: 80",
     ] {
         assert!(
             comments.iter().any(|line| line.contains(marker)),
             "incomplete or wrong-stage Geant4 CSV: missing marker '{marker}'"
         );
     }
-    let geant4_csv = geant4_text
-        .lines()
-        .filter(|line| !line.starts_with('#'))
-        .collect::<Vec<_>>()
-        .join("\n");
-    let plan = SamplePlan::production(40).unwrap();
-    let geant4 =
-        DiagnosticDataset::read_csv(Cursor::new(geant4_csv), Implementation::Geant4, &plan)
-            .expect("RR-002 Geant4 CSV is malformed, partial, or has wrong seed/history coverage");
+    let plan = SamplePlan::production(80).unwrap();
+    let geant4 = DiagnosticDataset::read_csv(
+        BufReader::new(File::open(&csv_path).unwrap()),
+        Implementation::Geant4,
+        &plan,
+    )
+    .expect("RR-002 Geant4 CSV is malformed, partial, or has wrong seed/history coverage");
 
-    let scratch = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../.scratch/tests/2026-10-19__m6-900kev-spatial-rms-investigation");
     std::fs::create_dir_all(&scratch).unwrap();
-    let rust_path = scratch.join("05-spatial-rust-900kev-40-consumer.csv");
+    let rust_path = scratch.join("spatial_rust_900kev_80_local.csv");
     let rust_file = std::fs::File::create(&rust_path).unwrap();
     let mut writer = CsvSpatialDiagnosticWriter::new(BufWriter::new(rust_file)).unwrap();
     let table = ProcessTable::option2_electron(
@@ -715,7 +713,7 @@ fn m6_900kev_spatial_diagnostic() {
     .unwrap();
     let engine = PhysChemEngine::option3().unwrap();
     for seed in DIAGNOSTIC_SEEDS {
-        let mut config = RunConfig::new(900_000.0, 40);
+        let mut config = RunConfig::new(900_000.0, 80);
         config.master_seed = seed;
         config.batch_size = 2;
         run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer)).unwrap();

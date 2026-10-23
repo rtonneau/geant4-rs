@@ -6,6 +6,7 @@
 .work/sessions/.pending-seeds.json*
 .work/sessions/*/.write-payload.md
 .work/sessions/*/.changelog-payload.md
+/validation/reference/spatial_geant4_900kev_40.csv
 .VSCodeCounter/2026-10-16_19-15-11/details.md
 .VSCodeCounter/2026-10-16_19-15-11/diff-details.md
 .VSCodeCounter/2026-10-16_19-15-11/diff.csv

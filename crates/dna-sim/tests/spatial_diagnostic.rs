@@ -477,6 +477,23 @@ fn spatial_diagnostic_schema_round_trips_records_and_streamed_dataset() {
 }
 
 #[test]
+fn spatial_diagnostic_stream_reader_skips_comment_lines() {
+    let plan = small_plan();
+    let rows = constant_records(Implementation::Rust, &plan, [2.0; 5]);
+    let expected = dataset(rows.clone(), Implementation::Rust, &plan);
+    let mut body = Vec::new();
+    write_csv(&mut body, &rows).unwrap();
+    let mut csv = b"# mode physchem_spatial_diagnostic\n# metadata before header\n".to_vec();
+    csv.extend_from_slice(&body);
+    csv.extend_from_slice(b"# complete: true\n");
+
+    assert_eq!(
+        DiagnosticDataset::read_csv(Cursor::new(csv), Implementation::Rust, &plan).unwrap(),
+        expected
+    );
+}
+
+#[test]
 fn spatial_diagnostic_single_implementation_precision_is_descriptive_and_reproducible() {
     let plan = small_plan();
     let data = dataset(

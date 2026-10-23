@@ -1069,20 +1069,28 @@ impl DiagnosticDataset {
         implementation: Implementation,
         plan: &SamplePlan,
     ) -> Result<Self, DiagnosticError> {
-        let mut lines = reader.lines();
-        let header = lines
-            .next()
-            .ok_or_else(|| invalid("missing CSV header"))??;
+        let mut lines = reader.lines().enumerate();
+        let header = loop {
+            match lines.next() {
+                Some((_, Ok(line))) if line.starts_with('#') => {}
+                Some((_, Ok(line))) => break line,
+                Some((_, Err(error))) => return Err(error.into()),
+                None => return Err(invalid("missing CSV header")),
+            }
+        };
         if header != csv_header() {
             return Err(invalid(
                 "CSV header does not match the spatial diagnostic schema",
             ));
         }
         Self::from_fallible_records(
-            lines.enumerate().map(|(i, line)| {
-                let line = line?;
-                DiagnosticRecord::from_csv_row(&line)
-                    .map_err(|e| invalid(format!("CSV line {}: {e}", i + 2)))
+            lines.filter_map(|(i, line)| match line {
+                Ok(line) if line.starts_with('#') => None,
+                Ok(line) => Some(
+                    DiagnosticRecord::from_csv_row(&line)
+                        .map_err(|e| invalid(format!("CSV line {}: {e}", i + 1))),
+                ),
+                Err(error) => Some(Err(error.into())),
             }),
             implementation,
             plan,

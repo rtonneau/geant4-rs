@@ -1,0 +1,17 @@
+schema_version = 1
+artifact_id = "rr-002-spatial-geant4-900kev-40"
+storage = "local-only"
+required_path = "validation/reference/spatial_geant4_900kev_40.csv"
+provenance = "validation/reference/provenance_m6_spatial_900kev_40.toml"
+bytes = 20548237115
+sha256 = "7c326007902e013408adf3c1e1dbc25ea10913edc13608f29e93a431ea397165"
+
+[coverage]
+implementation = "geant4"
+primary_energy_eV = 900000
+seeds = [20261021, 20261022, 20261023, 20261024, 20261025]
+histories_per_seed = 40
+complete = true
+
+[restore]
+note = "This artifact is intentionally not stored in Git. Restore the byte-identical local CSV at required_path before running the RR-002 consumer, then verify bytes and sha256."
