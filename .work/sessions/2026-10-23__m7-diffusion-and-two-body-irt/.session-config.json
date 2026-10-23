@@ -229,9 +229,33 @@
         "ticket": "06-v9-validation-and-reproducibility",
         "commit": "4a7bbcf"
       }
+    },
+    {
+      "at": "2026-10-23T12:46:16.298Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/07-document-m7-two-body-irt.md",
+        "03-implement/07-document-m7-two-body-irt/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-document-m7-two-body-irt"
+      }
+    },
+    {
+      "at": "2026-10-23T12:53:21.679Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/07-document-m7-two-body-irt/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-document-m7-two-body-irt",
+        "commit": "9dd499a"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/two-body-irt",
     "base_branch": "main",
