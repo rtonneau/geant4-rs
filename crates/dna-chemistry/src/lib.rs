@@ -26,8 +26,8 @@ pub mod molecule;
 pub mod params;
 pub mod reaction_parameters;
 pub mod reactions;
-pub mod species;
 pub(crate) mod special;
+pub mod species;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
 pub use error::ChemistryError;

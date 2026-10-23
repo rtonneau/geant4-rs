@@ -125,7 +125,11 @@ fn functions_are_monotone_across_central_values_tails_and_interval_boundaries() 
     let mut probabilities = (1..20_000)
         .map(|i| f64::from(i) / 10_000.0)
         .collect::<Vec<_>>();
-    probabilities.extend((1..=1074).map(|i| 2.0_f64.powi(-i)));
+    let mut power_of_two = 1.0;
+    for _ in 1..=1074 {
+        power_of_two *= 0.5;
+        probabilities.push(power_of_two);
+    }
     probabilities.extend((1..=52).map(|i| 2.0 - 2.0_f64.powi(-i)));
     probabilities.sort_by(f64::total_cmp);
     let mut previous = f64::INFINITY;
