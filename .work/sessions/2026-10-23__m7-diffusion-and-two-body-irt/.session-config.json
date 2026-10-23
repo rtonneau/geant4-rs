@@ -109,6 +109,30 @@
         "ticket": "01-special-functions",
         "commit": "abd616c"
       }
+    },
+    {
+      "at": "2026-10-23T12:03:12.633Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-molecule-and-diffusion.md",
+        "03-implement/02-molecule-and-diffusion/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-molecule-and-diffusion"
+      }
+    },
+    {
+      "at": "2026-10-23T12:09:17.890Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-molecule-and-diffusion/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-molecule-and-diffusion",
+        "commit": "a43fcaf"
+      }
     }
   ],
   "current_phase": "ship",
