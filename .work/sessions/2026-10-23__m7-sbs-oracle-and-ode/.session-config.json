@@ -170,6 +170,30 @@
         "ticket": "05-preregister-geant4-comparison",
         "commit": "53643e9"
       }
+    },
+    {
+      "at": "2026-10-23T21:17:17.548Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-irt-sbs-statistical-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-irt-sbs-statistical-oracle",
+        "reason": "Geant4 11.4.1 confirms the executable SBS curve does not agree with IRT; all-six-pass acceptance conflicts with source fidelity and needs a specification decision"
+      }
+    },
+    {
+      "at": "2026-10-23T21:20:01.036Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-irt-sbs-statistical-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-irt-sbs-statistical-oracle",
+        "commit": "1efe887"
+      }
     }
   ],
   "current_phase": "ship",
