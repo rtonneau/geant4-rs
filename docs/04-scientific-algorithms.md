@@ -69,10 +69,33 @@ V9 validates three registered cases (neutral A+A TDC, neutral A+B PDC, charged A
 
 The validated M7 input is `ReactionTable::option3()`: 72 source-order reactions with explicit mobile or bulk participants, ordered products, observed-rate order and literal, source class, kinetic intent, and the `SetReactionType` call flag. It preserves the executable Geant4 11.4.1 table without claiming that the kinetics are executable. `totally_diffusion_controlled` and `partially_diffusion_controlled` describe constructor intent; first- and pseudo-first-order entries keep their `s^-1` observations rather than being converted to a bimolecular unit.
 
-The isolated kernel requires species diffusion coefficients and reaction radii/rates; these are available from embedded option3 tables and validated `TwoBodyReactionParameters`. A future scheduler will additionally need policies for bulk participants, boundaries, end time, reaction selection and product/site placement. Those scheduler policies and SBS/ODE alternatives remain deferred; the current pair sampler does not schedule competing reactions.
+The isolated kernel requires species diffusion coefficients and reaction radii/rates; these are available from embedded option3 tables and validated `TwoBodyReactionParameters`. A future scheduler will additionally need policies for bulk participants, boundaries, end time, reaction selection and product/site placement. Those scheduler policies remain deferred; the current pair sampler does not schedule competing reactions.
 **Recommended first method: IRT** (Geant4's default for option3/chem6; independent-pair assumption; cost scales with number of close pairs, far faster than SBS).
 Algorithm (after `G4DNAIRT`): bin species into cells of size R_cutoff; for each reactant pair within cut-off sample an independent reaction time from the Green function of the (partially) diffusion-controlled problem (`G4DiffusionControlledReactionModel::GetTimeToEncounter` - Smoluchowski radius from rate and D, `kdif = 4 pi D R N_A`, erfc); process pair reactions in time order; on a reaction, remove reactants, create products at a position determined by [U G7 - check `MakeReaction`], then **resample** reaction times for the new species against others; unreacted partners are propagated to the current time by Gaussian jumps with sigma = sqrt(2 D dt) per axis (as in `G4DNAIRT::Sampling`), which is the only place diffusion is explicit. Time axis log-spaced output grid for G(t).
 **Also implement SBS** (small, in `chemistry::sbs`) as a *validation oracle*, not default: it is the reference method for totally diffusion-controlled systems (reaction type 0 only, as the chem6 README states), and exposes IRT approximation error. **Synchronised IRT (IRT-syn)** and mesoscopic methods are deferred (UHDR prototype; Q6).
+
+**Implemented SBS oracle.** For a separated pair it uses
+`dt = (r-R)^2 / [8(D_A+D_B+2 sqrt(D_A D_B))]`; for H+H the denominator is
+`32 D_H`. Both molecules diffuse independently for the smaller of that adaptive
+step and the remaining observation interval. Endpoint contact is inclusive
+(`r <= R`). Only an observation-capped step applies the Brownian-bridge test,
+including exact equality between the remaining interval and adaptive step. The
+bridge deliberately preserves the executable `FindReaction` coordinate
+double-count quirk; the nearby source comment claiming a factor 16 is stale.
+Production IRT instead uses strict initial overlap (`R > r`), so exact contact
+is a documented measure-zero distinction. The fixed-seed 100,000-pair H+H
+comparison preserves the source-faithful early discrepancy: at tau 0.25 the
+IRT/SBS CDF residual exceeds the combined pointwise three-sigma bound, while
+the other five registered points satisfy it.
+
+**V10 well-mixed oracle.** The closed test system enables only option3 reaction
+ID 2, `e_aq + H -> OHm + H2`, with terminal products, 10,000 molecules of each
+reactant at 1 micromolar, and `t_end = 360 us`. Its exact Gillespie propensity
+is `a = k n_e n_H/(N_A V)`, with `V = N/(c N_A)` and the validated
+`k = 2.50e10 M^-1 s^-1`. Across 512 fixed-seed histories every trajectory
+checks reactant/product conservation. The four matching mass-action equations
+are integrated with LSODA and all ensemble means must agree within 1%; the
+observed maximum relative error is 0.0824%. Both implementations are test-only.
 Interchangeability: `trait ChemistryEngine { fn run(&self, species: &[SpeciesInstance], t_end: Time, observers: &mut [&mut dyn ChemObserver], rng: &mut Rng) -> ... }`.
 Homogeneous ODE (well-mixed) network: implemented only in tests (`tests/kinetics_ode.rs`) to check rate bookkeeping in the long-time limit and Fricke-like yields; it is never a substitute.
 Reaction radius for type 1 and its relation to k: **derive from Geant4 exactly (G7) before coding**; do not re-derive Collins-Kimball parameters independently without validation.

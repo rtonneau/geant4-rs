@@ -16,4 +16,5 @@ toml = { workspace = true }
 [dev-dependencies]
 approx = { workspace = true }
 rayon = { workspace = true }
+rsoda = { git = "https://github.com/rtonneau/rsoda", rev = "ae76eee69d6d494be9253eaee819c77ee962c934" }
 serde_json = { workspace = true }
