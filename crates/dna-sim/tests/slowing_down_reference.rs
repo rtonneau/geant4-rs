@@ -56,6 +56,14 @@ use std::path::PathBuf;
 /// Node energies of `xs_lowenergy.csv` (window boundaries etc.; `RunXsLow` in `g4rs_ref.cc`).
 const NODE_ENERGIES: [f64; 8] = [2.0, 4.0, 7.4, 9.0, 11.0, 12.3, 13.0, 100.0];
 const GENERATION_CLASSES: usize = 4;
+const SLOW_ENERGIES: [f64; 7] = [8.0, 30.0, 100.0, 1_000.0, 10_000.0, 100_000.0, 900_000.0];
+const XS_PROCESSES: [&str; 5] = [
+    "elastic",
+    "excitation",
+    "ionisation",
+    "vibexc",
+    "attachment",
+];
 /// Combined-standard-error criterion of the V5 family (see the file header).
 const Z_CRIT: f64 = 4.0;
 /// V2 values (per volume per nm) below this are the 1e-300 log-floor, i.e. zero (see header).
@@ -81,6 +89,406 @@ const QUANTITIES: [&str; 11] = [
 
 fn reference_dir() -> PathBuf {
     repo_data_dir().join("../validation/reference")
+}
+
+/// Validate source evidence before it is projected into comparison arrays. This catches duplicate
+/// spectrum/radial keys before assignment can silently overwrite an earlier row.
+fn validate_reference(name: &str, text: &str, provenance: &str) -> Result<(), String> {
+    let prov: toml::Table = provenance
+        .parse()
+        .map_err(|e| format!("provenance_m3.toml is not valid TOML: {e}"))?;
+    let required = [
+        "geant4_version",
+        "geant4_commit",
+        "g4emlow_version",
+        "g4emlow_md5",
+        "physics_constructor",
+        "generator",
+        "date",
+        "command_lines",
+        "fluo_auger",
+        "compiler",
+        "platform",
+    ];
+    for key in required {
+        if !prov.contains_key(key) {
+            return Err(format!("provenance_m3.toml lacks `{key}`"));
+        }
+    }
+    let string = |key: &str| -> Result<&str, String> {
+        prov.get(key)
+            .and_then(toml::Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .ok_or_else(|| format!("provenance `{key}` must be a nonempty string"))
+    };
+    for (key, expected) in [
+        ("geant4_version", "11.4.1"),
+        ("g4emlow_version", "8.8"),
+        ("g4emlow_md5", "328330009df633f7e9b3a9f445745298"),
+        ("physics_constructor", "G4EmDNAPhysics_option2"),
+        ("fluo_auger", "off"),
+    ] {
+        if string(key)? != expected {
+            return Err(format!("provenance `{key}` must be `{expected}`"));
+        }
+    }
+    for key in ["geant4_commit", "generator", "date", "compiler", "platform"] {
+        string(key)?;
+    }
+    let date = string("date")?;
+    let date_parts: Vec<&str> = date.split('-').collect();
+    if date_parts.len() != 3
+        || date_parts[0].len() != 4
+        || date_parts[1].len() != 2
+        || date_parts[2].len() != 2
+        || date_parts
+            .iter()
+            .any(|part| !part.bytes().all(|byte| byte.is_ascii_digit()))
+    {
+        return Err("provenance `date` must use YYYY-MM-DD format".into());
+    }
+    let commands = prov
+        .get("command_lines")
+        .and_then(toml::Value::as_array)
+        .ok_or_else(|| "provenance `command_lines` must be an array".to_owned())?;
+    let command = match name {
+        "xs_lowenergy.csv" => "g4rs_ref xslow xs_lowenergy.csv",
+        "slow_sums.csv" | "slow_spectra.csv" | "slow_radial.csv" => {
+            "g4rs_ref slow slow 20271 8:100000,30:100000,100:100000,1000:20000,10000:2000,100000:200,900000:20"
+        }
+        _ => return Err(format!("unregistered M3 reference filename `{name}`")),
+    };
+    if !commands.iter().any(|item| item.as_str() == Some(command)) {
+        return Err(format!("provenance command_lines must include `{command}`"));
+    }
+
+    let mut comments = Vec::new();
+    let mut data = Vec::new();
+    for line in text.lines().map(str::trim).filter(|line| !line.is_empty()) {
+        if line.starts_with('#') {
+            comments.push(line.trim_start_matches('#').trim());
+        } else {
+            data.push(line);
+        }
+    }
+    if data.is_empty() {
+        return Err(format!("{name} is empty or has no header"));
+    }
+    let mode = if name == "xs_lowenergy.csv" {
+        "xslow"
+    } else {
+        "slow"
+    };
+    if !comments
+        .iter()
+        .any(|line| line.ends_with(&format!("mode {mode}")))
+    {
+        return Err(format!("{name} has wrong or missing mode `{mode}`"));
+    }
+    if !comments
+        .iter()
+        .any(|line| line.starts_with("geant4_version_number: 1141"))
+    {
+        return Err(format!(
+            "{name} must identify Geant4 11.4.1 (version number 1141)"
+        ));
+    }
+    if !comments
+        .iter()
+        .any(|line| line.starts_with("generator: g4rs_ref (validation/geant4/g4rs_ref),"))
+    {
+        return Err(format!("{name} has wrong or missing generator metadata"));
+    }
+    let expected_physics = if mode == "xslow" {
+        "physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 0; seed 0"
+    } else {
+        "physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 0; seed 20271"
+    };
+    if !comments.contains(&expected_physics) {
+        return Err(format!(
+            "{name} has wrong process/constructor/seed metadata"
+        ));
+    }
+    let header: Vec<&str> = data[0].split(',').collect();
+    let rows: Vec<Vec<&str>> = data
+        .iter()
+        .skip(1)
+        .enumerate()
+        .map(|(i, line)| {
+            let fields: Vec<&str> = line.split(',').collect();
+            if fields.len() != header.len() {
+                return Err(format!(
+                    "{name} row {} has {} fields; expected {}",
+                    i + 2,
+                    fields.len(),
+                    header.len()
+                ));
+            }
+            if fields.iter().any(|field| field.is_empty()) {
+                return Err(format!("{name} row {} has an empty field", i + 2));
+            }
+            Ok(fields)
+        })
+        .collect::<Result<_, _>>()?;
+    if rows.is_empty() {
+        return Err(format!("{name} has no data rows"));
+    }
+    match name {
+        "xs_lowenergy.csv" => validate_m3_xs(&header, &rows),
+        "slow_sums.csv" => validate_slow_sums(&header, &rows),
+        "slow_spectra.csv" => validate_spectra(&header, &rows),
+        "slow_radial.csv" => validate_radial(&header, &rows),
+        _ => unreachable!(),
+    }
+}
+
+fn parse_nonnegative(raw: &str, name: &str, row: usize, column: &str) -> Result<f64, String> {
+    let value = raw
+        .parse::<f64>()
+        .map_err(|_| format!("{name} row {row} column `{column}` is not numeric: `{raw}`"))?;
+    if !value.is_finite() || value < 0.0 {
+        return Err(format!(
+            "{name} row {row} column `{column}` must be finite and nonnegative, got `{raw}`"
+        ));
+    }
+    Ok(value)
+}
+
+fn exact_header(name: &str, actual: &[&str], expected: &[&str]) -> Result<(), String> {
+    if actual != expected {
+        Err(format!(
+            "{name} has wrong columns/units: expected {expected:?}, got {actual:?}"
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn expected_xs_grid() -> Vec<f64> {
+    let mut energies = vec![
+        1.5, 2.0, 3.9, 4.0, 7.4, 9.0, 11.0, 12.3, 12.8, 13.0, 13.5, 100.0, 101.0, 150.0,
+    ];
+    energies.extend((0..200).map(|i| 2.0 * (100.0_f64 / 2.0).powf(i as f64 / 199.0)));
+    energies
+}
+
+fn validate_m3_xs(header: &[&str], rows: &[Vec<&str>]) -> Result<(), String> {
+    exact_header(
+        "xs_lowenergy.csv",
+        header,
+        &["energy_eV", "process", "sigma_per_volume_per_nm"],
+    )?;
+    // The generator's 200-point log sweep includes 2 and 100 eV, both also explicit nodes.
+    // Keep those two intentional repeated keys while rejecting any other duplicate.
+    let mut expected: Vec<(f64, &str)> = expected_xs_grid()
+        .into_iter()
+        .flat_map(|energy| XS_PROCESSES.map(move |process| (energy, process)))
+        .collect();
+    let mut found = Vec::new();
+    for (i, row) in rows.iter().enumerate() {
+        let energy = parse_nonnegative(row[0], "xs_lowenergy.csv", i + 2, "energy_eV")?;
+        if energy == 0.0 {
+            return Err(format!("xs_lowenergy.csv row {} has zero energy", i + 2));
+        }
+        if !XS_PROCESSES.contains(&row[1]) {
+            return Err(format!(
+                "xs_lowenergy.csv row {} has unknown process `{}`",
+                i + 2,
+                row[1]
+            ));
+        }
+        let sigma =
+            parse_nonnegative(row[2], "xs_lowenergy.csv", i + 2, "sigma_per_volume_per_nm")?;
+        found.push((energy, row[1], sigma));
+    }
+    expected.sort_by(|a, b| a.1.cmp(b.1).then_with(|| a.0.total_cmp(&b.0)));
+    found.sort_by(|a, b| a.1.cmp(b.1).then_with(|| a.0.total_cmp(&b.0)));
+    if found.len() != expected.len()
+        || found.iter().zip(&expected).any(|(actual, expected)| {
+            actual.1 != expected.1
+                || (actual.0 - expected.0).abs() > 1e-12 * expected.0.abs().max(1.0)
+        })
+    {
+        return Err(format!(
+            "xs_lowenergy.csv coverage differs from the registered 214-energy × 5-process grid (expected {} rows, found {})",
+            expected.len(),
+            rows.len()
+        ));
+    }
+    for (index, pair) in expected.windows(2).enumerate() {
+        if pair[0] == pair[1] {
+            let left = found[index].2;
+            let right = found[index + 1].2;
+            if (left - right).abs() > 1e-12 * left.abs().max(right.abs()).max(1.0) {
+                return Err(format!(
+                    "xs_lowenergy.csv has conflicting repeated endpoint values for {} at {} eV",
+                    pair[0].1, pair[0].0
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_slow_sums(header: &[&str], rows: &[Vec<&str>]) -> Result<(), String> {
+    let mut expected = vec!["energy_eV".to_owned(), "n_events".to_owned()];
+    for quantity in QUANTITIES {
+        expected.push(format!("sum_{quantity}"));
+        expected.push(format!("sum2_{quantity}"));
+    }
+    expected.extend([
+        "sum_nsolv_x_edep".to_owned(),
+        "n_other_process".to_owned(),
+        "n_other_secondary".to_owned(),
+    ]);
+    let expected_refs: Vec<&str> = expected.iter().map(String::as_str).collect();
+    exact_header("slow_sums.csv", header, &expected_refs)?;
+    if rows.len() != SLOW_ENERGIES.len() {
+        return Err(format!(
+            "slow_sums.csv has {} rows; expected {} energies",
+            rows.len(),
+            SLOW_ENERGIES.len()
+        ));
+    }
+    let mut seen = Vec::new();
+    for (i, row) in rows.iter().enumerate() {
+        let energy = parse_nonnegative(row[0], "slow_sums.csv", i + 2, "energy_eV")?;
+        if !SLOW_ENERGIES.contains(&energy) || seen.contains(&energy) {
+            return Err(format!(
+                "slow_sums.csv row {} has unexpected or duplicate energy {energy}",
+                i + 2
+            ));
+        }
+        seen.push(energy);
+        let n = parse_nonnegative(row[1], "slow_sums.csv", i + 2, "n_events")?;
+        if n < 2.0 || n.fract() != 0.0 {
+            return Err(format!(
+                "slow_sums.csv row {} has invalid n_events {n}",
+                i + 2
+            ));
+        }
+        for (j, quantity) in QUANTITIES.iter().enumerate() {
+            let sum = parse_nonnegative(
+                row[2 + j * 2],
+                "slow_sums.csv",
+                i + 2,
+                &format!("sum_{quantity}"),
+            )?;
+            let sum2 = parse_nonnegative(
+                row[3 + j * 2],
+                "slow_sums.csv",
+                i + 2,
+                &format!("sum2_{quantity}"),
+            )?;
+            if quantity.starts_with("n_") && (sum.fract() != 0.0 || sum2.fract() != 0.0) {
+                return Err(format!(
+                    "slow_sums.csv row {} has non-integer count moments for `{quantity}`",
+                    i + 2
+                ));
+            }
+            if sum2 + 1e-12 * sum2.abs().max(1.0) < sum * sum / n {
+                return Err(format!(
+                    "slow_sums.csv row {} has invalid moment pair for `{quantity}`",
+                    i + 2
+                ));
+            }
+        }
+        let cross = parse_nonnegative(row[24], "slow_sums.csv", i + 2, "sum_nsolv_x_edep")?;
+        let other_process = parse_nonnegative(row[25], "slow_sums.csv", i + 2, "n_other_process")?;
+        let other_secondary =
+            parse_nonnegative(row[26], "slow_sums.csv", i + 2, "n_other_secondary")?;
+        for (column, value) in [
+            ("n_other_process", other_process),
+            ("n_other_secondary", other_secondary),
+        ] {
+            if value.fract() != 0.0 || value != 0.0 {
+                return Err(format!(
+                    "slow_sums.csv row {} has invalid {column}={value}",
+                    i + 2
+                ));
+            }
+        }
+        let solv_sum2 =
+            parse_nonnegative(row[3 + 8 * 2], "slow_sums.csv", i + 2, "sum2_n_solvation")?;
+        let edep_sum2 = parse_nonnegative(row[3 + 2 * 2], "slow_sums.csv", i + 2, "sum2_edep_eV")?;
+        if cross * cross > solv_sum2 * edep_sum2 + 1e-10 * (solv_sum2 * edep_sum2).max(1.0) {
+            return Err(format!(
+                "slow_sums.csv row {} has invalid sum_nsolv_x_edep moment",
+                i + 2
+            ));
+        }
+    }
+    if seen != SLOW_ENERGIES {
+        return Err("slow_sums.csv energies are not in registered order".into());
+    }
+    Ok(())
+}
+
+fn validate_spectra(header: &[&str], rows: &[Vec<&str>]) -> Result<(), String> {
+    exact_header(
+        "slow_spectra.csv",
+        header,
+        &["energy_eV", "generation_class", "bin", "count"],
+    )?;
+    if rows.len() != SLOW_ENERGIES.len() * GENERATION_CLASSES * (SPECTRUM_BINS + 2) {
+        return Err(format!(
+            "slow_spectra.csv has {} rows; expected exact 7 × 4 × 72 coverage",
+            rows.len()
+        ));
+    }
+    let mut seen = BTreeMap::new();
+    for (i, row) in rows.iter().enumerate() {
+        let e = parse_nonnegative(row[0], "slow_spectra.csv", i + 2, "energy_eV")?;
+        let class = parse_nonnegative(row[1], "slow_spectra.csv", i + 2, "generation_class")?;
+        let bin = parse_nonnegative(row[2], "slow_spectra.csv", i + 2, "bin")?;
+        let count = parse_nonnegative(row[3], "slow_spectra.csv", i + 2, "count")?;
+        if !SLOW_ENERGIES.contains(&e)
+            || !(1.0..=4.0).contains(&class)
+            || class.fract() != 0.0
+            || bin > (SPECTRUM_BINS + 1) as f64
+            || bin.fract() != 0.0
+            || count.fract() != 0.0
+        {
+            return Err(format!(
+                "slow_spectra.csv row {} has invalid key or non-integer count",
+                i + 2
+            ));
+        }
+        if seen
+            .insert((e.to_bits(), class as usize, bin as usize), ())
+            .is_some()
+        {
+            return Err(format!("slow_spectra.csv row {} duplicates a key", i + 2));
+        }
+    }
+    Ok(())
+}
+
+fn validate_radial(header: &[&str], rows: &[Vec<&str>]) -> Result<(), String> {
+    exact_header(
+        "slow_radial.csv",
+        header,
+        &["energy_eV", "bin", "energy_eV_sum"],
+    )?;
+    if rows.len() != SLOW_ENERGIES.len() * (RADIAL_BINS + 2) {
+        return Err(format!(
+            "slow_radial.csv has {} rows; expected exact 7 × 42 coverage",
+            rows.len()
+        ));
+    }
+    let mut seen = BTreeMap::new();
+    for (i, row) in rows.iter().enumerate() {
+        let e = parse_nonnegative(row[0], "slow_radial.csv", i + 2, "energy_eV")?;
+        let bin = parse_nonnegative(row[1], "slow_radial.csv", i + 2, "bin")?;
+        parse_nonnegative(row[2], "slow_radial.csv", i + 2, "energy_eV_sum")?;
+        if !SLOW_ENERGIES.contains(&e) || bin > (RADIAL_BINS + 1) as f64 || bin.fract() != 0.0 {
+            return Err(format!("slow_radial.csv row {} has invalid key", i + 2));
+        }
+        if seen.insert((e.to_bits(), bin as usize), ()).is_some() {
+            return Err(format!("slow_radial.csv row {} duplicates a key", i + 2));
+        }
+    }
+    Ok(())
 }
 
 fn parse_csv(text: &str) -> (Vec<String>, Vec<Vec<String>>) {
@@ -109,37 +517,12 @@ fn read_reference(name: &str) -> (Vec<String>, Vec<Vec<String>>) {
             path.display()
         )
     });
-    check_provenance();
+    let provenance_path = reference_dir().join("provenance_m3.toml");
+    let provenance = std::fs::read_to_string(&provenance_path)
+        .unwrap_or_else(|e| panic!("missing {}: {e}", provenance_path.display()));
+    validate_reference(name, &text, &provenance)
+        .unwrap_or_else(|error| panic!("invalid Geant4 reference {}: {error}", path.display()));
     parse_csv(&text)
-}
-
-fn check_provenance() {
-    let path = reference_dir().join("provenance_m3.toml");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("missing {}: {e}", path.display()));
-    let t: toml::Table = text.parse().expect("provenance_m3.toml is not valid TOML");
-    for key in [
-        "geant4_version",
-        "g4emlow_version",
-        "physics_constructor",
-        "generator",
-        "date",
-        "command_lines",
-        "fluo_auger",
-    ] {
-        assert!(t.contains_key(key), "provenance_m3.toml lacks `{key}`");
-    }
-    assert!(
-        t["geant4_version"]
-            .as_str()
-            .is_some_and(|v| v.contains("11.4.1")),
-        "reference must come from Geant4 11.4.1"
-    );
-    assert_eq!(
-        t["physics_constructor"].as_str(),
-        Some("G4EmDNAPhysics_option2")
-    );
-    assert_eq!(t["fluo_auger"].as_str(), Some("off"));
 }
 
 fn col(header: &[String], name: &str) -> usize {
@@ -747,4 +1130,176 @@ fn homogeneity_test_accepts_equal_and_rejects_different_histograms() {
     let (_, _, p) = homogeneity_p(&a, &c).unwrap();
     assert!(p < 1e-6, "{p}");
     assert!(homogeneity_p(&a, &[0.0; 5]).is_none());
+}
+
+#[test]
+fn m3_reference_validator_accepts_committed_evidence() {
+    let provenance = include_str!("../../../validation/reference/provenance_m3.toml");
+    for (name, csv) in [
+        (
+            "xs_lowenergy.csv",
+            include_str!("../../../validation/reference/xs_lowenergy.csv"),
+        ),
+        (
+            "slow_sums.csv",
+            include_str!("../../../validation/reference/slow_sums.csv"),
+        ),
+        (
+            "slow_spectra.csv",
+            include_str!("../../../validation/reference/slow_spectra.csv"),
+        ),
+        (
+            "slow_radial.csv",
+            include_str!("../../../validation/reference/slow_radial.csv"),
+        ),
+    ] {
+        assert_eq!(validate_reference(name, csv, provenance), Ok(()), "{name}");
+    }
+}
+
+#[test]
+fn m3_xs_grid_accepts_one_ulp_rounding_of_registered_energy() {
+    let provenance = include_str!("../../../validation/reference/provenance_m3.toml");
+    let xs = include_str!("../../../validation/reference/xs_lowenergy.csv");
+    let rounded = xs.replacen(
+        "3.8999999999999999,elastic,0",
+        "3.9000000000000004,elastic,0",
+        1,
+    );
+    assert_ne!(rounded, xs);
+    assert_eq!(
+        validate_reference("xs_lowenergy.csv", &rounded, provenance),
+        Ok(())
+    );
+}
+
+#[test]
+fn m3_xs_grid_rejects_conflicting_repeated_endpoint_values() {
+    let provenance = include_str!("../../../validation/reference/provenance_m3.toml");
+    let xs = include_str!("../../../validation/reference/xs_lowenergy.csv");
+    let changed = xs.replacen("2,vibexc,0.56252597895798584", "2,vibexc,0", 1);
+    assert_ne!(changed, xs);
+    assert!(validate_reference("xs_lowenergy.csv", &changed, provenance).is_err());
+}
+
+#[test]
+fn m3_reference_validator_rejects_malformed_evidence() {
+    let provenance = include_str!("../../../validation/reference/provenance_m3.toml");
+    let xs = include_str!("../../../validation/reference/xs_lowenergy.csv");
+    let sums = include_str!("../../../validation/reference/slow_sums.csv");
+    let spectra = include_str!("../../../validation/reference/slow_spectra.csv");
+    let radial = include_str!("../../../validation/reference/slow_radial.csv");
+    let mut cases: Vec<(&str, &str, String, String)> = vec![
+        (
+            "empty file",
+            "xs_lowenergy.csv",
+            String::new(),
+            provenance.to_owned(),
+        ),
+        (
+            "malformed row",
+            "xs_lowenergy.csv",
+            xs.replacen("1.5,elastic,0", "1.5,elastic,NaN,extra", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "unknown process",
+            "xs_lowenergy.csv",
+            xs.replacen("1.5,elastic,0", "1.5,unknown,0", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "nonfinite",
+            "xs_lowenergy.csv",
+            xs.replacen("1.5,elastic,0", "1.5,elastic,NaN", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "negative",
+            "xs_lowenergy.csv",
+            xs.replacen("1.5,elastic,0", "1.5,elastic,-1", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "wrong units",
+            "xs_lowenergy.csv",
+            xs.replacen("sigma_per_volume_per_nm", "sigma_per_volume_per_mm", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "wrong process metadata",
+            "xs_lowenergy.csv",
+            xs.replacen("G4EmDNAPhysics_option2", "G4EmDNAPhysics_option4", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "wrong seed",
+            "slow_sums.csv",
+            sums.replacen("seed 20271", "seed 20272", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "invalid moments",
+            "slow_sums.csv",
+            sums.replacen(
+                "832251.02302457928,9703428.8562096618",
+                "832251.02302457928,0",
+                1,
+            ),
+            provenance.to_owned(),
+        ),
+        (
+            "missing key",
+            "slow_sums.csv",
+            sums.replacen("30,100000,", "31,100000,", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "missing row",
+            "slow_radial.csv",
+            radial
+                .lines()
+                .take(radial.lines().count() - 1)
+                .collect::<Vec<_>>()
+                .join("\n"),
+            provenance.to_owned(),
+        ),
+        (
+            "negative radial value",
+            "slow_radial.csv",
+            radial.replacen("8,0,2495.113000000033", "8,0,-1", 1),
+            provenance.to_owned(),
+        ),
+        (
+            "missing provenance key",
+            "slow_sums.csv",
+            sums.to_owned(),
+            provenance.replace("compiler", "compiler_missing"),
+        ),
+        (
+            "wrong provenance constructor",
+            "slow_sums.csv",
+            sums.to_owned(),
+            provenance.replace("G4EmDNAPhysics_option2", "G4EmDNAPhysics_option4"),
+        ),
+        (
+            "wrong provenance seed command",
+            "slow_sums.csv",
+            sums.to_owned(),
+            provenance.replace("20271 8:100000", "7 8:100000"),
+        ),
+    ];
+    let duplicate_spectrum = spectra.replacen("900000,4,71,", "900000,4,70,", 1);
+    cases.push((
+        "duplicate key replacing a missing key",
+        "slow_spectra.csv",
+        duplicate_spectrum,
+        provenance.to_owned(),
+    ));
+    for (label, name, csv, prov) in cases {
+        assert!(
+            validate_reference(name, &csv, &prov).is_err(),
+            "accepted {label}"
+        );
+    }
 }
