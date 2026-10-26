@@ -74,9 +74,33 @@
         "ticket": "01-optional-chemistry-simulation",
         "commit": "5387056"
       }
+    },
+    {
+      "at": "2026-10-26T16:19:17.674Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-enforce-physics-only-boundary.md",
+        "03-implement/02-enforce-physics-only-boundary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-enforce-physics-only-boundary"
+      }
+    },
+    {
+      "at": "2026-10-26T16:33:58.610Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/02-enforce-physics-only-boundary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-enforce-physics-only-boundary",
+        "commit": "56f2da7"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/physics-only-simulation",
     "base_branch": "main",
