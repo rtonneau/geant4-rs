@@ -121,7 +121,22 @@ fn hash_part(hash: &mut Sha256, value: &str) {
 }
 
 impl Provenance {
+    /// Metadata for a supplied manifest; this alone makes no verification claim.
     pub fn new(manifest: &Manifest, master_seed: u64) -> Self {
+        let mut provenance = Self::unverified(master_seed);
+        provenance.dataset = manifest.dataset().to_owned();
+        provenance.dataset_version = manifest.version().to_owned();
+        provenance.manifest_sha256 = manifest.hash().to_owned();
+        provenance.inputs = InputIdentity::Unverified {
+            supplied_manifest_sha256: manifest.hash().to_owned(),
+            reason: "a supplied manifest does not prove loaded bytes",
+        };
+        provenance
+    }
+
+    /// Synthetic test metadata with no manifest claim. Empty identity strings mean no
+    /// dataset or manifest was supplied; the explicit verification marker is authoritative.
+    pub fn unverified(master_seed: u64) -> Self {
         Self {
             crate_version: env!("CARGO_PKG_VERSION").to_owned(),
             rustc: available(env!("DNA_CORE_RUSTC_VERSION")),
@@ -144,9 +159,9 @@ impl Provenance {
                 sha256: available(env!("DNA_CORE_LOCKFILE_SHA256")),
             },
             geant4_reference_version: GEANT4_REFERENCE_VERSION.to_owned(),
-            dataset: manifest.dataset().to_owned(),
-            dataset_version: manifest.version().to_owned(),
-            manifest_sha256: manifest.hash().to_owned(),
+            dataset: String::new(),
+            dataset_version: String::new(),
+            manifest_sha256: String::new(),
             master_seed,
             internal_units: "energy: eV, length: nm, time: ps".to_owned(),
             units: Units {
@@ -166,8 +181,8 @@ impl Provenance {
                 chemistry: None,
             },
             inputs: InputIdentity::Unverified {
-                supplied_manifest_sha256: manifest.hash().to_owned(),
-                reason: "a supplied manifest does not prove loaded bytes",
+                supplied_manifest_sha256: String::new(),
+                reason: "synthetic test input; no verified dataset identity",
             },
             chemistry: None,
         }
@@ -239,6 +254,18 @@ mod tests {
             "0".repeat(64)
         ))
         .unwrap()
+    }
+
+    #[test]
+    fn synthetic_metadata_has_no_manifest_claim() {
+        let json = serde_json::to_value(Provenance::unverified(17)).unwrap();
+        assert_eq!(json["master_seed"], 17);
+        assert_eq!(json["dataset"], "");
+        assert_eq!(json["dataset_version"], "");
+        assert_eq!(json["manifest_sha256"], "");
+        assert_eq!(json["inputs"]["verification"], "unverified");
+        assert_eq!(json["inputs"]["supplied_manifest_sha256"], "");
+        assert!(json["inputs"].get("files").is_none());
     }
 
     #[test]

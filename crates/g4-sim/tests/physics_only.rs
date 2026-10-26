@@ -1,9 +1,9 @@
 //! Required physical API and raw handoff coverage in both feature profiles.
 use g4_core::manifest::Manifest;
-use g4_data::datadir::{DataDir, repo_data_dir};
+use g4_data::datadir::{DataDir, VerifiedDataSet, repo_data_dir};
 use g4_physics::models::ElasticRotation;
 use g4_physics::physchem::PHYSCHEM_CSV_HEADER;
-use g4_physics::table::ProcessTable;
+use g4_physics::table::VerifiedProcessTable;
 use g4_sim::RunConfig;
 use g4_sim::run::{CsvPhysChemWriter, run, run_detailed, run_with_sink};
 
@@ -12,14 +12,14 @@ fn eight_ordered_physical_histories_preserve_ledgers_and_raw_handoff() {
     let root = repo_data_dir();
     let manifest = Manifest::load(&root.join("MANIFEST.toml")).unwrap();
     let dir = DataDir::new(root).unwrap();
-    dir.verify(&manifest).unwrap();
-    let table = ProcessTable::option2_electron(&dir, ElasticRotation::Geant4).unwrap();
+    let data = VerifiedDataSet::load(&dir, &manifest).unwrap();
+    let table = VerifiedProcessTable::option2_electron(&data, ElasticRotation::Geant4).unwrap();
     let mut config = RunConfig::new(1000.0, 8);
     config.master_seed = 20261026;
     config.record_physchem = true;
     config.threads = Some(1);
     config.batch_size = 7;
-    let histories = run_detailed(&table, &config).unwrap();
+    let histories = run_detailed(table.table(), &config).unwrap();
     assert_eq!(histories.len(), 8);
     for (id, history) in histories.iter().enumerate() {
         assert_eq!(history.id, id as u64);
@@ -41,7 +41,7 @@ fn eight_ordered_physical_histories_preserve_ledgers_and_raw_handoff() {
     let expected_header = "parent_history,kind,level_or_shell,x_nm,y_nm,z_nm,deposited_energy_eV";
     assert_eq!(PHYSCHEM_CSV_HEADER, expected_header);
     let mut csv = CsvPhysChemWriter::new(Vec::new(), "test memory").unwrap();
-    let output = run_with_sink(&table, &config, &manifest, Some(&mut csv)).unwrap();
+    let output = run_with_sink(&table, &config, Some(&mut csv)).unwrap();
     assert_eq!(
         csv.rows() as usize,
         histories.iter().map(|h| h.physchem.len()).sum::<usize>()
@@ -55,9 +55,9 @@ fn eight_ordered_physical_histories_preserve_ledgers_and_raw_handoff() {
         .join("\n")
         + "\n";
     assert_eq!(String::from_utf8(csv.into_inner()).unwrap(), expected);
-    assert_eq!(output.schema, "geant4-rs/dna-sim/run/v2");
+    assert_eq!(output.schema, "geant4-rs/dna-sim/run/v4");
     assert_eq!(output.summary.n_histories, 8);
-    let plain = run(&table, &config, &manifest).unwrap();
+    let plain = run(&table, &config).unwrap();
     assert_eq!(
         serde_json::to_value(plain.summary).unwrap(),
         serde_json::to_value(output.summary).unwrap()

@@ -13,7 +13,7 @@ use crate::scoring::{RunSummary, Scorer};
 use g4_core::provenance::Provenance;
 use g4_core::rng::RngStreams;
 use g4_physics::physchem::{PHYSCHEM_CSV_HEADER, PhysChemEvent};
-use g4_physics::table::{ModelInfo, ProcessTable};
+use g4_physics::table::{ModelInfo, ProcessTable, VerifiedProcessTable};
 use rayon::prelude::*;
 use serde::Serialize;
 use std::io::Write;
@@ -186,7 +186,7 @@ pub fn run_summary_with_sink(
 pub struct RunOutput {
     /// Version of this JSON layout.
     pub schema: &'static str,
-    pub provenance: Provenance,
+    provenance: Provenance,
     /// Models used, with Geant4 source paths and data files.
     pub models: Vec<ModelInfo>,
     /// Elastic-scattering rotation convention (see `g4_physics::models::ElasticRotation`).
@@ -196,6 +196,11 @@ pub struct RunOutput {
 }
 
 impl RunOutput {
+    /// Identity captured from this run's input context; it cannot be replaced before writing.
+    pub fn provenance(&self) -> &Provenance {
+        &self.provenance
+    }
+
     pub fn to_json_pretty(&self) -> Result<String, SimError> {
         serde_json::to_string_pretty(self).map_err(|e| SimError::Json(e.to_string()))
     }
@@ -208,25 +213,67 @@ impl RunOutput {
     }
 }
 
-/// Run, score and attach provenance. `manifest` is the checksum manifest of the data in use.
-pub fn run(
-    table: &ProcessTable,
-    config: &RunConfig,
-    manifest: &g4_core::manifest::Manifest,
-) -> Result<RunOutput, SimError> {
-    run_with_sink(table, config, manifest, None)
+/// Run, score and attach the identity bound to the verified model tables.
+///
+/// Construct the context with `VerifiedDataSet::load` and
+/// [`VerifiedProcessTable::option2_electron`]. No independent manifest can be supplied.
+///
+/// ```compile_fail
+/// # use g4_sim::{RunConfig, run::run};
+/// # use g4_physics::table::ProcessTable;
+/// fn cannot_label_unverified(table: &ProcessTable, config: &RunConfig) {
+///     run(table, config).unwrap();
+/// }
+/// ```
+pub fn run(table: &VerifiedProcessTable, config: &RunConfig) -> Result<RunOutput, SimError> {
+    run_with_sink(table, config, None)
 }
 
-/// As [`run`], with the physicochemical events streamed to `sink` (see
-/// [`run_summary_with_sink`]).
+/// As [`run`], with physicochemical events streamed to `sink` in history order.
 pub fn run_with_sink(
-    table: &ProcessTable,
+    table: &VerifiedProcessTable,
     config: &RunConfig,
-    manifest: &g4_core::manifest::Manifest,
     sink: Option<&mut dyn PhysChemSink>,
 ) -> Result<RunOutput, SimError> {
-    let summary = run_summary_with_sink(table, config, sink)?;
-    let rotation = table
+    output_with_sink(
+        table.table(),
+        config,
+        verified_provenance(table, config),
+        "geant4-rs/dna-sim/run/v4",
+        sink,
+    )
+}
+
+/// Synthetic test escape hatch. No manifest identity is accepted or asserted.
+/// Production JSON must be obtained with [`run`] from a verified context.
+pub fn run_unverified_for_testing(
+    table: &ProcessTable,
+    config: &RunConfig,
+) -> Result<RunOutput, SimError> {
+    run_unverified_with_sink_for_testing(table, config, None)
+}
+
+/// As [`run_unverified_for_testing`], with an ordered raw-event sink.
+pub fn run_unverified_with_sink_for_testing(
+    table: &ProcessTable,
+    config: &RunConfig,
+    sink: Option<&mut dyn PhysChemSink>,
+) -> Result<RunOutput, SimError> {
+    output_with_sink(
+        table,
+        config,
+        Provenance::unverified(config.master_seed),
+        "geant4-rs/dna-sim/run-unverified/v1",
+        sink,
+    )
+}
+
+fn verified_provenance(table: &VerifiedProcessTable, config: &RunConfig) -> Provenance {
+    Provenance::new(table.identity(), config.master_seed).with_verified_input(table.identity())
+}
+
+fn elastic_rotation(table: &ProcessTable) -> String {
+    table
         .chain(g4_physics::models::ProcessKind::Elastic)
         .map(|c| c.models())
         .unwrap_or(&[])
@@ -235,12 +282,22 @@ pub fn run_with_sink(
             g4_physics::models::ElectronModel::Elastic(c) => Some(format!("{:?}", c.rotation())),
             _ => None,
         })
-        .unwrap_or_else(|| "n/a".to_owned());
+        .unwrap_or_else(|| "n/a".to_owned())
+}
+
+fn output_with_sink(
+    table: &ProcessTable,
+    config: &RunConfig,
+    provenance: Provenance,
+    schema: &'static str,
+    sink: Option<&mut dyn PhysChemSink>,
+) -> Result<RunOutput, SimError> {
+    let summary = run_summary_with_sink(table, config, sink)?;
     Ok(RunOutput {
-        schema: "geant4-rs/dna-sim/run/v2",
-        provenance: Provenance::new(manifest, config.master_seed),
+        schema,
+        provenance,
         models: table.describe(),
-        elastic_rotation: rotation,
+        elastic_rotation: elastic_rotation(table),
         config: config.clone(),
         summary,
     })
@@ -252,5 +309,5 @@ mod chemistry;
 #[cfg(feature = "chemistry")]
 pub use chemistry::{
     PhysChemRunOutput, run_physchem_summary, run_physchem_summary_with_diagnostics,
-    run_with_physchem,
+    run_unverified_with_physchem_for_testing, run_with_physchem,
 };

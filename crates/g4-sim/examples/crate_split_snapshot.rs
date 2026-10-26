@@ -8,9 +8,9 @@ use g4_core::rng::RngStreams;
 #[cfg(feature = "chemistry")]
 use g4_core::rng::Stage;
 use g4_core::vec3::Vec3;
-use g4_data::datadir::{DataDir, repo_data_dir};
+use g4_data::datadir::{DataDir, VerifiedDataSet, repo_data_dir};
 use g4_physics::models::{ElasticRotation, ProcessKind};
-use g4_physics::table::ProcessTable;
+use g4_physics::table::VerifiedProcessTable;
 use g4_physics::transport::SecondaryRecorder;
 use g4_sim::config::RunConfig;
 use g4_sim::history::{
@@ -93,8 +93,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = repo_data_dir();
     let manifest = Manifest::load(&root.join("MANIFEST.toml"))?;
     let dir = DataDir::new(root)?;
-    dir.verify(&manifest)?;
-    let table = ProcessTable::option2_electron(&dir, ElasticRotation::Geant4)?;
+    let data = VerifiedDataSet::load(&dir, &manifest)?;
+    let table = VerifiedProcessTable::option2_electron(&data, ElasticRotation::Geant4)?;
     #[cfg(feature = "chemistry")]
     let engine = coupled.then(PhysChemEngine::option3).transpose()?;
     let streams = RngStreams::new(20261026);
@@ -106,13 +106,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.threads = Some(1);
         config.batch_size = 7;
         config.record_physchem = true;
-        let histories = run_detailed(&table, &config)?;
+        let histories = run_detailed(table.table(), &config)?;
         let mut records = Vec::new();
         for h in histories {
             let mut record = physical(&h);
             let mut secondaries = SecondaryRecorder::default();
             let observed = run_history_with_observer(
-                &table,
+                table.table(),
                 &config,
                 &streams,
                 h.id,
@@ -159,7 +159,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             records.push(record);
         }
         let mut csv = CsvPhysChemWriter::new(Vec::new(), "snapshot memory")?;
-        let output = run_with_sink(&table, &config, &manifest, Some(&mut csv))?;
+        let output = run_with_sink(&table, &config, Some(&mut csv))?;
         #[allow(unused_mut)]
         let mut result = json!({"config": exact(serde_json::to_value(&config)?),
             "histories": records, "summary_json": exact(serde_json::to_value(output)?),
@@ -167,7 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "chemistry")]
         if let Some(engine) = &engine {
             result["coupled_summary_json"] = exact(serde_json::to_value(run_with_physchem(
-                &table, engine, &config, &manifest,
+                &table, engine, &config,
             )?)?);
             result["species_csv_header"] = json!(SPECIES_CSV_HEADER);
             result["species_order"] = json!(
