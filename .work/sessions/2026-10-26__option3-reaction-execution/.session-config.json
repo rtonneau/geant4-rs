@@ -134,6 +134,30 @@
         "ticket": "03-unary-clocks",
         "commit": "7284e30"
       }
+    },
+    {
+      "at": "2026-10-26T21:26:06.465Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-reaction-placement.md",
+        "03-implement/04-reaction-placement/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-reaction-placement"
+      }
+    },
+    {
+      "at": "2026-10-26T21:34:48.400Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-reaction-placement/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-reaction-placement",
+        "commit": "281de82"
+      }
     }
   ],
   "current_phase": "ship",
