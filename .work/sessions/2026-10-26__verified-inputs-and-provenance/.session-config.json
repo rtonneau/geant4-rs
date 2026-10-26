@@ -159,6 +159,30 @@
         "ticket": "04-chemistry-semantic-identity",
         "commit": "c923773"
       }
+    },
+    {
+      "at": "2026-10-26T19:29:37.742Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-provenance-envelope.md",
+        "03-implement/05-provenance-envelope/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-provenance-envelope"
+      }
+    },
+    {
+      "at": "2026-10-26T19:37:32.579Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-provenance-envelope/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-provenance-envelope",
+        "commit": "94ca1d0"
+      }
     }
   ],
   "current_phase": "ship",
