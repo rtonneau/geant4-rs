@@ -83,9 +83,33 @@
         "ticket": "01-capture-pre-refactor-evidence",
         "commit": "48c9ffa"
       }
+    },
+    {
+      "at": "2026-10-26T13:07:27.743Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-move-species-to-chemistry.md",
+        "03-implement/02-move-species-to-chemistry/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-move-species-to-chemistry"
+      }
+    },
+    {
+      "at": "2026-10-26T13:24:00.152Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/02-move-species-to-chemistry/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-move-species-to-chemistry",
+        "commit": "6c1ea52"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "refactor/crate-domain-ownership-r01",
     "base_branch": "main",
