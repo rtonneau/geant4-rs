@@ -104,6 +104,8 @@ R09 and R10 do not depend on each other. R12 may follow G3 before proton work if
 4. Product identity/order and one/two/three-product placement follow the source-specific branch. Test zero separation, unequal diffusion and degenerate cases; a source ambiguity becomes a documented explicit error/limitation, never an arbitrary Brownian placement.
 5. Atom/charge accounting is tested for every channel with reservoir exchanges explicit; only the existing named reaction-53 exception is permitted. No blanket conservation exemption.
 
+**R03 evidence boundary:** [The 72-ID execution matrix](../validation/option3-reaction-coverage.md) records constructor lines, IRT branches, ordered products and the exact reaction-53 balance exception. It covers descriptor execution and isolated primitives only. R04 independently assesses pair distributions and the Geant4 gate; R05 begins correlated many-species history scheduling only after R04/G1. Neither pair acceptance nor history-level G(t) follows from R03 coverage.
+
 ### R04 — `pair-oracles-and-reference-gate`
 
 **Title/objective:** Independently validate reaction-time primitives across supported regimes. **Priority/complexity:** P1 / L. **Traceability:** split `m7-sbs-oracle-and-ode`, merged `m7-sbs-close-gate`, expanded V9. **Dependencies:** R01/R03. **External dependency:** new user-run Geant4 pair fixtures.
