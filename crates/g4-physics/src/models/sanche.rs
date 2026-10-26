@@ -65,6 +65,10 @@ pub struct SancheVibrational {
 
 impl SancheVibrational {
     pub fn new(table: CrossSectionTable) -> Result<Self, PhysicsError> {
+        table.require_components(
+            DnaFile::SancheVibrationalE.relative_path(),
+            DnaFile::SancheVibrationalE.n_components(),
+        )?;
         let window = window(SANCHE_WINDOW_EV.0, SANCHE_WINDOW_EV.1);
         ensure_table_covers(
             "sigma_excitationvib_e_sanche",
@@ -72,7 +76,6 @@ impl SancheVibrational {
             table.energy_range(),
             window,
         )?;
-        debug_assert_eq!(table.n_components(), SANCHE_LEVELS);
         Ok(Self { table, window })
     }
 

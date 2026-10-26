@@ -304,7 +304,11 @@ impl DnaFile {
     /// Read and build the table from `path` (the file for `self`, wherever it lives).
     pub fn load_from(self, path: &Path) -> Result<Table, DataError> {
         Ok(match self.format() {
-            Format::CrossSection(spec) => Table::CrossSection(CrossSectionTable::load(path, spec)?),
+            Format::CrossSection(spec) => {
+                let table = CrossSectionTable::load(path, spec)?;
+                table.require_components(&path.display().to_string(), self.n_components())?;
+                Table::CrossSection(table)
+            }
             Format::AngularCdf => Table::AngularCdf(AngularCdfTable::load(path)?),
             Format::IonisationCdf => Table::IonisationCdf(IonisationCdfTable::load(path)?),
             Format::IonisationDcs => Table::IonisationDcs(IonisationDcsTable::load(path)?),

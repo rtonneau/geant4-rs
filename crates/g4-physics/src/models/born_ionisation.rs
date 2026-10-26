@@ -61,6 +61,11 @@ pub struct BornIonisation {
 
 impl BornIonisation {
     pub fn new(table: CrossSectionTable, cdf: IonisationCdfTable) -> Result<Self, PhysicsError> {
+        // Five shells in G4DNAWaterIonisationStructure.cc (Geant4 11.4.1).
+        table.require_components(
+            DnaFile::BornIonisationE.relative_path(),
+            DnaFile::BornIonisationE.n_components(),
+        )?;
         let window = window(BORN_IONISATION_WINDOW_EV.0, BORN_IONISATION_WINDOW_EV.1);
         ensure_table_covers(
             "sigma_ionisation_e_born",

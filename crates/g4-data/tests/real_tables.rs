@@ -87,6 +87,31 @@ fn all_20_files_load_after_checksum_verification() {
 }
 
 #[test]
+fn catalog_rejects_missing_and_extra_cross_section_components() {
+    let scratch = std::env::temp_dir().join(format!("g4-data-shapes-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).unwrap();
+    let path = scratch.join("shape.dat");
+    for &file in DnaFile::ALL {
+        if !matches!(file.format(), Format::CrossSection(_)) {
+            continue;
+        }
+        for count in [file.n_components() - 1, file.n_components() + 1] {
+            let values = " 1".repeat(count);
+            std::fs::write(&path, format!("1{values}\n2{values}\n")).unwrap();
+            assert!(
+                matches!(file.load_from(&path), Err(DataError::InvalidTable { .. })),
+                "{file:?} accepted {count} components"
+            );
+        }
+        let values = " 1".repeat(file.n_components());
+        std::fs::write(&path, format!("1{values}\n2{values}\n")).unwrap();
+        assert!(file.load_from(&path).is_ok(), "{file:?}");
+    }
+    std::fs::remove_file(&path).unwrap();
+    std::fs::remove_dir(&scratch).unwrap();
+}
+
+#[test]
 fn row_counts_match_the_files() {
     require_data!();
     // Counts observed with `wc -l` (docs/10); the last Sanche line has no trailing newline.

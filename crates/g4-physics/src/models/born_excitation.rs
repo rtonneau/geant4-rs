@@ -41,6 +41,11 @@ pub struct BornExcitation {
 
 impl BornExcitation {
     pub fn new(table: CrossSectionTable) -> Result<Self, PhysicsError> {
+        // Five levels in G4DNAWaterExcitationStructure.cc (Geant4 11.4.1).
+        table.require_components(
+            DnaFile::BornExcitationE.relative_path(),
+            DnaFile::BornExcitationE.n_components(),
+        )?;
         let window = window(BORN_EXCITATION_WINDOW_EV.0, BORN_EXCITATION_WINDOW_EV.1);
         ensure_table_covers(
             "sigma_excitation_e_born",

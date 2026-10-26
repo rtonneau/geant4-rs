@@ -204,3 +204,59 @@ fn a_zero_direction_is_rejected() {
     .unwrap_err();
     assert_eq!(err, PhysicsError::InvalidDirection);
 }
+
+fn synthetic_xs(count: usize) -> g4_data::xs::CrossSectionTable {
+    use g4_core::units::Area;
+    use g4_data::xs::{CrossSectionTable, Interpolation, XsSpec};
+    let values = " 1".repeat(count);
+    CrossSectionTable::from_text(
+        "shape",
+        &format!("1{values}\n1000000{values}\n"),
+        XsSpec {
+            scale: Area::from_nm2(1.0),
+            interpolation: Interpolation::LinLin,
+        },
+    )
+    .unwrap()
+}
+
+fn synthetic_cdf() -> g4_data::blocks::IonisationCdfTable {
+    g4_data::blocks::IonisationCdfTable::from_text(
+        "shape",
+        "1 1 0 0 0 0 0\n1 2 1 1 1 1 1\n1000000 1 0 0 0 0 0\n1000000 2 1 1 1 1 1\n",
+    )
+    .unwrap()
+}
+
+#[test]
+fn direct_models_reject_missing_and_extra_channels() {
+    use g4_data::DataError;
+    for count in [4, 6] {
+        assert!(matches!(
+            BornExcitation::new(synthetic_xs(count)),
+            Err(PhysicsError::Data(DataError::InvalidTable { .. }))
+        ));
+        assert!(matches!(
+            BornIonisation::new(synthetic_xs(count), synthetic_cdf()),
+            Err(PhysicsError::Data(DataError::InvalidTable { .. }))
+        ));
+    }
+    for count in [8, 10] {
+        assert!(matches!(
+            SancheVibrational::new(synthetic_xs(count)),
+            Err(PhysicsError::Data(DataError::InvalidTable { .. }))
+        ));
+    }
+    assert!(BornExcitation::new(synthetic_xs(5)).is_ok());
+    assert!(BornIonisation::new(synthetic_xs(5), synthetic_cdf()).is_ok());
+    assert!(SancheVibrational::new(synthetic_xs(9)).is_ok());
+}
+
+proptest::proptest! {
+    #[test]
+    fn models_require_exact_channel_counts(count in 1_usize..20) {
+        proptest::prop_assert_eq!(BornExcitation::new(synthetic_xs(count)).is_ok(), count == 5);
+        proptest::prop_assert_eq!(BornIonisation::new(synthetic_xs(count), synthetic_cdf()).is_ok(), count == 5);
+        proptest::prop_assert_eq!(SancheVibrational::new(synthetic_xs(count)).is_ok(), count == 9);
+    }
+}
