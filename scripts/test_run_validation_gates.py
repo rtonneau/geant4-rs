@@ -43,6 +43,19 @@ class GateInventoryTests(unittest.TestCase):
     def test_unchanged_committed_fixtures_pass(self) -> None:
         gates.validate_manifest(self.read_manifest(), self.root)
 
+    def test_checkout_line_endings_preserve_text_evidence_identity(self) -> None:
+        paths = [
+            self.root / relative
+            for relative in ["data/MANIFEST.toml", "validation/reference/xs_per_volume.csv"]
+        ]
+        canonical = [path.read_bytes().replace(b"\r\n", b"\n") for path in paths]
+        for path, content in zip(paths, canonical, strict=True):
+            path.write_bytes(content)
+        gates.validate_manifest(self.read_manifest(), self.root)
+        for path, content in zip(paths, canonical, strict=True):
+            path.write_bytes(content.replace(b"\n", b"\r\n"))
+        gates.validate_manifest(self.read_manifest(), self.root)
+
     def test_removed_fixture_fails_with_actionable_path(self) -> None:
         path = self.root / "validation" / "reference" / "slow_radial.csv"
         path.unlink()

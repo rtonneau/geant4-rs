@@ -52,7 +52,7 @@ def _safe_file(root: Path, relative: str, label: str) -> Path:
     return candidate
 
 
-def _verify_file(root: Path, relative: str, expected: dict, label: str) -> None:
+def _verify_file(root: Path, relative: str, expected: dict, label: str, *, text_file: bool = False) -> None:
     if not isinstance(expected, dict):
         raise GateError(f"{label}: invalid inventory entry")
     if set(expected) != {"path", "bytes", "sha256"} or expected["path"] != relative:
@@ -67,6 +67,10 @@ def _verify_file(root: Path, relative: str, expected: dict, label: str) -> None:
         raise GateError(f"{label}: required evidence unavailable at {path}: {exc}") from exc
     if not content:
         raise GateError(f"{label}: required evidence is empty at {path}")
+    # Git checks text files out with either LF or CRLF. Inventory identities use
+    # the canonical LF bytes stored in Git, without changing the evidence file.
+    if text_file:
+        content = content.replace(b"\r\n", b"\n")
     if len(content) != size:
         raise GateError(f"{label}: size mismatch at {path}: expected {size} bytes, found {len(content)}")
     actual = hashlib.sha256(content).hexdigest()
@@ -124,6 +128,7 @@ def validate_manifest(manifest: object, root: Path = REPO_ROOT) -> None:
         data_bytes = manifest_path.read_bytes()
     except OSError as exc:
         raise GateError(f"committed data manifest unavailable at {manifest_path}: {exc}") from exc
+    data_bytes = data_bytes.replace(b"\r\n", b"\n")
     if hashlib.sha256(data_bytes).hexdigest() != data_manifest["sha256"]:
         raise GateError(f"committed data manifest SHA-256 mismatch at {manifest_path}")
     data_entries = _parse_data_manifest(data_bytes.decode("utf-8"))
@@ -159,7 +164,7 @@ def validate_manifest(manifest: object, root: Path = REPO_ROOT) -> None:
             raise GateError(f"validation/gates.json: invalid fixture identity {name!r}")
         entry = fixture if isinstance(fixture, dict) else {}
         relative = entry.get("path")
-        _verify_file(root, relative, entry, f"required fixture {name}")
+        _verify_file(root, relative, entry, f"required fixture {name}", text_file=True)
     exclusions = manifest["historical_exclusions"]
     if not isinstance(exclusions, list) or not exclusions:
         raise GateError("validation/gates.json: historical_exclusions must document excluded tests")
