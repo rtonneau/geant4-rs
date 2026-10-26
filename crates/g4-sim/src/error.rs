@@ -1,5 +1,6 @@
 //! Errors of the orchestration layer.
 
+#[cfg(feature = "chemistry")]
 use g4_chemistry::ChemistryError;
 use g4_core::error::DnaError;
 use g4_data::DataError;
@@ -8,6 +9,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum SimError {
+    #[cfg(feature = "chemistry")]
     #[error(transparent)]
     SpatialDiagnostic(#[from] crate::spatial_diagnostic::DiagnosticError),
     #[error(transparent)]
@@ -16,6 +18,7 @@ pub enum SimError {
     Core(#[from] DnaError),
     #[error(transparent)]
     Data(#[from] DataError),
+    #[cfg(feature = "chemistry")]
     #[error(transparent)]
     Chemistry(#[from] ChemistryError),
     #[error("invalid run configuration: {0}")]

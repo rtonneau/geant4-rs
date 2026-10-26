@@ -7,6 +7,16 @@
 - Uniform variates in (0,1) use the top 52 bits, `(k + 0.5)/2^52`: neither endpoint is returned, so `ln(u)` is always finite. (53 bits would round to 1.0 at the top.)
 
 ## What is promised
+
+The `g4-sim` default `chemistry` feature adds coupled physicochemistry APIs.
+Disabling default features retains physical histories and raw handoff events;
+it does not change the physical RNG stream, batch order or output format.
+The same-platform exact physics snapshot comparison covers both profiles.
+Default physicochemistry is also compared with the immutable pre-S01 capture;
+see [crate separation evidence](crate-separation.md) for commands, inputs,
+revisions and executed test counts. These comparisons establish regression
+identity within the recorded workload, not broader scientific validity.
+
 - Same seed + same history ids => identical per-history results regardless of thread count (tested bitwise in `tests/thread_independence.rs`).
 - Scoring reductions are done in history order (fixed-order fold), so sums are also thread-count independent (docs/05 E.3).
 - **Bitwise** reproducibility is promised only for the same platform, toolchain (`rust-toolchain.toml`), `Cargo.lock` and data (manifest hash). Floating-point library functions may differ across platforms.

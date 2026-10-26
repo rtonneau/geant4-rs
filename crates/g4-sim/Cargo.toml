@@ -6,11 +6,15 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+default = ["chemistry"]
+chemistry = ["dep:g4-chemistry"]
+
 [dependencies]
 g4-core = { path = "../g4-core" }
 g4-data = { path = "../g4-data" }
 g4-physics = { path = "../g4-physics" }
-g4-chemistry = { path = "../g4-chemistry" }
+g4-chemistry = { path = "../g4-chemistry", optional = true }
 rayon = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -19,3 +23,27 @@ thiserror = { workspace = true }
 [dev-dependencies]
 approx = { workspace = true }
 toml = { workspace = true }
+
+[[test]]
+name = "physchem_a"
+required-features = ["chemistry"]
+
+[[test]]
+name = "physchem_b"
+required-features = ["chemistry"]
+
+[[test]]
+name = "physchem_audit"
+required-features = ["chemistry"]
+
+[[test]]
+name = "physchem_reference"
+required-features = ["chemistry"]
+
+[[test]]
+name = "spatial_diagnostic"
+required-features = ["chemistry"]
+
+[[test]]
+name = "chemistry_feature"
+required-features = ["chemistry"]
