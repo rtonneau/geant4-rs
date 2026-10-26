@@ -63,6 +63,30 @@
       "detail": {
         "tickets": 6
       }
+    },
+    {
+      "at": "2026-10-26T18:49:27.954Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-validate-table-domains.md",
+        "03-implement/01-validate-table-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-validate-table-domains"
+      }
+    },
+    {
+      "at": "2026-10-26T18:57:53.607Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-validate-table-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-validate-table-domains",
+        "commit": "a14f5ca"
+      }
     }
   ],
   "current_phase": "ship",
@@ -71,5 +95,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-26T18:47:40.681Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent+inline"
 }
