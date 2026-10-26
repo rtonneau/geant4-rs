@@ -50,6 +50,30 @@
       "detail": {
         "tickets": 2
       }
+    },
+    {
+      "at": "2026-10-26T16:07:52.680Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-optional-chemistry-simulation.md",
+        "03-implement/01-optional-chemistry-simulation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-optional-chemistry-simulation"
+      }
+    },
+    {
+      "at": "2026-10-26T16:19:04.125Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-optional-chemistry-simulation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-optional-chemistry-simulation",
+        "commit": "5387056"
+      }
     }
   ],
   "current_phase": "ship",
@@ -58,5 +82,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-26T16:05:44.194Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent+inline"
 }
