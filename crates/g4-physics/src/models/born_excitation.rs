@@ -26,7 +26,7 @@ use crate::water::excitation_energy;
 use g4_core::units::{Area, Energy, EnergyRange};
 use g4_core::vec3::Vec3;
 use g4_data::catalog::{DnaFile, Table};
-use g4_data::datadir::DataDir;
+use g4_data::datadir::{DataDir, VerifiedDataSet};
 use g4_data::xs::CrossSectionTable;
 use rand::Rng;
 
@@ -59,6 +59,14 @@ impl BornExcitation {
     pub fn from_data_dir(dir: &DataDir) -> Result<Self, PhysicsError> {
         match dir.load(DnaFile::BornExcitationE)? {
             Table::CrossSection(t) => Self::new(t),
+            _ => unreachable!("catalog: BornExcitationE is a cross-section table"),
+        }
+    }
+
+    /// Build from the checked snapshot without reading the source directory again.
+    pub fn from_verified_data(data: &VerifiedDataSet) -> Result<Self, PhysicsError> {
+        match data.table(DnaFile::BornExcitationE)? {
+            Table::CrossSection(t) => Self::new(t.clone()),
             _ => unreachable!("catalog: BornExcitationE is a cross-section table"),
         }
     }

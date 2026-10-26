@@ -6,9 +6,13 @@
 //! installed binary must set the variable or the key). A path that is given but invalid is an
 //! error; there is no silent fallback to the next candidate.
 
-use crate::catalog::{DnaFile, Table};
+use crate::blocks::{AngularCdfTable, IonisationCdfTable, IonisationDcsTable};
+use crate::catalog::{DnaFile, Format, Table};
 use crate::error::DataError;
+use crate::xs::CrossSectionTable;
+use g4_core::error::DnaError;
 use g4_core::manifest::Manifest;
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
@@ -75,11 +79,88 @@ impl DataDir {
         file.load_from(&self.path(file))
     }
 
-    /// Verify the file against `manifest`, then load it.
+    /// Verify and parse the same captured bytes of one listed file.
+    /// Use [`VerifiedDataSet`] to verify the entire manifest before constructing models.
     pub fn load_verified(&self, file: DnaFile, manifest: &Manifest) -> Result<Table, DataError> {
-        manifest.verify_path(&self.root, file.relative_path())?;
-        self.load(file)
+        let bytes = manifest.read_verified(&self.root, file.relative_path())?;
+        parse_captured(file, &bytes)
     }
+}
+
+/// Immutable data captured and checked against one complete manifest.
+///
+/// Every declared file is read once, including files unused by electron option2. The size
+/// and SHA-256 checks and all table parsing use those same bytes. No source root is retained and no
+/// subsequent table access performs I/O, so changes to the source directory cannot change
+/// the tables or their identity. Verification establishes agreement with the supplied
+/// manifest; it does not independently certify the physical validity of a custom dataset.
+#[derive(Debug, Clone)]
+pub struct VerifiedDataSet {
+    identity: Manifest,
+    bytes: Vec<Box<[u8]>>,
+    tables: HashMap<DnaFile, Table>,
+}
+
+impl VerifiedDataSet {
+    /// Capture and verify every file in manifest order, then parse the catalogued tables.
+    /// Extra declared files are also verified; they need not have a known table layout.
+    pub fn load(dir: &DataDir, manifest: &Manifest) -> Result<Self, DataError> {
+        let bytes = manifest
+            .files()
+            .iter()
+            .map(|entry| {
+                manifest
+                    .read_verified(dir.root(), &entry.path)
+                    .map(Vec::into_boxed_slice)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut snapshot = Self {
+            identity: manifest.clone(),
+            bytes,
+            tables: HashMap::new(),
+        };
+        for (entry, bytes) in snapshot.identity.files().iter().zip(&snapshot.bytes) {
+            if let Some(&file) = DnaFile::ALL
+                .iter()
+                .find(|file| file.relative_path() == entry.path)
+            {
+                snapshot.tables.insert(file, parse_captured(file, bytes)?);
+            }
+        }
+        Ok(snapshot)
+    }
+
+    /// Verified dataset name, version, manifest-text hash and file records in manifest order.
+    /// Identity contains relative file names only; relocating identical inputs preserves it.
+    pub fn identity(&self) -> &Manifest {
+        &self.identity
+    }
+
+    /// A read-only parsed table from the captured bytes. Unlisted files are always an error,
+    /// even if a file with the expected name exists in the original directory.
+    pub fn table(&self, file: DnaFile) -> Result<&Table, DataError> {
+        self.tables.get(&file).ok_or_else(|| {
+            DnaError::InvalidManifest(format!("{} is not listed", file.relative_path())).into()
+        })
+    }
+}
+
+fn parse_captured(file: DnaFile, bytes: &[u8]) -> Result<Table, DataError> {
+    let name = file.relative_path();
+    let text = std::str::from_utf8(bytes).map_err(|error| DataError::InvalidTable {
+        file: name.to_owned(),
+        message: format!("table is not UTF-8 text: {error}"),
+    })?;
+    Ok(match file.format() {
+        Format::CrossSection(spec) => {
+            let table = CrossSectionTable::from_text(name, text, spec)?;
+            table.require_components(name, file.n_components())?;
+            Table::CrossSection(table)
+        }
+        Format::AngularCdf => Table::AngularCdf(AngularCdfTable::from_text(name, text)?),
+        Format::IonisationCdf => Table::IonisationCdf(IonisationCdfTable::from_text(name, text)?),
+        Format::IonisationDcs => Table::IonisationDcs(IonisationDcsTable::from_text(name, text)?),
+    })
 }
 
 #[cfg(test)]

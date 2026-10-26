@@ -14,8 +14,9 @@ use crate::models::{
     ElectronModel, MeltonAttachment, ProcessKind, SancheVibrational, Solvation,
 };
 use crate::water::WATER_MOLECULES_PER_NM3;
+use g4_core::manifest::Manifest;
 use g4_core::units::{Energy, EnergyRange};
-use g4_data::datadir::DataDir;
+use g4_data::datadir::{DataDir, VerifiedDataSet};
 use serde::Serialize;
 
 /// Models of one process ordered by ascending energy window.
@@ -119,12 +120,69 @@ pub struct ProcessTable {
     molecules_per_nm3: f64,
 }
 
+/// Production option2 models permanently bound to the manifest of their verified input bytes.
+///
+/// Construction accepts only a [`VerifiedDataSet`]; there is no operation that labels an
+/// arbitrary [`ProcessTable`] as verified. Both the table and its identity are read-only.
+#[derive(Debug, Clone)]
+pub struct VerifiedProcessTable {
+    table: ProcessTable,
+    identity: Manifest,
+}
+
+impl VerifiedProcessTable {
+    /// Build the standard option2 electron models from captured, checked tables only.
+    /// The full supplied manifest was verified when the snapshot was loaded, including files
+    /// not used by these models. Model windows and sampling policies match the unverified path.
+    pub fn option2_electron(
+        data: &VerifiedDataSet,
+        rotation: ElasticRotation,
+    ) -> Result<Self, PhysicsError> {
+        let table = ProcessTable::from_models(
+            vec![
+                ElectronModel::Elastic(ChampionElastic::from_verified_data(data, rotation)?),
+                ElectronModel::Excitation(BornExcitation::from_verified_data(data)?),
+                ElectronModel::Ionisation(BornIonisation::from_verified_data(data)?),
+                ElectronModel::Vibrational(SancheVibrational::from_verified_data(data)?),
+                ElectronModel::Attachment(MeltonAttachment::from_verified_data(data)?),
+            ],
+            Some(Solvation::new()),
+        )?;
+        Ok(Self {
+            table,
+            identity: data.identity().clone(),
+        })
+    }
+
+    /// The frozen process table, suitable for transport and inspection.
+    pub fn table(&self) -> &ProcessTable {
+        &self.table
+    }
+
+    /// Verified manifest identity, retaining its original file order and no source root.
+    pub fn identity(&self) -> &Manifest {
+        &self.identity
+    }
+}
+
 impl ProcessTable {
     /// `G4EmDNAPhysics_option2` electron processes (M3: complete below 1 MeV): Champion elastic
     /// (7.4 eV - 1 MeV), Born excitation (9 eV - 1 MeV), Born1 ionisation (11 eV - 1 MeV), Sanche
     /// vibrational excitation (2 - 100 eV), Melton attachment (4 - 13 eV) and solvation (0 - 7.4
     /// eV), in liquid water of Geant4 `G4_WATER` density.
+    ///
+    /// Compatibility entry point without checksum verification or a verified identity.
+    /// Production inputs should use [`VerifiedProcessTable::option2_electron`].
     pub fn option2_electron(
+        dir: &DataDir,
+        rotation: ElasticRotation,
+    ) -> Result<Self, PhysicsError> {
+        Self::option2_electron_unverified(dir, rotation)
+    }
+
+    /// Load option2 tables without checksum verification, for tests and exploratory input.
+    /// This cannot produce a [`VerifiedProcessTable`] or claim a verified manifest identity.
+    pub fn option2_electron_unverified(
         dir: &DataDir,
         rotation: ElasticRotation,
     ) -> Result<Self, PhysicsError> {

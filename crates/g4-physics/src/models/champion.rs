@@ -33,7 +33,7 @@ use g4_core::units::{Area, Energy, EnergyRange};
 use g4_core::vec3::Vec3;
 use g4_data::blocks::AngularCdfTable;
 use g4_data::catalog::{DnaFile, Table};
-use g4_data::datadir::DataDir;
+use g4_data::datadir::{DataDir, VerifiedDataSet};
 use g4_data::xs::CrossSectionTable;
 use rand::Rng;
 use std::f64::consts::PI;
@@ -100,6 +100,20 @@ impl ChampionElastic {
             _ => unreachable!("catalog: ChampionElasticCdfE is an angular table"),
         };
         Self::new(sigma, angles, rotation)
+    }
+
+    /// Build from the checked snapshot without reading the source directory again.
+    pub fn from_verified_data(
+        data: &VerifiedDataSet,
+        rotation: ElasticRotation,
+    ) -> Result<Self, PhysicsError> {
+        let Table::CrossSection(sigma) = data.table(DnaFile::ChampionElasticE)? else {
+            unreachable!("catalog: ChampionElasticE is a cross-section table")
+        };
+        let Table::AngularCdf(angles) = data.table(DnaFile::ChampionElasticCdfE)? else {
+            unreachable!("catalog: ChampionElasticCdfE is an angular table")
+        };
+        Self::new(sigma.clone(), angles.clone(), rotation)
     }
 
     pub fn rotation(&self) -> ElasticRotation {

@@ -7,7 +7,7 @@
 //! * [`blocks`]: angular and ionisation cumulative tables and their deterministic lookups.
 //! * [`interp`]: the 1-D and `QuadInterpolator` formulas.
 //! * [`catalog`]: the 20 committed files with their transcribed units, columns and consumers.
-//! * [`datadir`]: `G4RS_DATA_DIR` resolution, optional checksum verification, loading.
+//! * [`datadir`]: `G4RS_DATA_DIR` resolution and immutable [`VerifiedDataSet`] snapshots.
 //!
 //! Nothing here draws random numbers or transports particles (M2). Every table type is immutable
 //! after construction, hence `Send + Sync`; share with `Arc`.
@@ -20,6 +20,7 @@ pub mod interp;
 pub mod parse;
 pub mod xs;
 
+pub use datadir::VerifiedDataSet;
 pub use error::DataError;
 
 use g4_core::error::DnaError;
