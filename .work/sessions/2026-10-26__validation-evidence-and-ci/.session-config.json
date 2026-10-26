@@ -77,6 +77,30 @@
         "ticket": "01-m2-reference-validation",
         "commit": "e75d2d8"
       }
+    },
+    {
+      "at": "2026-10-26T10:39:10.422Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-m3-reference-validation.md",
+        "03-implement/02-m3-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-m3-reference-validation"
+      }
+    },
+    {
+      "at": "2026-10-26T10:55:24.336Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-m3-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-m3-reference-validation",
+        "commit": "a59072a"
+      }
     }
   ],
   "current_phase": "ship",
