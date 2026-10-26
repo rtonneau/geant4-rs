@@ -87,6 +87,30 @@
         "ticket": "01-validate-table-domains",
         "commit": "a14f5ca"
       }
+    },
+    {
+      "at": "2026-10-26T18:58:09.575Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-verified-byte-snapshot.md",
+        "03-implement/02-verified-byte-snapshot/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-verified-byte-snapshot"
+      }
+    },
+    {
+      "at": "2026-10-26T19:11:44.385Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-verified-byte-snapshot/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-verified-byte-snapshot",
+        "commit": "58b80e3"
+      }
     }
   ],
   "current_phase": "ship",
