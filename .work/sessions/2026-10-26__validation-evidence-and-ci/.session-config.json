@@ -149,9 +149,33 @@
         "ticket": "04-gate-inventory-runner",
         "commit": "3a7a15a"
       }
+    },
+    {
+      "at": "2026-10-26T11:18:00.276Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-ci-support-status.md",
+        "03-implement/05-ci-support-status/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-ci-support-status"
+      }
+    },
+    {
+      "at": "2026-10-26T11:28:19.972Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-ci-support-status/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-ci-support-status",
+        "commit": "3cebdf5"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "test/validation-evidence-and-ci",
     "base_branch": "main",
