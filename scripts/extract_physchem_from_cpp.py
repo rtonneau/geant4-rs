@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Machine-extract the physicochemical-stage data of Geant4 11.4.1 (option3 chemistry) from the C++ text.
 
-Independent of the Rust code: the output (crates/dna-chemistry/tests/fixtures/cpp_extract.json) is what the
+Independent of the Rust code: the output (crates/g4-chemistry/tests/fixtures/cpp_extract.json) is what the
 Rust data files (data/chemistry/*.toml) and the displacer constants are tested against. Run with the path of
 the (read-only) reference repository:
 
-    python3 scripts/extract_physchem_from_cpp.py /path/to/geant4 > crates/dna-chemistry/tests/fixtures/cpp_extract.json
+    python3 scripts/extract_physchem_from_cpp.py /path/to/geant4 > crates/g4-chemistry/tests/fixtures/cpp_extract.json
 
 Files read (relative to <geant4>/source):
   physics_lists/constructors/electromagnetic/src/G4ChemDissociationChannels_option1.cc

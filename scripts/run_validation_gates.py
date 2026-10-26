@@ -17,13 +17,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 GATES_PATH = REPO_ROOT / "validation" / "gates.json"
 SCRATCH = REPO_ROOT / ".scratch" / "tests" / "2026-10-26__validation-evidence-and-ci"
 EXPECTED_GATES = (
-    ("M2-xs", "M2", "cross sections V2/V3", "dna-sim/geant4_reference", "v2_v3_cross_sections_per_volume_match_geant4"),
-    ("M2-mfp", "M2", "mean free path V5, seed 1", "dna-sim/geant4_reference", "v5_first_interaction_mean_free_path_matches_geant4"),
-    ("M2-track", "M2", "primary track with 100 eV cut V5, seed 1", "dna-sim/geant4_reference", "v5_primary_track_with_100_ev_cut_matches_geant4"),
-    ("M2-seed2", "M2", "independent seed-2 consistency against seed 1 and Rust", "dna-sim/geant4_reference", "seed2_geant4_runs_are_consistent_with_seed1_and_with_rust"),
-    ("M3-xs", "M3", "low-energy cross sections V2", "dna-sim/slowing_down_reference", "m3_v2_low_energy_cross_sections_match_geant4"),
-    ("M3-cascade", "M3", "full-cascade slowing-down V5, spectra and radial profile", "dna-sim/slowing_down_reference", "m3_v5_full_slowing_down_matches_geant4"),
-    ("M6-prechem", "M6", "RR-001 dissociation-only snapshot at 1 ps before IRT", "dna-sim/physchem_reference", "m6_prechem_counts_and_rms_match_geant4"),
+    ("M2-xs", "M2", "cross sections V2/V3", "g4-sim/geant4_reference", "v2_v3_cross_sections_per_volume_match_geant4"),
+    ("M2-mfp", "M2", "mean free path V5, seed 1", "g4-sim/geant4_reference", "v5_first_interaction_mean_free_path_matches_geant4"),
+    ("M2-track", "M2", "primary track with 100 eV cut V5, seed 1", "g4-sim/geant4_reference", "v5_primary_track_with_100_ev_cut_matches_geant4"),
+    ("M2-seed2", "M2", "independent seed-2 consistency against seed 1 and Rust", "g4-sim/geant4_reference", "seed2_geant4_runs_are_consistent_with_seed1_and_with_rust"),
+    ("M3-xs", "M3", "low-energy cross sections V2", "g4-sim/slowing_down_reference", "m3_v2_low_energy_cross_sections_match_geant4"),
+    ("M3-cascade", "M3", "full-cascade slowing-down V5, spectra and radial profile", "g4-sim/slowing_down_reference", "m3_v5_full_slowing_down_matches_geant4"),
+    ("M6-prechem", "M6", "RR-001 dissociation-only snapshot at 1 ps before IRT", "g4-sim/physchem_reference", "m6_prechem_counts_and_rms_match_geant4"),
 )
 EXPECTED_FIXTURES = {
     "M2-xs": ("xs_per_volume.csv", "provenance.toml"),

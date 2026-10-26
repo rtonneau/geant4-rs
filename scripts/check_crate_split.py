@@ -17,7 +17,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = "geant4-rs/crate-split-snapshot/v1"
-SCRATCH = ROOT / ".scratch/tests/2026-10-26__crate-domain-ownership"
+SCRATCH = ROOT / ".scratch/tests/2026-10-26__g4-crate-namespace-migration"
 CRATE_RENAMES = {f"dna-{part}": f"g4-{part}" for part in
                  ("core", "data", "physics", "chemistry", "sim")}
 
@@ -195,7 +195,7 @@ def main() -> int:
     mode.add_argument("--compare", nargs=2, type=Path, metavar=("BASELINE", "CANDIDATE"))
     parser.add_argument("--allow-crate-rename", action="store_true",
                         help="compare only the planned dna-* to g4-* local package rename")
-    parser.add_argument("--package", default="dna-sim")
+    parser.add_argument("--package", default="g4-sim")
     args = parser.parse_args()
     try:
         if args.capture:

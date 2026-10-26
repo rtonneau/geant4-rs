@@ -1,0 +1,15 @@
+[package]
+name = "g4-data"
+description = "Geant4-DNA (G4EMLOW) cross-section and differential-table readers with Geant4-exact interpolation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+g4-core = { path = "../g4-core" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }
+proptest = { workspace = true }

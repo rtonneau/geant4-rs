@@ -15,7 +15,7 @@ class SnapshotTests(unittest.TestCase):
         self.revision = checker.command(["git", "rev-parse", "HEAD"])
         self.baseline = {
             "schema": checker.SCHEMA,
-            "metadata": {"revision": self.revision, "package": "dna-sim"},
+            "metadata": {"revision": self.revision, "package": "g4-sim"},
             "inputs": {"Cargo.lock": "abc", "data/MANIFEST.toml": "def"},
             "toolchain": {"rustc": "same compiler"},
             "runs": [{"energy_ev": "0x4059000000000000", "species": ["H3Op", "°OH"],

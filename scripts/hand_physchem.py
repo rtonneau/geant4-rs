@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """Hand-computed (independent of the Rust code) reference values for the physicochemical stage.
 
-Reads the machine-extracted C++ constants (crates/dna-chemistry/tests/fixtures/cpp_extract.json,
+Reads the machine-extracted C++ constants (crates/g4-chemistry/tests/fixtures/cpp_extract.json,
 produced by scripts/extract_physchem_from_cpp.py) and evaluates, in plain Python:
   * the Onsager radius and the dielectric constant of G4DNAElectronHoleRecombination
     (11.4.1: D/processes/src/G4DNAElectronHoleRecombination.cc), with the CLHEP constants of the
     reference tree (k_Boltzmann = 8.617333e-11 MeV/K, mu0 = 4 pi 1e-7 henry/m, e_SI);
   * the nominal RMS of the product displacements (analytic, from the displacer cases);
   * the elemental balance of every channel.
-Output: crates/dna-chemistry/tests/fixtures/hand_values.json
+Output: crates/g4-chemistry/tests/fixtures/hand_values.json
 
-    python3 scripts/hand_physchem.py > crates/dna-chemistry/tests/fixtures/hand_values.json
+    python3 scripts/hand_physchem.py > crates/g4-chemistry/tests/fixtures/hand_values.json
 """
 import json, math
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
-x = json.loads((root / "crates/dna-chemistry/tests/fixtures/cpp_extract.json").read_text())
+x = json.loads((root / "crates/g4-chemistry/tests/fixtures/cpp_extract.json").read_text())
 rc = x["recombination"]
 
 # ---- Onsager radius ---------------------------------------------------------------------------

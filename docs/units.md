@@ -1,6 +1,6 @@
 # Units
 
-Internal units (fixed, `dna-core::units`): **energy eV, length nm, time ps**. Geant4/CLHEP
+Internal units (fixed, `g4-core::units`): **energy eV, length nm, time ps**. Geant4/CLHEP
 uses MeV, mm, ns; nothing from the C++ side is copied numerically without conversion.
 
 | Quantity | Type | Stored as | Constructors | Notes |
@@ -19,7 +19,7 @@ Rules:
 - Energy-range validity is enforced with `EnergyRange::check` (typed `UnsupportedEnergy` error); values are never clamped or extrapolated. Initial beam limit: electron primaries <= 1 MeV (decision Q1).
 - G-value: species per 100 eV; mol/J = G x 1.0364e-7 (docs/01 A.4/A.5).
 
-Cross sections and densities (M2): the tables hold cross sections **per molecule**; the models return them in nm^2 (`Area`). The macroscopic cross section in nm^-1 is `sigma x n` with `n = 33.42797593 nm^-3`, the number density of Geant4's `G4_WATER` as derived in `dna-physics::water` (docs/02 B.7.4 item 2). Transport lengths are nm, free paths `-ln(u)/Sigma` in nm, energies eV, positions nm, directions dimensionless. Secondary-spectrum bins are in eV (0.1 eV - 1 MeV, 10 bins per decade).
+Cross sections and densities (M2): the tables hold cross sections **per molecule**; the models return them in nm^2 (`Area`). The macroscopic cross section in nm^-1 is `sigma x n` with `n = 33.42797593 nm^-3`, the number density of Geant4's `G4_WATER` as derived in `g4-physics::water` (docs/02 B.7.4 item 2). Transport lengths are nm, free paths `-ln(u)/Sigma` in nm, energies eV, positions nm, directions dimensionless. Secondary-spectrum bins are in eV (0.1 eV - 1 MeV, 10 bins per decade).
 M3 outputs: radial deposit profile in nm (edges 0.1 nm - 10 mm, 5 bins per decade, energies in eV); `PhysChemEvent` positions in nm and deposits in eV (CSV columns `x_nm,y_nm,z_nm,deposited_energy_eV`); solvation displacements in nm.
 
 M6 A: species diffusion coefficients are read in Geant4's m^2/s and stored in nm^2/ps (x 1e6); radii in nm; the physicochemical species list carries positions in nm and the birth time in ps (1 ps); `Species` CSV (`species,x_nm,y_nm,z_nm,time_ps`). The Onsager radius is computed in nm from SI constants (CLHEP values of the reference tree, docs/02 B.7.6 item 5).

@@ -1,17 +1,41 @@
 # Crate ownership regression evidence
 
-The S01 change moves species ownership from `dna-core` to `dna-chemistry`.
-Package renaming and optional chemistry belong to later sessions. This snapshot
-checks behavior across the ownership move; it does not extend a model's scientific
-validation range or replace the maintained Geant4 reference gates.
+Species ownership moved from core to chemistry in S01; S02 renames the five
+workspace packages to `g4-*`. Optional chemistry belongs to a later session.
+This snapshot checks behavior across both migrations; it does not extend a
+model's scientific validation range or replace the maintained Geant4 reference gates.
+
+## Import migration
+
+| Previous package / Rust import | Current package / Rust import |
+|---|---|
+| `dna-core` / `dna_core` | `g4-core` / `g4_core` |
+| `dna-data` / `dna_data` | `g4-data` / `g4_data` |
+| `dna-physics` / `dna_physics` | `g4-physics` / `g4_physics` |
+| `dna-chemistry` / `dna_chemistry` | `g4-chemistry` / `g4_chemistry` |
+| `dna-sim` / `dna_sim` | `g4-sim` / `g4_sim` |
+
+Directories and path dependencies follow the package names. There are no
+compatibility re-exports. The persisted schema IDs `geant4-rs/dna-sim/run/v2`
+and `geant4-rs/dna-sim/run/v3`, the scientific `data/dna` directory and
+`G4RS_DATA_DIR` remain intentional, unchanged names. CSV headers, species names
+and scientific fixture bytes are unchanged. Historical evidence below retains
+its original names and revisions. `data/chemistry/README.md` is also retained
+byte-for-byte because it belongs to the hashed input map; interpret its old
+crate paths using the table above.
+
+Commit the coherent rename before capturing: rename comparison verifies the
+candidate lockfile against its recorded commit. Compare S01 baselines with
+`--allow-crate-rename`; comparisons between two new captures use strict mode.
 
 ## Species ownership
 
 The public species interface is now
-`dna_chemistry::{Species, SpeciesInstance, SPECIES_CSV_HEADER}`. Its implementation
+`g4_chemistry::{Species, SpeciesInstance, SPECIES_CSV_HEADER}`. Its implementation
 and existing unit tests live in the private `species_types` module. The property
-table remains at `dna_chemistry::species::SpeciesTable`. This is an import-path
-break: `dna_core::species` is removed without a compatibility re-export.
+table remains at `g4_chemistry::species::SpeciesTable`. This is an import-path
+break: the former `dna_core::species` interface was removed without a
+compatibility re-export.
 
 Core retains the shared, water-specific `physchem` handoff records and
 `penetration` law needed by both stages. Core has no chemistry dependency, and
@@ -23,7 +47,7 @@ The complete species implementation moves without algorithm changes; the new
 
 ## Exact snapshot contract
 
-`crates/dna-sim/examples/crate_split_snapshot.rs` emits
+`crates/g4-sim/examples/crate_split_snapshot.rs` emits
 `geant4-rs/crate-split-snapshot/v1` for `--physics` and `--physchem`.
 Both use seed **20261026**, history IDs **3–10 inclusive**, primary energies
 **100 eV, 1 keV and 10 keV**, one worker and batch size **7**. Input data is
@@ -51,24 +75,26 @@ The checker compares all fields, including SHA-256 identities of `Cargo.lock`
 and every file under `data/`, full `rustc -vV`, Cargo version, platform, build
 profile and recorded compiler environment. Only **`metadata.revision`** may
 differ: each value must be a full commit ID that exists and is an ancestor of the
-current checkout's `HEAD`. No other build metadata difference is currently
-allowlisted. Package identity and all input/toolchain changes fail. This is a
-same-platform/toolchain regression oracle, not a cross-platform bitwise promise.
+current checkout's `HEAD`. Strict mode allows no other build metadata difference.
+Rename mode additionally accepts only `dna-sim` to `g4-sim` package identity and the corresponding five
+local Cargo.lock package/dependency identities, verified against committed
+revisions. Third-party versions, sources, checksums and all data/toolchain
+changes still fail. This is a same-platform/toolchain regression oracle, not a cross-platform bitwise promise.
 
 ## Capture and compare
 
 Run from the repository root in PowerShell:
 
 ```powershell
-$scratch = Join-Path (Get-Location) '.scratch/tests/2026-10-26__crate-domain-ownership'
+$scratch = Join-Path (Get-Location) '.scratch/tests/2026-10-26__g4-crate-namespace-migration'
 $env:CARGO_TARGET_DIR = "$scratch/cargo-target"
 $env:PYTHONPYCACHEPREFIX = "$scratch/python-cache"
 $revision = git rev-parse HEAD
 $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ') + '-' + [guid]::NewGuid().ToString('N')
 $capture = "target/crate-split-baseline/$revision-$runId"
-python scripts/check_crate_split.py --capture $capture --package dna-sim
-python scripts/check_crate_split.py --compare "$baseline/physics.json" "$capture/physics.json"
-python scripts/check_crate_split.py --compare "$baseline/physchem.json" "$capture/physchem.json"
+python scripts/check_crate_split.py --capture $capture --package g4-sim
+python scripts/check_crate_split.py --compare "$baseline/physics.json" "$capture/physics.json" --allow-crate-rename
+python scripts/check_crate_split.py --compare "$baseline/physchem.json" "$capture/physchem.json" --allow-crate-rename
 ```
 
 Set `$baseline` to the baseline directory below. Capture creates both profiles
@@ -121,9 +147,9 @@ python -m unittest discover -s scripts -p test_check_crate_split.py
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
-cargo test -p dna-sim --test geant4_reference --locked -- --ignored
-cargo test -p dna-sim --test slowing_down_reference --locked -- --ignored
-cargo test -p dna-sim --test physchem_reference --locked m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact
+cargo test -p g4-sim --test geant4_reference --locked -- --ignored
+cargo test -p g4-sim --test slowing_down_reference --locked -- --ignored
+cargo test -p g4-sim --test physchem_reference --locked m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact
 ```
 
 The checker mutation tests cover equal snapshots, validated revision changes,
