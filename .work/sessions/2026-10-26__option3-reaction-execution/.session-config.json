@@ -86,6 +86,30 @@
         "ticket": "01-compile-network",
         "commit": "4f17d10"
       }
+    },
+    {
+      "at": "2026-10-26T21:05:22.771Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-charged-pdc.md",
+        "03-implement/02-charged-pdc/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-charged-pdc"
+      }
+    },
+    {
+      "at": "2026-10-26T21:18:07.879Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-charged-pdc/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-charged-pdc",
+        "commit": "d7716bd"
+      }
     }
   ],
   "current_phase": "ship",
