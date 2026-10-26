@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -12,10 +13,13 @@ import platform
 import re
 import subprocess
 import sys
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = "geant4-rs/crate-split-snapshot/v1"
 SCRATCH = ROOT / ".scratch/tests/2026-10-26__crate-domain-ownership"
+CRATE_RENAMES = {f"dna-{part}": f"g4-{part}" for part in
+                 ("core", "data", "physics", "chemistry", "sim")}
 
 
 def command(args: list[str], *, root: Path = ROOT) -> str:
@@ -49,8 +53,9 @@ def toolchain_identity() -> dict:
 def validate_revision(revision: object, root: Path = ROOT) -> None:
     if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("metadata.revision must be a full Git commit ID")
-    resolved = command(["git", "rev-parse", "--verify", revision + "^{commit}"], root=root)
-    if resolved != revision:
+    resolved = subprocess.run(["git", "rev-parse", "--verify", revision + "^{commit}"],
+                              cwd=root, capture_output=True, text=True, encoding="utf-8")
+    if resolved.returncode or resolved.stdout.strip() != revision:
         raise ValueError("metadata.revision is not a commit in this checkout")
     if subprocess.run(["git", "merge-base", "--is-ancestor", revision, "HEAD"], cwd=root,
                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
@@ -80,7 +85,48 @@ def difference(a: object, b: object, path: str = "$") -> str | None:
     return None
 
 
-def compare(baseline: dict, candidate: dict, *, root: Path = ROOT) -> None:
+def committed_lockfile(document: dict, root: Path) -> bytes:
+    revision = document["metadata"]["revision"]
+    contents = subprocess.check_output(["git", "show", f"{revision}:Cargo.lock"], cwd=root)
+    recorded = document["inputs"].get("Cargo.lock")
+    # Git stores LF text; on Windows the capture hashes its CRLF checkout.
+    checkout_forms = (contents, contents.replace(b"\n", b"\r\n"))
+    if recorded not in {hashlib.sha256(form).hexdigest() for form in checkout_forms}:
+        raise ValueError(f"inputs.Cargo.lock does not match committed lockfile at {revision}")
+    return contents
+
+
+def comparable_lockfile(contents: bytes, *, old_names: bool) -> dict:
+    """Normalize only the planned local identities and unordered Cargo package lists."""
+    lock = tomllib.loads(contents.decode("utf-8"))
+    packages = lock.get("package")
+    if not isinstance(packages, list) or not all(isinstance(p, dict) for p in packages):
+        raise ValueError("Cargo.lock has no valid package list")
+    expected = set(CRATE_RENAMES if old_names else CRATE_RENAMES.values())
+    local = {p.get("name") for p in packages if "source" not in p}
+    if local != expected or sum("source" not in p for p in packages) != len(expected):
+        raise ValueError("Cargo.lock has unexpected local packages")
+    normalized = []
+    for original in packages:
+        package = dict(original)
+        if "source" not in package:
+            if "checksum" in package:
+                raise ValueError("Cargo.lock local package has a checksum")
+            dependencies = package.get("dependencies", [])
+            if not isinstance(dependencies, list) or not all(isinstance(d, str) for d in dependencies):
+                raise ValueError("Cargo.lock has invalid local dependencies")
+            if old_names:
+                package["name"] = CRATE_RENAMES[package["name"]]
+                dependencies = [CRATE_RENAMES.get(dependency, dependency) for dependency in dependencies]
+            if "dependencies" in package:
+                package["dependencies"] = dependencies
+        normalized.append(package)
+    lock["package"] = sorted(normalized, key=lambda p: (p["name"], p["version"], p.get("source", "")))
+    return lock
+
+
+def compare(baseline: dict, candidate: dict, *, root: Path = ROOT,
+            allow_crate_rename: bool = False) -> None:
     for document in (baseline, candidate):
         if document.get("schema") != SCHEMA:
             raise ValueError("unsupported snapshot schema")
@@ -89,9 +135,21 @@ def compare(baseline: dict, candidate: dict, *, root: Path = ROOT) -> None:
         if not document.get("inputs") or not document.get("toolchain") or not document.get("runs"):
             raise ValueError("missing inputs, toolchain or scientific runs")
         validate_revision(document["metadata"]["revision"], root)
-    # Only this individually named field is allowed to differ, after checkout validation.
-    # No wildcard metadata stripping; package, inputs, compiler and all science remain exact.
-    left = {**baseline, "metadata": {**baseline["metadata"], "revision": candidate["metadata"]["revision"]}}
+    # Exact mode only ignores the validated revision. Rename mode additionally verifies
+    # both committed locks before allowing the five package identities and lock hash.
+    left = copy.deepcopy(baseline)
+    left["metadata"]["revision"] = candidate["metadata"]["revision"]
+    if allow_crate_rename:
+        if baseline["metadata"]["package"] != "dna-sim" or candidate["metadata"]["package"] != "g4-sim":
+            raise ValueError("metadata.package must change only from dna-sim to g4-sim")
+        old_lock = committed_lockfile(baseline, root)
+        new_lock = committed_lockfile(candidate, root)
+        changed_lock = difference(comparable_lockfile(old_lock, old_names=True),
+                                  comparable_lockfile(new_lock, old_names=False), "Cargo.lock")
+        if changed_lock:
+            raise ValueError(changed_lock)
+        left["metadata"]["package"] = "g4-sim"
+        left["inputs"]["Cargo.lock"] = candidate["inputs"]["Cargo.lock"]
     changed = difference(left, candidate)
     if changed:
         raise ValueError(changed)
@@ -135,15 +193,22 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--capture", type=Path)
     mode.add_argument("--compare", nargs=2, type=Path, metavar=("BASELINE", "CANDIDATE"))
+    parser.add_argument("--allow-crate-rename", action="store_true",
+                        help="compare only the planned dna-* to g4-* local package rename")
     parser.add_argument("--package", default="dna-sim")
     args = parser.parse_args()
     try:
         if args.capture:
+            if args.allow_crate_rename:
+                raise ValueError("--allow-crate-rename requires --compare")
             capture(args.capture, args.package)
         else:
             documents = [json.loads(p.read_text(encoding="utf-8")) for p in args.compare]
-            compare(*documents)
-            print("PASS: exact scientific, input and toolchain identity (validated revision may differ)")
+            compare(*documents, allow_crate_rename=args.allow_crate_rename)
+            if args.allow_crate_rename:
+                print("PASS: exact scientific, data and toolchain identity; verified local crate rename")
+            else:
+                print("PASS: exact scientific, input and toolchain identity (validated revision may differ)")
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
