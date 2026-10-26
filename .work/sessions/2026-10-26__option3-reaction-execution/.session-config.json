@@ -110,6 +110,30 @@
         "ticket": "02-charged-pdc",
         "commit": "d7716bd"
       }
+    },
+    {
+      "at": "2026-10-26T21:18:15.445Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-unary-clocks.md",
+        "03-implement/03-unary-clocks/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-unary-clocks"
+      }
+    },
+    {
+      "at": "2026-10-26T21:25:57.466Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-unary-clocks/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-unary-clocks",
+        "commit": "7284e30"
+      }
     }
   ],
   "current_phase": "ship",
