@@ -93,36 +93,388 @@ fn read_reference(name: &str) -> (Vec<String>, Vec<Vec<String>>) {
             path.display()
         )
     });
-    check_provenance();
+    let provenance_path = reference_dir().join("provenance.toml");
+    let provenance = std::fs::read_to_string(&provenance_path)
+        .unwrap_or_else(|e| panic!("missing {}: {e}", provenance_path.display()));
+    validate_m2_reference(name, &text, &provenance)
+        .unwrap_or_else(|e| panic!("invalid Geant4 reference {name}: {e}"));
     parse_csv(&text)
 }
 
-/// `provenance.toml` must exist and name the Geant4 version, dataset and physics constructor.
-fn check_provenance() {
-    let path = reference_dir().join("provenance.toml");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("missing {}: {e}", path.display()));
-    let t: toml::Table = text.parse().expect("provenance.toml is not valid TOML");
+/// Validate the complete M2 evidence contract before any row reaches the comparison code.
+fn validate_m2_reference(name: &str, csv: &str, provenance: &str) -> Result<(), String> {
+    let fail = |message: String| Err(message);
+    if csv.trim().is_empty() {
+        return fail("CSV is missing or empty".into());
+    }
+    let prov: toml::Table = provenance
+        .parse()
+        .map_err(|e| format!("provenance.toml is invalid TOML: {e}"))?;
+    let metadata = |key: &str| -> Result<String, String> {
+        prov.get(key)
+            .and_then(toml::Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| format!("provenance.toml lacks string `{key}`"))
+    };
     for key in [
         "geant4_version",
+        "geant4_commit",
         "g4emlow_version",
+        "g4emlow_md5",
         "physics_constructor",
         "generator",
         "date",
         "command_lines",
+        "fluo_auger",
+        "compiler",
+        "platform",
     ] {
-        assert!(t.contains_key(key), "provenance.toml lacks `{key}`");
+        if !prov.contains_key(key) {
+            return fail(format!("provenance.toml lacks `{key}`"));
+        }
     }
-    assert!(
-        t["geant4_version"]
-            .as_str()
-            .is_some_and(|v| v.starts_with("11.4.1") || v.contains("11.4.1")),
-        "reference must come from Geant4 11.4.1"
-    );
-    assert_eq!(
-        t["physics_constructor"].as_str(),
-        Some("G4EmDNAPhysics_option2")
-    );
+    for key in [
+        "geant4_commit",
+        "g4emlow_md5",
+        "generator",
+        "date",
+        "compiler",
+        "platform",
+    ] {
+        if prov
+            .get(key)
+            .and_then(toml::Value::as_str)
+            .is_none_or(str::is_empty)
+        {
+            return fail(format!("provenance `{key}` must be a nonempty string"));
+        }
+    }
+    if metadata("geant4_version")? != "11.4.1" {
+        return fail("provenance Geant4 version must be 11.4.1".into());
+    }
+    if metadata("g4emlow_version")? != "8.8" {
+        return fail("provenance G4EMLOW version must be 8.8".into());
+    }
+    if metadata("g4emlow_md5")? != "328330009df633f7e9b3a9f445745298" {
+        return fail("provenance G4EMLOW checksum must match dataset 8.8".into());
+    }
+    if metadata("physics_constructor")? != "G4EmDNAPhysics_option2" {
+        return fail("provenance physics_constructor must be G4EmDNAPhysics_option2".into());
+    }
+    if metadata("fluo_auger")? != "off" {
+        return fail("provenance fluo_auger must be off".into());
+    }
+
+    let mut comments = Vec::new();
+    let mut data_lines = Vec::new();
+    for line in csv.lines().map(str::trim).filter(|line| !line.is_empty()) {
+        if line.starts_with('#') {
+            comments.push(line.trim_start_matches('#').trim());
+        } else {
+            data_lines.push(line);
+        }
+    }
+    if data_lines.is_empty() {
+        return fail("CSV has no header".into());
+    }
+    let header: Vec<&str> = data_lines[0].split(',').collect();
+    let (mode, expected_header, energies, seed, events) = match name {
+        "xs_per_volume.csv" => ("xs", XS_HEADER.as_slice(), Vec::new(), 0, 0),
+        "mfp_first_interaction.csv" => (
+            "mfp",
+            EVENT_HEADER.as_slice(),
+            MFP_ENERGIES.to_vec(),
+            20261,
+            1_000_000,
+        ),
+        "mfp_first_interaction_seed2.csv" => (
+            "mfp",
+            EVENT_HEADER.as_slice(),
+            MFP_ENERGIES.to_vec(),
+            20263,
+            1_000_000,
+        ),
+        "track_cut100eV.csv" => (
+            "track",
+            EVENT_HEADER.as_slice(),
+            TRACK_ENERGIES.to_vec(),
+            20262,
+            10_000,
+        ),
+        "track_cut100eV_seed2.csv" => (
+            "track",
+            EVENT_HEADER.as_slice(),
+            TRACK_ENERGIES.to_vec(),
+            20264,
+            10_000,
+        ),
+        other => return fail(format!("unregistered M2 reference filename `{other}`")),
+    };
+    if header != expected_header {
+        return fail(format!(
+            "wrong CSV columns/units for {name}: expected {expected_header:?}, got {header:?}"
+        ));
+    }
+    if !comments
+        .iter()
+        .any(|c| c.ends_with(&format!("mode {mode}")))
+    {
+        return fail(format!("CSV metadata has wrong or missing mode `{mode}`"));
+    }
+    if !comments
+        .iter()
+        .any(|c| c.contains("geant4_version_number: 1141"))
+    {
+        return fail("CSV metadata must identify Geant4 11.4.1 (version number 1141)".into());
+    }
+    let expected_physics = if mode == "xs" {
+        "physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 0; seed 0"
+    } else {
+        // The registered generator records these exact settings for every maintained mode.
+        if mode == "mfp" {
+            "physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 1000000; seed"
+        } else {
+            "physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 10000; seed"
+        }
+    };
+    let physics = comments.iter().find(|c| c.starts_with("physics:"));
+    if !physics.is_some_and(|p| p.starts_with(expected_physics)) {
+        return fail(format!(
+            "CSV physics/constructor/units metadata is wrong; expected `{expected_physics} ...`"
+        ));
+    }
+    if mode != "xs" && !physics.is_some_and(|p| p.ends_with(&format!("seed {seed}"))) {
+        return fail(format!("CSV seed metadata must be {seed} for {name}"));
+    }
+    let command_line = match name {
+        "xs_per_volume.csv" => "g4rs_ref xs xs_per_volume.csv".to_owned(),
+        "mfp_first_interaction.csv" => {
+            "g4rs_ref mfp mfp_first_interaction.csv 1000000 20261".to_owned()
+        }
+        "mfp_first_interaction_seed2.csv" => {
+            "g4rs_ref mfp mfp_first_interaction_seed2.csv 1000000 20263".to_owned()
+        }
+        "track_cut100eV.csv" => "g4rs_ref track track_cut100eV.csv 10000 20262 100".to_owned(),
+        _ => "g4rs_ref track track_cut100eV_seed2.csv 10000 20264 100".to_owned(),
+    };
+    if !prov
+        .get("command_lines")
+        .and_then(toml::Value::as_array)
+        .is_some_and(|v| v.iter().any(|x| x.as_str() == Some(&command_line)))
+    {
+        return fail(format!(
+            "provenance command_lines must include `{command_line}`"
+        ));
+    }
+    if mode == "track" && !comments.contains(&"tracking cut: 100 eV") {
+        return fail("track CSV metadata must declare tracking cut 100 eV".into());
+    }
+
+    let mut rows = Vec::new();
+    for (index, line) in data_lines.iter().enumerate().skip(1) {
+        let fields: Vec<&str> = line.split(',').collect();
+        if fields.len() != header.len() {
+            return fail(format!(
+                "row {} has {} fields; expected {}",
+                index + 1,
+                fields.len(),
+                header.len()
+            ));
+        }
+        rows.push(fields);
+    }
+    if mode == "xs" {
+        validate_xs_rows(&rows)
+    } else {
+        validate_event_rows(name, &header, &rows, &energies, events)
+    }
+}
+
+const XS_HEADER: [&str; 3] = ["energy_eV", "process", "sigma_per_volume_per_nm"];
+const EVENT_HEADER: [&str; 17] = [
+    "energy_eV",
+    "n_events",
+    "sum_L_nm",
+    "sum_L2_nm2",
+    "sum_edep_eV",
+    "sum_edep2_eV2",
+    "sum_remaining_eV",
+    "sum_remaining2_eV2",
+    "sum_nsec",
+    "sum_nsec2",
+    "sum_esec_eV",
+    "sum_esec2_eV2",
+    "sum_range_nm",
+    "n_elastic",
+    "n_excitation",
+    "n_ionisation",
+    "n_other",
+];
+
+fn validate_xs_rows(rows: &[Vec<&str>]) -> Result<(), String> {
+    // This is the generator's registered grid: eight boundary/node values plus its 200-point
+    // logarithmic sweep. Endpoint overlap is intentional in the existing source and evidence.
+    let mut grid = vec![7.4, 9.0, 11.0, 100.0, 1e3, 1e4, 1e5, 1e6];
+    grid.extend((0..200).map(|i| 7.4 * (1e6_f64 / 7.4).powf(i as f64 / 199.0)));
+    let expected: Vec<(f64, &str)> = grid
+        .iter()
+        .flat_map(|e| M2_PROCESS_NAMES.map(move |p| (*e, p)))
+        .collect();
+    let mut found = Vec::new();
+    for (i, row) in rows.iter().enumerate() {
+        let e = parse_nonnegative(row[0], i, "energy_eV")?;
+        if e == 0.0 {
+            return Err(format!("cross-section row {} has zero energy", i + 1));
+        }
+        let process = row[1];
+        if !M2_PROCESS_NAMES.contains(&process) {
+            return Err(format!(
+                "cross-section row {} has unknown process `{process}`",
+                i + 1
+            ));
+        }
+        let sigma = parse_nonnegative(row[2], i, "sigma_per_volume_per_nm")?;
+        found.push((e, process, sigma));
+    }
+    found.sort_by(|a, b| a.1.cmp(b.1).then_with(|| a.0.total_cmp(&b.0)));
+    let mut sorted_expected = expected;
+    sorted_expected.sort_by(|a, b| a.1.cmp(b.1).then_with(|| a.0.total_cmp(&b.0)));
+    if found.len() != sorted_expected.len()
+        || found
+            .iter()
+            .zip(&sorted_expected)
+            .any(|(actual, expected)| {
+                actual.1 != expected.1
+                    || (actual.0 - expected.0).abs() > 1e-12 * expected.0.abs().max(1.0)
+            })
+    {
+        return Err(format!(
+            "cross-section grid/process coverage differs: expected {} rows (208 registered energy entries × 3 processes), found {}",
+            sorted_expected.len(),
+            found.len()
+        ));
+    }
+    for (index, pair) in sorted_expected.windows(2).enumerate() {
+        if pair[0] == pair[1] {
+            let left = found[index].2;
+            let right = found[index + 1].2;
+            if (left - right).abs() > 1e-12 * left.abs().max(right.abs()).max(1.0) {
+                return Err(format!(
+                    "repeated cross-section endpoint has conflicting values for {} at {} eV",
+                    pair[0].1, pair[0].0
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+const M2_PROCESS_NAMES: [&str; 3] = ["elastic", "excitation", "ionisation"];
+
+fn validate_event_rows(
+    name: &str,
+    header: &[&str],
+    rows: &[Vec<&str>],
+    energies: &[f64],
+    expected_events: u64,
+) -> Result<(), String> {
+    if rows.len() != energies.len() {
+        return Err(format!(
+            "{name} has {} rows; expected {} registered energies",
+            rows.len(),
+            energies.len()
+        ));
+    }
+    let mut seen = Vec::new();
+    for (i, row) in rows.iter().enumerate() {
+        let number = |column: &str| -> Result<f64, String> {
+            parse_nonnegative(
+                row[header.iter().position(|h| *h == column).unwrap()],
+                i,
+                column,
+            )
+        };
+        let energy = number("energy_eV")?;
+        if !energies.contains(&energy) || seen.contains(&energy) {
+            return Err(format!(
+                "{name} row {} has unexpected or duplicate energy {energy}",
+                i + 1
+            ));
+        }
+        seen.push(energy);
+        let n = number("n_events")?;
+        if n != expected_events as f64 {
+            return Err(format!(
+                "{name} at {energy} eV has n_events={n}; expected {expected_events}"
+            ));
+        }
+        let moments = [
+            ("sum_L_nm", "sum_L2_nm2"),
+            ("sum_edep_eV", "sum_edep2_eV2"),
+            ("sum_remaining_eV", "sum_remaining2_eV2"),
+            ("sum_nsec", "sum_nsec2"),
+            ("sum_esec_eV", "sum_esec2_eV2"),
+        ];
+        for (sum_name, square_name) in moments {
+            let sum = number(sum_name)?;
+            let square = number(square_name)?;
+            if square + 1e-10 * square.abs().max(1.0) < sum * sum / n {
+                return Err(format!(
+                    "{name} row {} has invalid count/moment pair {sum_name}/{square_name}: sum of squares violates Cauchy bound",
+                    i + 1
+                ));
+            }
+        }
+        number("sum_range_nm")?;
+        for col in ["n_elastic", "n_excitation", "n_ionisation", "n_other"] {
+            let v = number(col)?;
+            if v.fract() != 0.0 {
+                return Err(format!(
+                    "{name} row {} has non-integer count `{col}`",
+                    i + 1
+                ));
+            }
+        }
+        if number("n_other")? != 0.0 {
+            return Err(format!(
+                "{name} row {} contains n_other interactions",
+                i + 1
+            ));
+        }
+        if name.starts_with("mfp_")
+            && ["n_elastic", "n_excitation", "n_ionisation"]
+                .iter()
+                .map(|c| number(c))
+                .collect::<Result<Vec<_>, _>>()?
+                .iter()
+                .sum::<f64>()
+                != n
+        {
+            return Err(format!(
+                "{name} row {} process counts do not sum to n_events",
+                i + 1
+            ));
+        }
+    }
+    if seen != energies {
+        return Err(format!(
+            "{name} energy list differs from its registered order"
+        ));
+    }
+    Ok(())
+}
+
+fn parse_nonnegative(raw: &str, row: usize, column: &str) -> Result<f64, String> {
+    let value = raw
+        .parse::<f64>()
+        .map_err(|_| format!("row {} column `{column}` is not a number: `{raw}`", row + 2))?;
+    if !value.is_finite() || value < 0.0 {
+        return Err(format!(
+            "row {} column `{column}` must be finite and nonnegative, got `{raw}`",
+            row + 2
+        ));
+    }
+    Ok(value)
 }
 
 fn col(header: &[String], name: &str) -> usize {
@@ -183,9 +535,24 @@ fn print_margins(title: &str) {
 
 /// V5: `|a-b| < 3 combined se` and (when `with_relative`) `|a-b|/|b| < 2 %`.
 fn v5(label: &str, a: Sample, b: Sample, with_relative: bool) -> Result<(), String> {
+    if !a.mean.is_finite()
+        || !b.mean.is_finite()
+        || !a.se.is_finite()
+        || !b.se.is_finite()
+        || a.se < 0.0
+        || b.se < 0.0
+    {
+        return Err(format!("{label}: nonfinite mean or invalid standard error"));
+    }
     let diff = (a.mean - b.mean).abs();
     let se = (a.se * a.se + b.se * b.se).sqrt();
-    let z = if se > 0.0 { diff / se } else { 0.0 };
+    let z = if se > 0.0 {
+        diff / se
+    } else if diff == 0.0 {
+        0.0
+    } else {
+        f64::INFINITY
+    };
     let rel = diff / b.mean.abs();
     let used_rel = if with_relative && rel.is_finite() {
         rel / 0.02
@@ -721,4 +1088,177 @@ fn cross_section_comparison_detects_a_perturbed_reference() {
     );
     // a 1e-5 error fails everywhere
     assert!(compare_cross_sections(&table, &make(1.0 + 1e-5)).len() >= 2);
+}
+
+#[test]
+fn m2_reference_validator_accepts_a_complete_in_memory_mfp_fixture() {
+    let csv = mfp_fixture();
+    assert_eq!(
+        validate_m2_reference("mfp_first_interaction.csv", &csv, VALID_PROVENANCE),
+        Ok(())
+    );
+}
+
+#[test]
+fn m2_reference_validator_rejects_malformed_evidence() {
+    let valid = mfp_fixture();
+    let cases = [
+        ("empty file", "".to_owned()),
+        ("missing column", valid.replacen("sum_L_nm,", "", 1)),
+        (
+            "malformed row",
+            valid.replacen("150,1000000,", "150,ten,", 1),
+        ),
+        (
+            "duplicate row",
+            valid.clone() + valid.lines().last().unwrap() + "\n",
+        ),
+        (
+            "missing energy",
+            valid.replace("150,1000000,", "151,1000000,"),
+        ),
+        ("nonfinite value", valid.replacen(",20,", ",NaN,", 1)),
+        ("negative value", valid.replacen(",20,", ",-1,", 1)),
+        ("invalid moments", valid.replacen(",20,40,", ",20,0,", 1)),
+        ("wrong mode", valid.replacen("mode mfp", "mode track", 1)),
+        (
+            "wrong constructor",
+            valid.replacen("G4EmDNAPhysics_option2", "G4EmDNAPhysics_option4", 1),
+        ),
+        ("wrong seed", valid.replacen("seed 20261", "seed 7", 1)),
+        ("wrong units", valid.replacen("sum_L_nm", "sum_L_um", 1)),
+        ("wrong provenance constructor", valid.clone()),
+        ("wrong provenance", valid.clone()),
+    ];
+    for (label, text) in cases {
+        let provenance = match label {
+            "wrong provenance" => VALID_PROVENANCE.replace("11.4.1", "11.3.0"),
+            "wrong provenance constructor" => {
+                VALID_PROVENANCE.replace("G4EmDNAPhysics_option2", "G4EmDNAPhysics_option4")
+            }
+            _ => VALID_PROVENANCE.to_owned(),
+        };
+        assert!(
+            validate_m2_reference("mfp_first_interaction.csv", &text, &provenance).is_err(),
+            "accepted {label}"
+        );
+    }
+}
+
+#[test]
+fn m2_cross_section_validator_requires_exact_grid_and_process_coverage() {
+    let valid = xs_fixture();
+    assert_eq!(
+        validate_m2_reference("xs_per_volume.csv", &valid, XS_PROVENANCE),
+        Ok(())
+    );
+    let unknown_process = valid.replacen(",elastic,", ",unknown,", 1);
+    assert!(validate_m2_reference("xs_per_volume.csv", &unknown_process, XS_PROVENANCE).is_err());
+    let missing_row = valid
+        .lines()
+        .take(valid.lines().count() - 1)
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(validate_m2_reference("xs_per_volume.csv", &missing_row, XS_PROVENANCE).is_err());
+}
+
+#[test]
+fn m2_cross_section_grid_accepts_one_ulp_rounding_of_a_registered_energy() {
+    let mut lines: Vec<String> = xs_fixture().lines().map(str::to_owned).collect();
+    let mut first: Vec<String> = lines[4].split(',').map(str::to_owned).collect();
+    let energy: f64 = first[0].parse().unwrap();
+    first[0] = f64::from_bits(energy.to_bits() + 1).to_string();
+    lines[4] = first.join(",");
+    assert_eq!(
+        validate_m2_reference("xs_per_volume.csv", &lines.join("\n"), XS_PROVENANCE),
+        Ok(())
+    );
+}
+
+#[test]
+fn m2_cross_section_grid_rejects_conflicting_repeated_endpoint_values() {
+    let mut lines: Vec<String> = xs_fixture().lines().map(str::to_owned).collect();
+    let repeated: Vec<usize> = lines
+        .iter()
+        .enumerate()
+        .filter_map(|(index, line)| {
+            let fields: Vec<&str> = line.split(',').collect();
+            (fields.len() == 3
+                && fields[0].parse::<f64>().ok() == Some(7.4)
+                && fields[1] == "elastic")
+                .then_some(index)
+        })
+        .collect();
+    assert_eq!(repeated.len(), 2);
+    let mut fields: Vec<&str> = lines[repeated[1]].split(',').collect();
+    fields[2] = "1";
+    lines[repeated[1]] = fields.join(",");
+    assert!(validate_m2_reference("xs_per_volume.csv", &lines.join("\n"), XS_PROVENANCE).is_err());
+}
+
+#[test]
+fn m2_deterministic_unequal_means_fail_the_v5_check() {
+    let exact = |mean| Sample { mean, se: 0.0 };
+    assert!(v5("equal", exact(2.0), exact(2.0), false).is_ok());
+    assert!(v5("unequal", exact(2.0), exact(3.0), false).is_err());
+}
+
+const VALID_PROVENANCE: &str = r#"
+geant4_version = "11.4.1"
+geant4_commit = "test-revision"
+g4emlow_version = "8.8"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+physics_constructor = "G4EmDNAPhysics_option2"
+generator = "g4rs_ref"
+date = "2026-10-26"
+command_lines = ["g4rs_ref mfp mfp_first_interaction.csv 1000000 20261"]
+fluo_auger = "off"
+compiler = "test compiler"
+platform = "test platform"
+"#;
+
+const XS_PROVENANCE: &str = r#"
+geant4_version = "11.4.1"
+geant4_commit = "test-revision"
+g4emlow_version = "8.8"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+physics_constructor = "G4EmDNAPhysics_option2"
+generator = "g4rs_ref"
+date = "2026-10-26"
+command_lines = ["g4rs_ref xs xs_per_volume.csv"]
+fluo_auger = "off"
+compiler = "test compiler"
+platform = "test platform"
+"#;
+
+fn mfp_fixture() -> String {
+    let mut csv = String::from(
+        "# generator: g4rs_ref (validation/geant4/g4rs_ref), mode mfp\n\
+         # geant4_version_number: 1141\n\
+         # physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 1000000; seed 20261\n\
+         energy_eV,n_events,sum_L_nm,sum_L2_nm2,sum_edep_eV,sum_edep2_eV2,sum_remaining_eV,sum_remaining2_eV2,sum_nsec,sum_nsec2,sum_esec_eV,sum_esec2_eV2,sum_range_nm,n_elastic,n_excitation,n_ionisation,n_other\n",
+    );
+    for energy in MFP_ENERGIES {
+        csv.push_str(&format!(
+            "{energy},1000000,20,40,0,0,0,0,0,0,0,0,20,300000,200000,500000,0\n"
+        ));
+    }
+    csv
+}
+
+fn xs_fixture() -> String {
+    let mut csv = String::from(
+        "# generator: g4rs_ref (validation/geant4/g4rs_ref), mode xs\n\
+         # geant4_version_number: 1141\n\
+         # physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 0; seed 0\n\
+         energy_eV,process,sigma_per_volume_per_nm\n",
+    );
+    let mut energies = vec![7.4, 9.0, 11.0, 100.0, 1e3, 1e4, 1e5, 1e6];
+    energies.extend((0..200).map(|i| 7.4 * (1e6_f64 / 7.4).powf(i as f64 / 199.0)));
+    for energy in energies {
+        for process in M2_PROCESS_NAMES {
+            csv.push_str(&format!("{energy:.17},{process},0\n"));
+        }
+    }
+    csv
 }
