@@ -1,8 +1,12 @@
 //! Small, exact same-toolchain oracle for crate-ownership changes; no physics changes.
+#[cfg(feature = "chemistry")]
 use g4_chemistry::PhysChemEngine;
+#[cfg(feature = "chemistry")]
 use g4_chemistry::{SPECIES_CSV_HEADER, Species};
 use g4_core::manifest::Manifest;
-use g4_core::rng::{RngStreams, Stage};
+use g4_core::rng::RngStreams;
+#[cfg(feature = "chemistry")]
+use g4_core::rng::Stage;
 use g4_core::vec3::Vec3;
 use g4_data::datadir::{DataDir, repo_data_dir};
 use g4_physics::models::{ElasticRotation, ProcessKind};
@@ -12,7 +16,9 @@ use g4_sim::config::RunConfig;
 use g4_sim::history::{
     HistoryResult, radial_edges_nm, run_history_with_observer, spectrum_edges_ev,
 };
-use g4_sim::run::{CsvPhysChemWriter, run_detailed, run_with_physchem, run_with_sink};
+#[cfg(feature = "chemistry")]
+use g4_sim::run::run_with_physchem;
+use g4_sim::run::{CsvPhysChemWriter, run_detailed, run_with_sink};
 use serde_json::{Value, json};
 
 fn bits(x: f64) -> String {
@@ -80,11 +86,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         [arg] if arg == "--physchem" => true,
         _ => return Err("usage: crate_split_snapshot --physics|--physchem".into()),
     };
+    #[cfg(not(feature = "chemistry"))]
+    if coupled {
+        return Err("--physchem requires the unsupported chemistry feature in this build".into());
+    }
     let root = repo_data_dir();
     let manifest = Manifest::load(&root.join("MANIFEST.toml"))?;
     let dir = DataDir::new(root)?;
     dir.verify(&manifest)?;
     let table = ProcessTable::option2_electron(&dir, ElasticRotation::Geant4)?;
+    #[cfg(feature = "chemistry")]
     let engine = coupled.then(PhysChemEngine::option3).transpose()?;
     let streams = RngStreams::new(20261026);
     let mut runs = Vec::new();
@@ -120,6 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }))
                     .collect::<Vec<_>>()
             );
+            #[cfg(feature = "chemistry")]
             if let Some(engine) = &engine {
                 let mut rng = streams.stream(h.id, Stage::PhysChem)?;
                 let c = engine.convert_history(&h.physchem, &mut rng)?;
@@ -148,9 +160,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let mut csv = CsvPhysChemWriter::new(Vec::new(), "snapshot memory")?;
         let output = run_with_sink(&table, &config, &manifest, Some(&mut csv))?;
+        #[allow(unused_mut)]
         let mut result = json!({"config": exact(serde_json::to_value(&config)?),
             "histories": records, "summary_json": exact(serde_json::to_value(output)?),
             "physchem_csv": String::from_utf8(csv.into_inner())?});
+        #[cfg(feature = "chemistry")]
         if let Some(engine) = &engine {
             result["coupled_summary_json"] = exact(serde_json::to_value(run_with_physchem(
                 &table, engine, &config, &manifest,

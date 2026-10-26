@@ -6,14 +6,17 @@
 //! * [`scoring`]: sequential, fixed-order reduction into `RunSummary`.
 //! * [`run`]: rayon batches, thread-count independent, and the JSON `RunOutput`.
 //!
-//! Chemistry and the CLI arrive in M6-M8; this crate is where they will attach (docs/03).
+//! The default `chemistry` feature adds coupled physicochemical runs, scoring and diagnostics.
+//! Without it, physical transport and raw physicochemical handoff recording remain available.
 
 pub mod config;
 pub mod error;
 pub mod history;
+#[cfg(feature = "chemistry")]
 pub mod physchem_scoring;
 pub mod run;
 pub mod scoring;
+#[cfg(feature = "chemistry")]
 pub mod spatial_diagnostic;
 
 pub use config::RunConfig;
