@@ -14,10 +14,10 @@
 //! Charged PDC construction is supported; this does not imply a charged PDC sampler.
 //! Invalid arithmetic and k_obs >= k_diff are errors instead of C++ sentinel data.
 
+use crate::Species;
 use crate::error::ChemistryError;
 use crate::reactions::{KineticIntent, ObservedRate, Reaction, ReactionParticipant};
 use crate::species::{SpeciesProps, SpeciesTable};
-use dna_core::species::Species;
 use dna_core::units::{Diffusivity, Length, RateConstant};
 use std::f64::consts::PI;
 

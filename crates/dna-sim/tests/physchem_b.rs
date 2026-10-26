@@ -14,10 +14,10 @@
 //! bounds are a sanity check, not a Geant4 or experimental validation.
 
 use dna_chemistry::PhysChemEngine;
+use dna_chemistry::Species;
 use dna_core::manifest::Manifest;
 use dna_core::physchem::{PhysChemEvent, PhysChemKind};
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::Species;
 use dna_core::testing::ScriptedRng;
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;

@@ -13,7 +13,7 @@
 //! label does not describe a dissociation-only snapshot. The original gate remains unchanged.
 
 use dna_chemistry::PhysChemEngine;
-use dna_core::species::Species;
+use dna_chemistry::Species;
 use dna_data::datadir::{DataDir, repo_data_dir};
 use dna_physics::models::ElasticRotation;
 use dna_physics::table::ProcessTable;

@@ -14,10 +14,10 @@
 mod common;
 
 use common::fixture;
+use dna_chemistry::Species;
 use dna_chemistry::channels::DisplacementKind;
 use dna_chemistry::displacer::{autoionisation_r_mean_nm, displacements};
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::Species;
 use dna_core::vec3::Vec3;
 
 const N: usize = 200_000;

@@ -18,10 +18,10 @@
 //! `G4DNAMolecularDissociation.cc:258`). The `H2Ovib` relaxation has zero released energy: its constructor
 //! default is never overridden, unlike the five excited-state relaxations (docs/02 B.7.8).
 
+use crate::Species;
 use crate::error::ChemistryError;
 use crate::species::{SpeciesTable, atoms};
 use dna_core::physchem::PhysChemKind;
-use dna_core::species::Species;
 use dna_core::units::Energy;
 use serde::Deserialize;
 

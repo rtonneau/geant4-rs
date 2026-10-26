@@ -5,9 +5,9 @@
 
 use std::collections::HashMap;
 
+use crate::Species;
 use crate::error::ChemistryError;
 use crate::species::{SpeciesTable, atoms};
-use dna_core::species::Species;
 use serde::Deserialize;
 
 const FILE: &str = "reactions_option3.toml";
@@ -433,7 +433,7 @@ fn is_exact_geant4_anomaly(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dna_core::species::Species;
+    use crate::Species;
 
     fn replace_once(source: &str, from: &str, to: &str) -> String {
         let source = source.replace("\r\n", "\n");

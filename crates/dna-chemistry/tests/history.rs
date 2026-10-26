@@ -7,9 +7,9 @@
 mod common;
 
 use dna_chemistry::PhysChemEngine;
+use dna_chemistry::{Species, SpeciesInstance};
 use dna_core::physchem::{PhysChemEvent, PhysChemKind};
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::{Species, SpeciesInstance};
 use dna_core::testing::ScriptedRng;
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;

@@ -1,8 +1,8 @@
 use std::error::Error;
 
+use dna_chemistry::Species;
 use dna_chemistry::reactions::{ObservedRate, ReactionParticipant, ReactionTable};
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::Species;
 use rsoda::{ClosureSystem, Lsoda, OptionsBuilder, Tolerance};
 
 const AVOGADRO_PER_MOL: f64 = 6.022_140_76e23;

@@ -5,13 +5,13 @@
 //! brackets below were evaluated independently from the source envelope.
 
 use dna_chemistry::ChemistryError;
+use dna_chemistry::SpeciesInstance;
 use dna_chemistry::irt::{ReactionTime, sample_independent_reaction_time};
 use dna_chemistry::molecule::{Molecule, MoleculeId, MoleculePair};
 use dna_chemistry::reaction_parameters::TwoBodyReactionParameters as Parameters;
 use dna_chemistry::reactions::{ObservedRate, ReactionParticipant, ReactionTable};
 use dna_chemistry::species::SpeciesTable;
 use dna_core::rng::u64_to_open01;
-use dna_core::species::SpeciesInstance;
 use dna_core::testing::ScriptedRng;
 use dna_core::units::{Diffusivity, Length, Time};
 use dna_core::vec3::Vec3;

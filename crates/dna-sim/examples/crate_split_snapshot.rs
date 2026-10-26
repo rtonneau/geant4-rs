@@ -1,8 +1,8 @@
 //! Small, exact same-toolchain oracle for crate-ownership changes; no physics changes.
 use dna_chemistry::PhysChemEngine;
+use dna_chemistry::{SPECIES_CSV_HEADER, Species};
 use dna_core::manifest::Manifest;
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::{SPECIES_CSV_HEADER, Species};
 use dna_core::vec3::Vec3;
 use dna_data::datadir::{DataDir, repo_data_dir};
 use dna_physics::models::{ElasticRotation, ProcessKind};

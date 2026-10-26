@@ -23,9 +23,9 @@
 //! `docs/02-cpp-reference-inventory.md`, B.7.9.
 
 use dna_chemistry::engine::{DissociationBirth, PhysChemObserver};
+use dna_chemistry::{Species, SpeciesInstance};
 use dna_core::physchem::{PhysChemEvent, PhysChemKind, PhysChemSite};
 use dna_core::rng::{HistoryRng, RngStreams, Stage};
-use dna_core::species::{Species, SpeciesInstance};
 use dna_core::vec3::Vec3;
 use dna_physics::transport::HistoryObserver;
 use std::collections::{BTreeMap, BTreeSet};
