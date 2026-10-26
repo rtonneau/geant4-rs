@@ -769,10 +769,10 @@ impl DiagnosticRecord {
         {
             return Err(invalid("daughter birth is missing its zero-time pass"));
         }
-        if let Some(time) = self.time_ps {
-            if !time.is_finite() || time < 0.0 {
-                return Err(invalid("time must be finite and nonnegative"));
-            }
+        if let Some(time) = self.time_ps
+            && (!time.is_finite() || time < 0.0)
+        {
+            return Err(invalid("time must be finite and nonnegative"));
         }
         if self.stage == DiagnosticStage::Physicochemical && self.time_ps != Some(1.0) {
             return Err(invalid("molecular boundary must be at global time 1 ps"));
@@ -1011,20 +1011,20 @@ impl HistoryBuilder {
 
     fn add(&mut self, row: DiagnosticRecord) -> Result<(), DiagnosticError> {
         let key = (row.boundary, row.category);
-        if let Some(id) = row.identity.entity {
-            if !self.identities.insert((row.boundary, id)) {
-                return Err(invalid(format!(
-                    "duplicate entity at {:?}: {id:?}",
-                    row.boundary
-                )));
-            }
+        if let Some(id) = row.identity.entity
+            && !self.identities.insert((row.boundary, id))
+        {
+            return Err(invalid(format!(
+                "duplicate entity at {:?}: {id:?}",
+                row.boundary
+            )));
         }
-        if let Some(existing) = self.summary.categories.get(&key) {
-            if existing.count == 0 || row.moments.count == 0 {
-                return Err(invalid(
-                    "duplicate empty category or empty and populated category",
-                ));
-            }
+        if let Some(existing) = self.summary.categories.get(&key)
+            && (existing.count == 0 || row.moments.count == 0)
+        {
+            return Err(invalid(
+                "duplicate empty category or empty and populated category",
+            ));
         }
         self.summary
             .categories

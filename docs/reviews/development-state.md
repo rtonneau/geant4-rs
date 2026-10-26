@@ -12,6 +12,12 @@ The next selected GPS session, `m6-process-counts-geant4-request`, is obsolete i
 
 Readiness: suitable for controlled electron/physicochemical research and incremental development; **not ready for production G(t), proton claims, full Geant4-DNA compatibility or independent physical-validation claims**. Completed GPS sessions are evidence of delivered work, not proof of scientific correctness.
 
+### Current R01 validation and CI status (2026-10-26)
+
+The maintained gate inventory selects four M2 Geant4 comparisons, two M3 comparisons and the M6 RR-001 pre-IRT 1 ps comparison. `python scripts/run_validation_gates.py --tier required` fails on missing or altered committed data/reference evidence; `--tier statistical` runs the selected ignored comparisons manually. Historical post-zero-time M6 gates and exploratory or scratch-producing spatial diagnostics remain excluded. CI now specifies pinned Rust 1.97.0, format, Clippy, workspace tests and the required tier for Linux and Windows. Linux and remote Windows CI results are unverified until those jobs actually run.
+
+M6's closure remains qualified. RR-002 met its precision target and did not reproduce the earlier 12–13% spatial RMS excess; the interval includes equality, so this is not an equivalence result. Its CSV/provenance remain local-only under `.scratch/rr-002-80/` and cannot be used as committed CI evidence. The baseline audit and historical findings below retain their original as-of context.
+
 ## 1. Scope, evidence and checks
 
 Inspected `AGENTS.md`, README, the original `docs/01`–`docs/10` planning package, architecture/reproducibility/units documents, GPS backlogs, local registry, session grills/tickets/commit logs, available non-shallow Git history, all five crate boundaries, relevant source/tests/examples, CI, Geant4 generators/run requests and reference metadata. Specialist reviews covered history, Rust architecture, validation and chemistry/source fidelity.
