@@ -386,6 +386,23 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
     observer: &mut O,
 ) -> Result<HistoryOutcome, PhysicsError> {
     table.primary_energy_range().check(primary.energy)?;
+    for (component, value_nm) in [
+        ("x", primary.position.x),
+        ("y", primary.position.y),
+        ("z", primary.position.z),
+    ] {
+        if !value_nm.is_finite() {
+            return Err(PhysicsError::InvalidPrimaryPosition {
+                component,
+                value_nm,
+            });
+        }
+    }
+    if !config.ledger_limit_relative.is_finite() || config.ledger_limit_relative < 0.0 {
+        return Err(PhysicsError::InvalidLedgerLimit {
+            value: config.ledger_limit_relative,
+        });
+    }
     let start_direction = primary
         .direction
         .normalised()

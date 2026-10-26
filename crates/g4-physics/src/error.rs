@@ -1,5 +1,6 @@
 //! Errors of the physics layer.
 
+use crate::models::ProcessKind;
 use g4_core::error::DnaError;
 use g4_data::DataError;
 use thiserror::Error;
@@ -28,6 +29,28 @@ pub enum PhysicsError {
     /// The primary direction is zero or not finite.
     #[error("primary direction must be a non-zero finite vector")]
     InvalidDirection,
+    /// A primary position component is not finite.
+    #[error("primary position {component} must be finite, got {value_nm} nm")]
+    InvalidPrimaryPosition {
+        component: &'static str,
+        value_nm: f64,
+    },
+    /// The relative ledger tolerance must be finite and nonnegative.
+    #[error("relative ledger limit must be finite and nonnegative, got {value}")]
+    InvalidLedgerLimit { value: f64 },
+    /// A model produced an invalid macroscopic cross section after density conversion.
+    #[error(
+        "{model} ({process:?}) at {energy_ev} eV produced invalid macroscopic cross section {value_per_nm} 1/nm"
+    )]
+    InvalidMacroscopicCrossSection {
+        energy_ev: f64,
+        process: ProcessKind,
+        model: &'static str,
+        value_per_nm: f64,
+    },
+    /// The sum of otherwise valid macroscopic cross sections overflowed.
+    #[error("macroscopic cross-section total at {energy_ev} eV is invalid: {value_per_nm} 1/nm")]
+    InvalidMacroscopicTotal { energy_ev: f64, value_per_nm: f64 },
     /// The table was built without a model for a process the caller asked for.
     #[error("no {0} model registered")]
     MissingModel(&'static str),

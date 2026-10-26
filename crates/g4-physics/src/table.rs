@@ -278,10 +278,13 @@ impl ProcessTable {
         let mut per_nm = [0.0; ProcessKind::COUNT];
         for p in ProcessKind::ALL {
             if let Some(model) = self.select(p, e) {
-                per_nm[p.index()] = model.cross_section(e)?.nm2() * self.molecules_per_nm3;
+                let value = model.cross_section(e)?.nm2() * self.molecules_per_nm3;
+                per_nm[p.index()] = checked_macroscopic_component(e, p, model.name(), value)?;
             }
         }
-        Ok(MacroscopicCrossSections { per_nm })
+        let xs = MacroscopicCrossSections { per_nm };
+        checked_macroscopic_total(e, xs.total())?;
+        Ok(xs)
     }
 
     /// Inventory of the registered models for the output metadata.
@@ -345,10 +348,68 @@ impl ProcessTable {
     }
 }
 
+fn checked_macroscopic_component(
+    energy: Energy,
+    process: ProcessKind,
+    model: &'static str,
+    value_per_nm: f64,
+) -> Result<f64, PhysicsError> {
+    if !value_per_nm.is_finite() || value_per_nm < 0.0 {
+        return Err(PhysicsError::InvalidMacroscopicCrossSection {
+            energy_ev: energy.ev(),
+            process,
+            model,
+            value_per_nm,
+        });
+    }
+    Ok(value_per_nm)
+}
+
+fn checked_macroscopic_total(energy: Energy, value_per_nm: f64) -> Result<(), PhysicsError> {
+    if !value_per_nm.is_finite() || value_per_nm < 0.0 {
+        return Err(PhysicsError::InvalidMacroscopicTotal {
+            energy_ev: energy.ev(),
+            value_per_nm,
+        });
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use g4_core::units::Area;
+
+    #[test]
+    fn invalid_macroscopic_components_and_overflowed_total_are_errors() {
+        let energy = Energy::from_ev(100.0);
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0] {
+            let err =
+                checked_macroscopic_component(energy, ProcessKind::Elastic, "test model", invalid)
+                    .unwrap_err();
+            assert!(matches!(
+                err,
+                PhysicsError::InvalidMacroscopicCrossSection {
+                    energy_ev: 100.0,
+                    process: ProcessKind::Elastic,
+                    model: "test model",
+                    ..
+                }
+            ));
+        }
+        assert_eq!(
+            checked_macroscopic_component(energy, ProcessKind::Elastic, "test model", 0.0),
+            Ok(0.0)
+        );
+        let overflowed = MacroscopicCrossSections::new([f64::MAX, f64::MAX, 0.0, 0.0, 0.0]);
+        assert!(matches!(
+            checked_macroscopic_total(energy, overflowed.total()),
+            Err(PhysicsError::InvalidMacroscopicTotal {
+                energy_ev: 100.0,
+                value_per_nm: f64::INFINITY,
+            })
+        ));
+    }
 
     /// A model that only has a window, to test the selection rule in isolation.
     #[derive(Debug)]
