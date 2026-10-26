@@ -10,7 +10,7 @@
       "id": "M2-xs",
       "milestone": "M2",
       "profile": "cross sections V2/V3",
-      "target": "dna-sim/geant4_reference",
+      "target": "g4-sim/geant4_reference",
       "test": "v2_v3_cross_sections_per_volume_match_geant4",
       "fixtures": ["xs_per_volume.csv", "provenance.toml"]
     },
@@ -18,7 +18,7 @@
       "id": "M2-mfp",
       "milestone": "M2",
       "profile": "mean free path V5, seed 1",
-      "target": "dna-sim/geant4_reference",
+      "target": "g4-sim/geant4_reference",
       "test": "v5_first_interaction_mean_free_path_matches_geant4",
       "fixtures": ["mfp_first_interaction.csv", "provenance.toml"]
     },
@@ -26,7 +26,7 @@
       "id": "M2-track",
       "milestone": "M2",
       "profile": "primary track with 100 eV cut V5, seed 1",
-      "target": "dna-sim/geant4_reference",
+      "target": "g4-sim/geant4_reference",
       "test": "v5_primary_track_with_100_ev_cut_matches_geant4",
       "fixtures": ["track_cut100eV.csv", "provenance.toml"]
     },
@@ -34,7 +34,7 @@
       "id": "M2-seed2",
       "milestone": "M2",
       "profile": "independent seed-2 consistency against seed 1 and Rust",
-      "target": "dna-sim/geant4_reference",
+      "target": "g4-sim/geant4_reference",
       "test": "seed2_geant4_runs_are_consistent_with_seed1_and_with_rust",
       "fixtures": ["mfp_first_interaction.csv", "track_cut100eV.csv", "mfp_first_interaction_seed2.csv", "track_cut100eV_seed2.csv", "provenance.toml"]
     },
@@ -42,7 +42,7 @@
       "id": "M3-xs",
       "milestone": "M3",
       "profile": "low-energy cross sections V2",
-      "target": "dna-sim/slowing_down_reference",
+      "target": "g4-sim/slowing_down_reference",
       "test": "m3_v2_low_energy_cross_sections_match_geant4",
       "fixtures": ["xs_lowenergy.csv", "provenance_m3.toml"]
     },
@@ -50,7 +50,7 @@
       "id": "M3-cascade",
       "milestone": "M3",
       "profile": "full-cascade slowing-down V5, spectra and radial profile",
-      "target": "dna-sim/slowing_down_reference",
+      "target": "g4-sim/slowing_down_reference",
       "test": "m3_v5_full_slowing_down_matches_geant4",
       "fixtures": ["slow_sums.csv", "slow_spectra.csv", "slow_radial.csv", "provenance_m3.toml"]
     },
@@ -58,7 +58,7 @@
       "id": "M6-prechem",
       "milestone": "M6",
       "profile": "RR-001 dissociation-only snapshot at 1 ps before IRT",
-      "target": "dna-sim/physchem_reference",
+      "target": "g4-sim/physchem_reference",
       "test": "m6_prechem_counts_and_rms_match_geant4",
       "fixtures": ["physchem_prechem.csv", "provenance_m6_prechem.toml"]
     }

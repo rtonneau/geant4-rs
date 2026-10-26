@@ -1,0 +1,21 @@
+[package]
+name = "g4-sim"
+description = "Orchestration of geant4-rs physics runs: deterministic parallel histories, scorers, JSON output with provenance"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+g4-core = { path = "../g4-core" }
+g4-data = { path = "../g4-data" }
+g4-physics = { path = "../g4-physics" }
+g4-chemistry = { path = "../g4-chemistry" }
+rayon = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }
+toml = { workspace = true }

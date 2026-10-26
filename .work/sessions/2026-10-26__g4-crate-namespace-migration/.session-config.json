@@ -1,0 +1,169 @@
+{
+  "session_id": "2026-10-26__g4-crate-namespace-migration",
+  "feature_name": "g4-crate-namespace-migration",
+  "scratch_dir": ".scratch/tests/2026-10-26__g4-crate-namespace-migration",
+  "created_at": "2026-10-26T13:58:13.017Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-26T13:58:13.017Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T14:03:55.325Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T14:04:07.543Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T14:55:30.022Z",
+      "event": "auto_started",
+      "phase": "plan",
+      "detail": {
+        "target": "finish",
+        "steps": "write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-26T14:59:26.071Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "refactor/g4-crate-namespace-migration",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-26T14:59:26.087Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-validate-rename-snapshots.md",
+        "02-plan/tickets/02-rename-five-crates.md"
+      ],
+      "detail": {
+        "tickets": 2
+      }
+    },
+    {
+      "at": "2026-10-26T15:00:11.367Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-validate-rename-snapshots.md",
+        "03-implement/01-validate-rename-snapshots/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-validate-rename-snapshots"
+      }
+    },
+    {
+      "at": "2026-10-26T15:16:04.816Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-validate-rename-snapshots/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-validate-rename-snapshots",
+        "commit": "bf4946c"
+      }
+    },
+    {
+      "at": "2026-10-26T15:16:20.302Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-rename-five-crates.md",
+        "03-implement/02-rename-five-crates/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-rename-five-crates"
+      }
+    },
+    {
+      "at": "2026-10-26T15:35:11.863Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/02-rename-five-crates/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-rename-five-crates",
+        "commit": "e33bee3"
+      }
+    },
+    {
+      "at": "2026-10-26T15:36:06.853Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-10-26T15:37:25.566Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/23"
+      }
+    },
+    {
+      "at": "2026-10-26T15:37:25.568Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T15:37:25.777Z",
+      "event": "scratch_cleaned",
+      "phase": "finished",
+      "detail": {
+        "policy": "build-artifacts",
+        "removed": [
+          ".scratch/tests/2026-10-26__g4-crate-namespace-migration/cargo-target/debug/build",
+          ".scratch/tests/2026-10-26__g4-crate-namespace-migration/cargo-target/debug/incremental/build_script_build-0am1oqo2p4e76",
+          ".scratch/tests/2026-10-26__g4-crate-namespace-migration/cargo-target/debug/incremental/build_script_build-1dq95hh1raev2",
+          ".scratch/tests/2026-10-26__g4-crate-namespace-migration/cargo-target/debug/incremental/build_script_build-2ctjd8o604zk5",
+          ".scratch/tests/2026-10-26__g4-crate-namespace-migration/cargo-target/debug/incremental/build_script_build-2hkw18cxfyrgi"
+        ],
+        "freedBytes": 78300876
+      }
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "refactor/g4-crate-namespace-migration",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-26T14:59:26.071Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/23"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "minor",
+    "floor": "patch",
+    "reason": "Deliberate source breaking package and import renames in the pre-release workspace",
+    "bullets": 1,
+    "path": ".work/changelog/2026-10-26__g4-crate-namespace-migration.md",
+    "written_at": "2026-10-26T15:36:06.843Z"
+  },
+  "finished_at": "2026-10-26T15:37:25.568Z"
+}

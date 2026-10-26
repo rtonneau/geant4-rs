@@ -2,10 +2,10 @@
 
 **Status.** M2: the generator modes `xs`, `mfp`, `track` were compiled and run by the project lead
 (Geant4 11.4.1, Windows/MSVC); the CSVs are committed in `validation/reference/` and the M2 gate passes
-(`cargo test -p dna-sim --test geant4_reference -- --ignored --nocapture`, docs/08). M3: the modes `xslow`
+(`cargo test -p g4-sim --test geant4_reference -- --ignored --nocapture`, docs/08). M3: the modes `xslow`
 and `slow` (section "M3: full slowing-down reference" at the end) are **untested C++**: they were written
 without a Geant4 installation and only syntax-checked against stub headers. The M3 comparison tests are in
-`crates/dna-sim/tests/slowing_down_reference.rs` and are `#[ignore]`d until the files listed there exist.
+`crates/g4-sim/tests/slowing_down_reference.rs` and are `#[ignore]`d until the files listed there exist.
 No Geant4 number has been invented or embedded anywhere in the repository.
 
 **New runs requested by agent sessions** are logged in [RUN_REQUESTS.md](RUN_REQUESTS.md): sessions write and compile-check the C++ but never run it.
@@ -89,7 +89,7 @@ platform            = ""
 ## Running the comparison
 
 ```bash
-cargo test -p dna-sim --test geant4_reference -- --ignored --nocapture
+cargo test -p g4-sim --test geant4_reference -- --ignored --nocapture
 ```
 
 Acceptance criteria are written in the header of `geant4_reference.rs` and were fixed before any
@@ -126,7 +126,7 @@ file has `energies x 4 x 72` rows; the radial file `energies x 42`; `xs_lowenerg
 |---|---|---|---|
 | `xs_lowenergy.csv` | `xslow` | `energy_eV,process,sigma_per_volume_per_nm` for `elastic, excitation, ionisation, vibexc, attachment` at 214 energies: 1.5, 2, 3.9, 4, 7.4, 9, 11, 12.3, 12.8, 13, 13.5, 100, 101, 150 eV and 200 log-spaced energies from 2 to 100 eV | `m3_v2_low_energy_cross_sections_match_geant4`: 1e-9 at nodes, 1e-6 elsewhere, zero windows must agree |
 | `slow_sums.csv` | `slow` | per primary energy: `n_events` and, for each of the quantities primary track length `Lprim_nm`, track length of all tracks `Lall_nm`, deposited energy `edep_eV`, counts of elastic / excitation / ionisation / vibrational excitation / attachment / solvation interactions, number of secondaries, primary range `range_nm`: the sum over events and the sum of squares; plus the cross sum `sum_nsolv_x_edep` and the counters `n_other_process`, `n_other_secondary` (must be 0) | `m3_v5_full_slowing_down_matches_geant4` |
-| `slow_spectra.csv` | `slow` | secondary-electron creation energy histograms, `energy_eV,generation_class,bin,count`; classes 1, 2, 3, 4 (= 4th generation or later); bins: 0 = underflow (< 0.1 eV), 1-70 = 0.1 eV x 10^(k/10), 71 = overflow (>= 1 MeV); the same edges as `dna-sim` | same test, two-sample chi-square per class |
+| `slow_spectra.csv` | `slow` | secondary-electron creation energy histograms, `energy_eV,generation_class,bin,count`; classes 1, 2, 3, 4 (= 4th generation or later); bins: 0 = underflow (< 0.1 eV), 1-70 = 0.1 eV x 10^(k/10), 71 = overflow (>= 1 MeV); the same edges as `g4-sim` | same test, two-sample chi-square per class |
 | `slow_radial.csv` | `slow` | energy deposited per radial shell around the origin summed over all events: `energy_eV,bin,energy_eV_sum`; bin 0 = r < 0.1 nm, 1-40 = 0.1 nm x 10^(k/5), 41 = r >= 10 mm | same test, cumulative fractions |
 | `provenance_m3.toml` | - | template below | the test refuses to run without it |
 
@@ -246,7 +246,7 @@ Exactly two files are needed in `validation/reference/`:
 - `physchem.csv`, from the successful command above.
 - `provenance_m6.toml`, with `geant4_version`, `geant4_commit`, `g4emlow_version`, `g4emlow_md5`, `physics_constructor = "G4EmDNAPhysics_option2"`, `chemistry_constructor = "G4EmDNAChemistry_option3"`, `scheduler_snapshot_ps = 1.0`, generator commit, date, exact command line, seed, compiler and platform.
 
-Then run `cargo test -p dna-sim --test physchem_reference -- --ignored --nocapture`. The ignored test contains the pre-registered count and RMS acceptance criteria. It must remain ignored until both files exist and the generator exits successfully.
+Then run `cargo test -p g4-sim --test physchem_reference -- --ignored --nocapture`. The ignored test contains the pre-registered count and RMS acceptance criteria. It must remain ignored until both files exist and the generator exits successfully.
 
 ## M6 pre-IRT diagnostic (RR-001, awaiting data)
 
@@ -310,7 +310,7 @@ PATH. The consumer accepts that registered command (use PATH or a shell alias fo
 Run only the paired ignored test after data and provenance are committed:
 
 ```bash
-cargo test -p dna-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture
+cargo test -p g4-sim --test physchem_reference m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact --nocapture
 ```
 
 Criteria registered before these data exist: the same **z <= 4.5**, **15%** count difference when both
@@ -368,7 +368,7 @@ command_line = "g4rs_ref physchem_spatial_diagnostic ../../reference/spatial_gea
 After both files are committed, run:
 
 ```bash
-cargo test --release -p dna-sim --test physchem_reference m6_900kev_spatial_diagnostic -- --ignored --exact --nocapture
+cargo test --release -p g4-sim --test physchem_reference m6_900kev_spatial_diagnostic -- --ignored --exact --nocapture
 ```
 
 The consumer generates an independent Rust sample and uses 20,000 hierarchical bootstrap replicates,
@@ -439,7 +439,7 @@ generated_at = "<YYYY-MM-DD>"
 Only after both new files are committed, run the paired close-gate command:
 
 ```bash
-cargo test --release -p dna-chemistry --test geant4_two_body m7_irt_survival_matches_geant4_sbs -- --ignored --exact --nocapture
+cargo test --release -p g4-chemistry --test geant4_two_body m7_irt_survival_matches_geant4_sbs -- --ignored --exact --nocapture
 ```
 
 The consumer validates provenance and exact CSV coverage before generating the fixed-seed Rust IRT

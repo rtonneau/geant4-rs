@@ -19,11 +19,11 @@ Re-implements, from the C++ algorithm, what the Rust models must return:
   * M3: G4DNAMeltonAttachmentModel: one column, scale 1e-18 cm^2 (:141), log-log through
     G4DNACrossSectionDataSet; above the last node (12.3 eV) the last stored value (0) is
     returned by G4EMDataSet::FindValue (lowenergy/src/G4EMDataSet.cc:167-183);
-  * water number density of G4DNAMolecularMaterial (see crates/dna-physics/src/water.rs).
+  * water number density of G4DNAMolecularMaterial (see crates/g4-physics/src/water.rs).
 
 Usage: scripts/hand_cross_sections.py [data_dir]   (default: <repo>/data)
 Output: Sigma (1/nm) per process and total at the test energies; pasted into
-crates/dna-physics/tests/cross_sections.rs.
+crates/g4-physics/tests/cross_sections.rs.
 """
 import math
 import os

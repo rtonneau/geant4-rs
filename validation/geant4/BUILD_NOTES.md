@@ -133,7 +133,7 @@ sets `/process/chem/TimeStepModel IRT` before `/run/initialize`; do the same in 
 ### 5.4 CSV species names
 `physchem.csv` holds native `G4Molecule::GetName()` = `<definition>^<charge>`: `H3O^1`, `°OH^0` (UTF-8
 degree sign), `e_aq^-1`, `H^0`, `H_2^0`, `OH^-1`, `O^-1`, `°O^0`, `H2O2^0`, `HO_2°^0`, `HO_2^-1`, `O_2^0`,
-`O_2^-1`, `O_3^0`. The Rust side maps them with `Species::from_geant4_name` (`crates/dna-core`). A name that
+`O_2^-1`, `O_3^0`. The Rust side maps them with `Species::from_geant4_name` (`crates/g4-chemistry`). A name that
 panics there ("unknown Geant4 species") means a spelling to add in that function, not a CSV edit.
 
 ## 6. Debugging a crash without a debugger

@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-EXTRACTION = ROOT / "crates/dna-chemistry/tests/fixtures/cpp_reactions.json"
+EXTRACTION = ROOT / "crates/g4-chemistry/tests/fixtures/cpp_reactions.json"
 
 # (hydrogen atoms, oxygen atoms, charge). This table is deliberately independent of Rust.
 COMPOSITION = {
