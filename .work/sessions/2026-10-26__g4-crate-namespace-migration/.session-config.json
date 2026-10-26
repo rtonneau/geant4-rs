@@ -83,9 +83,33 @@
         "ticket": "01-validate-rename-snapshots",
         "commit": "bf4946c"
       }
+    },
+    {
+      "at": "2026-10-26T15:16:20.302Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-rename-five-crates.md",
+        "03-implement/02-rename-five-crates/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-rename-five-crates"
+      }
+    },
+    {
+      "at": "2026-10-26T15:35:11.863Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/02-rename-five-crates/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-rename-five-crates",
+        "commit": "e33bee3"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "refactor/g4-crate-namespace-migration",
     "base_branch": "main",
