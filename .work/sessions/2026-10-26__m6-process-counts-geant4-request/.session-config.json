@@ -1,0 +1,18 @@
+{
+  "session_id": "2026-10-26__m6-process-counts-geant4-request",
+  "feature_name": "m6-process-counts-geant4-request",
+  "scratch_dir": ".scratch/tests/2026-10-26__m6-process-counts-geant4-request",
+  "created_at": "2026-10-25T23:13:22.186Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-25T23:13:22.186Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    }
+  ],
+  "current_phase": "grill"
+}
