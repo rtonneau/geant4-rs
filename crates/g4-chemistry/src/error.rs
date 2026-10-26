@@ -5,6 +5,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// Conditional placement cannot represent the source expression or its branch.
+    #[error("reaction {reaction_id}: placement domain failure in {operation}")]
+    PlacementDomain {
+        reaction_id: u16,
+        operation: &'static str,
+    },
+    /// Placement was requested for a disabled unary channel.
+    #[error("reaction {reaction_id}: disabled unary channel cannot be placed")]
+    DisabledReactionPlacement { reaction_id: u16 },
     /// A full source table changed the identity or ordering of an audited channel.
     #[error(
         "reaction {reaction_id}: inconsistent Geant4 option3 source signature or embedded rate"

@@ -13,6 +13,7 @@ use crate::reactions::{
 };
 use crate::species::SpeciesTable;
 use crate::{ChemistryError, Species};
+use g4_core::units::Diffusivity;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum UnaryRate {
@@ -70,6 +71,7 @@ enum ReactionExecution {
 pub struct CompiledReaction {
     source: Reaction,
     execution: ReactionExecution,
+    reactant_diffusivities: [Diffusivity; 2],
 }
 
 impl CompiledReaction {
@@ -92,6 +94,12 @@ impl CompiledReaction {
             ReactionExecution::Pair(_) => None,
             ReactionExecution::Unary(parameters) => Some(parameters),
         }
+    }
+
+    /// Diffusivities in source reactant order, retained for conditional placement.
+    /// A unary channel's second entry is its zero-diffusion fake bulk partner.
+    pub fn reactant_diffusivities(&self) -> [Diffusivity; 2] {
+        self.reactant_diffusivities
     }
 }
 
@@ -167,6 +175,10 @@ impl ReactionNetwork {
             reactions.push(CompiledReaction {
                 source: reaction.clone(),
                 execution,
+                reactant_diffusivities: reaction.reactants.map(|participant| match participant {
+                    ReactionParticipant::Mobile(mobile) => species.get(mobile).diffusivity,
+                    ReactionParticipant::Bulk(_) => Diffusivity::from_nm2_per_ps(0.0),
+                }),
             });
         }
         Ok(Self { reactions })
