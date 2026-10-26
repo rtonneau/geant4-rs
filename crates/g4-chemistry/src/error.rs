@@ -63,6 +63,9 @@ pub enum ChemistryError {
         reaction_id: u16,
         operation: &'static str,
     },
+    /// A positive unary rate produced an unrepresentable elapsed time in ps.
+    #[error("reaction {reaction_id}: unary clock delay is outside the finite positive time domain")]
+    UnaryClockDomain { reaction_id: u16 },
     /// A reaction pair names the same physical molecule twice.
     #[error("reaction pair contains molecule {id:?} twice")]
     DuplicateMoleculeId { id: MoleculeId },
