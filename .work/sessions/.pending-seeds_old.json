@@ -1,0 +1,115 @@
+{
+  "m7-sbs-close-gate": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "Close the two-body Geant4 comparison. Requires: `m7-sbs-oracle-and-ode` and the committed data and provenance.",
+    "solution": "Follow docs/gps-backlog.md, section m7-sbs-close-gate. **Tasks.** Provenance check, run the consuming test, record the result in docs/08, update RUN_REQUESTS. **Acceptance.** Pre-registered comparison passes, or the failure is documented with evidence; no tolerance loosened.",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m7-multispecies-irt-scheduler": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "The full many-species IRT scheduler on the M6 initial species. Requires: `m7-diffusion-and-two-body-irt`, `m7-sbs-close-gate`, and M6 closed (`m6-diagnose-and-fix` or `m6-close-gate`). Geant4 C++ follows validation/geant4/RUN_REQUESTS.md: write and compile-check only, never run.",
+    "solution": "Follow docs/gps-backlog.md, section m7-multispecies-irt-scheduler. **Tasks.** Reaction network from the validated table; time-ordered reaction events; species positions from the M6 1 ps record; thread-count independence; spatial correlations preserved (AGENTS.md). Keep the M6 same-decay pair statistic distinct from any RDF/nearest-neighbour observable (R16): if one is needed, pre-register bins and cutoffs as a new observable. Add a C++ reference mode for species counts over time (never run), RUN_REQUESTS entry, and an `#[ignore]`d comparison with pre-registered tolerances. **C++.** Yes: new mode, compile-check only. **Acceptance.** Unit and statistical tests pass; the comparison is written; gate \"awaiting data\".",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m7-scheduler-close-gate": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "Close the scheduler comparison. Requires: `m7-multispecies-irt-scheduler` and the committed data and provenance.",
+    "solution": "Follow docs/gps-backlog.md, section m7-scheduler-close-gate. **Tasks.** Provenance check, run the consuming test, record the result in docs/08, update RUN_REQUESTS. **Acceptance.** Comparison passes or is documented with evidence. M7 is then closed in docs/08.",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m8-gt-scoring-and-chem6-reference": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "G(t) scoring with uncertainties and the Geant4 chem6-like reference generator. Requires: `m7-scheduler-close-gate`. Geant4 C++ follows validation/geant4/RUN_REQUESTS.md: write and compile-check only, never run.",
+    "solution": "Follow docs/gps-backlog.md, section m8-gt-scoring-and-chem6-reference. **Tasks.** G(t) scorer for e_aq, OH, H, H2, H2O2 at the V11 times (docs/07: 1 ps, 10 ps, 100 ps, 1 ns, 10 ns, 100 ns, 1 us), normalisation as frozen in docs/01 A.4, batch-mean uncertainties (>= 30 batches); new C++ chem6-like G(t) generator (electrons) with a RUN_REQUESTS entry; `#[ignore]`d V11 test written with criteria fixed beforehand. The energies and time list are fixed in this seed's grill. **C++.** Yes: new program or mode; compile-check only. **Acceptance.** Scorer tests pass (hand-computed G on synthetic inputs, both estimators); gate \"awaiting data\".",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m8-gt-close-gate": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "V11 comparison for e- 100 keV and 1 MeV against the chem6 reference. Requires: `m8-gt-scoring-and-chem6-reference` and the committed data and provenance.",
+    "solution": "Follow docs/gps-backlog.md, section m8-gt-close-gate. **Tasks.** Provenance check; run the V11 test (per species and time, |G_rs - G_g4| < 3 sqrt(s_rs^2 + s_g4^2), Bonferroni family p > 0.01, relative systematic < 5 % at t >= 1 ns); record the result in docs/08. **Acceptance.** V11 passes or the failure is documented with evidence. The proton 10 MeV case is deferred to M5.",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m8-config-and-cli": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "Headless execution: TOML config, `dna run config.toml`, JSON output with metadata. Requires: `m8-gt-scoring-and-chem6-reference`.",
+    "solution": "Follow docs/gps-backlog.md, section m8-config-and-cli. **Tasks.** Config schema with validation errors; clap CLI; JSON output with provenance (versions, checksums, seed, physics options); documentation of the config and output schema. **Acceptance.** CLI integration tests (valid and invalid configs); output schema versioned; docs updated.",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m8-reproducibility-v13": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/gps-backlog.md"
+    ],
+    "problem": "V13 end to end: thread-count and seed reproducibility of the whole pipeline. Requires: `m8-gt-close-gate`, `m8-config-and-cli`.",
+    "solution": "Follow docs/gps-backlog.md, section m8-reproducibility-v13. **Tasks.** Identical G(t) output for 1, 2, 8 threads on the same platform; different seeds give statistically compatible results; fixed-order reductions; document the reproducibility claim's scope (docs/reproducibility.md). **Acceptance.** Bitwise equality across thread counts; seed compatibility test with thresholds fixed beforehand.",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-2026-10-16T17-19-09-850Z.md",
+    "sourcePath": "docs/gps-backlog.md",
+    "createdAt": "2026-10-16T17:19:09.850Z"
+  },
+  "m6-residual-close-gate": {
+    "strength": "Worth exploring",
+    "severity": null,
+    "files": [
+      "docs/08-roadmap.md",
+      "docs/09-open-questions-and-risks.md"
+    ],
+    "problem": "Closes RR-002 after the user has run it and committed data and provenance. Requires m6-process-counts-geant4-request.",
+    "solution": "Verify provenance, run the consuming ignored test, record pass or fail with evidence in docs/08 and docs/09 (Q21/R14). Any model fix is a separate seed; no tolerance is loosened.",
+    "benefits": null,
+    "sourceDirection": null,
+    "sourceReport": "scout-reports/review-gps-backlog-m6-residual-2026-10-17T08-41-19-788Z.md",
+    "sourcePath": "docs/gps-backlog-m6-residual.md",
+    "createdAt": "2026-10-17T08:41:19.788Z"
+  }
+}
