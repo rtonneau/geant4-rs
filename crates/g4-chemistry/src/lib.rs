@@ -25,6 +25,8 @@ pub mod error;
 pub mod irt;
 pub mod molecule;
 pub mod params;
+pub mod placement;
+pub mod reaction_network;
 pub mod reaction_parameters;
 pub mod reactions;
 /// Validation-only step-by-step oracle; not a production chemistry scheduler.
@@ -32,6 +34,7 @@ pub mod sbs;
 pub(crate) mod special;
 pub mod species;
 mod species_types;
+pub mod unary;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
 pub use error::ChemistryError;

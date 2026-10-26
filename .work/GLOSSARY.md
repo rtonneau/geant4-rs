@@ -35,6 +35,10 @@ _Avoid_: reservoir species, ordinary species
 The `k_obs` literal encoded by `G4EmDNAChemistry_option3` for a reaction, expressed according to that reaction's order. It is source data, unlike the activation-controlled rate `k_act` derived later by a selected reaction model.
 _Avoid_: treating `k_act` as a source-table constant
 
+**Disabled unary channel**:
+A first- or pseudo-first-order reaction retained in a custom reaction network with zero observed rate. It has no possible reaction event while its rate is zero; the embedded Geant4 option3 table has no disabled unary channels.
+_Avoid_: treating a zero-rate channel as a missing reaction
+
 **Isolated two-body system**:
 A chemistry system containing exactly one candidate reactant pair, either A+B or A+A, whose diffusion and possible reaction are studied without competition from any other molecule or reaction channel.
 _Avoid_: many-species chemistry system, reaction scheduler
