@@ -64,6 +64,243 @@ fn parse_rows(text: &str) -> Vec<Row> {
         .collect()
 }
 
+/// Read the RR-001 evidence as a complete, stage-specific set before running transport.
+fn read_prechem_rows(csv: &str, provenance_text: &str) -> Result<Vec<Row>, String> {
+    const COMMAND: &str = "g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20";
+    let provenance: toml::Value = toml::from_str(provenance_text).map_err(|e| e.to_string())?;
+    let expected = [
+        ("geant4_version", "11.4.1"),
+        ("g4emlow_version", "8.8"),
+        ("g4emlow_md5", "328330009df633f7e9b3a9f445745298"),
+        ("physics_constructor", "G4EmDNAPhysics_option2"),
+        ("chemistry_constructor", "G4EmDNAChemistry_option3"),
+        ("chemistry_time_step_model", "IRT"),
+        ("snapshot_boundary", "after_dissociation_before_irt"),
+        ("fluo_auger", "off"),
+        ("command_line", COMMAND),
+    ];
+    for (key, value) in expected {
+        if provenance.get(key).and_then(toml::Value::as_str) != Some(value) {
+            return Err(format!("invalid or missing provenance {key}"));
+        }
+    }
+    if provenance
+        .get("scheduler_snapshot_ps")
+        .and_then(toml::Value::as_float)
+        != Some(1.0)
+        || provenance.get("seed").and_then(toml::Value::as_integer) != Some(20261020)
+    {
+        return Err("invalid scheduler time or seed".into());
+    }
+    for key in [
+        "geant4_commit",
+        "snapshot",
+        "generator",
+        "data_commit",
+        "request",
+        "date",
+        "compiler",
+        "platform",
+    ] {
+        if !provenance
+            .get(key)
+            .and_then(toml::Value::as_str)
+            .is_some_and(|value| !value.trim().is_empty())
+        {
+            return Err(format!("missing or empty provenance {key}"));
+        }
+    }
+    if provenance
+        .get("generator_dirty")
+        .and_then(toml::Value::as_bool)
+        .is_none()
+    {
+        return Err("missing generator_dirty".into());
+    }
+
+    let mut lines = csv.lines();
+    for required in [
+        "# generator: g4rs_ref (validation/geant4/g4rs_ref), mode physchem_prechem",
+        "# geant4_version_number: 1141 ($Name: geant4-11-04-patch-01 [MT]$)",
+        "# physics: G4EmDNAPhysics_option2; material G4_WATER; fluo/auger OFF; events 0; seed 20261020",
+        "# G4EmDNAChemistry_option3; IRT selected; no reaction table or process changes",
+        "# snapshot_boundary: after_dissociation_before_irt; global_time_ps: 1; chemical_reactions: 0",
+        "energy_eV,n_events,species,sum_count,sum_count2,sum_r2_nm2",
+    ] {
+        if lines.next() != Some(required) {
+            return Err(format!("missing or invalid CSV metadata: {required}"));
+        }
+    }
+    let mut rows = Vec::new();
+    let mut seen = BTreeSet::new();
+    let expected_species = BTreeSet::from([
+        Species::H3Op,
+        Species::OH,
+        Species::OHm,
+        Species::e_aq,
+        Species::H,
+        Species::H2,
+        Species::Oxy,
+    ]);
+    let cases = [
+        (1_000.0, 20_000),
+        (10_000.0, 2_000),
+        (100_000.0, 200),
+        (900_000.0, 20),
+    ];
+    for (index, line) in lines.enumerate() {
+        let columns: Vec<_> = line.split(',').collect();
+        if columns.len() != 6 {
+            return Err(format!("row {index}: expected six columns"));
+        }
+        let parse_float = |column: usize| -> Result<f64, String> {
+            columns[column]
+                .parse::<f64>()
+                .map_err(|_| format!("row {index}: invalid column {column}"))
+        };
+        let energy = parse_float(0)?;
+        let n = columns[1]
+            .parse::<u64>()
+            .map_err(|_| format!("row {index}: invalid count"))?;
+        let species = species(columns[2]).ok_or_else(|| format!("row {index}: unknown species"))?;
+        let sum = parse_float(3)?;
+        let sum2 = parse_float(4)?;
+        let sum_r2 = parse_float(5)?;
+        if !cases
+            .iter()
+            .any(|&(e, histories)| energy == e && n == histories)
+            || !expected_species.contains(&species)
+        {
+            return Err(format!(
+                "row {index}: unexpected energy, history count or species"
+            ));
+        }
+        if !seen.insert((energy.to_bits(), species)) {
+            return Err(format!("row {index}: duplicate species-energy"));
+        }
+        if !sum.is_finite()
+            || sum <= 0.0
+            || sum.fract() != 0.0
+            || !sum2.is_finite()
+            || sum2 < sum
+            || sum2.fract() != 0.0
+            || !sum_r2.is_finite()
+            || sum_r2 <= 0.0
+            || sum2 + 1e-12 * sum2 < sum * sum / n as f64
+            || !(sum_r2 / sum).sqrt().is_finite()
+        {
+            return Err(format!("row {index}: invalid count or spatial moments"));
+        }
+        rows.push(Row {
+            energy,
+            n,
+            species,
+            sum,
+            sum2,
+            sum_r2,
+        });
+    }
+    if rows.len() != cases.len() * expected_species.len() {
+        return Err(format!(
+            "incomplete species-energy grid: {} rows",
+            rows.len()
+        ));
+    }
+    Ok(rows)
+}
+
+fn count_z_passes(g4_mean: f64, rust_mean: f64, g4_se: f64, rust_se: f64) -> bool {
+    if ![g4_mean, rust_mean, g4_se, rust_se]
+        .iter()
+        .all(|x| x.is_finite())
+        || g4_se < 0.0
+        || rust_se < 0.0
+    {
+        return false;
+    }
+    let se = g4_se.hypot(rust_se);
+    let delta = (rust_mean - g4_mean).abs();
+    se.is_finite()
+        && delta.is_finite()
+        && (if se == 0.0 {
+            delta == 0.0
+        } else {
+            delta / se <= 4.5
+        })
+}
+
+#[test]
+fn m6_prechem_reader_rejects_invalid_evidence() {
+    let csv = include_str!("../../../validation/reference/physchem_prechem.csv");
+    let provenance = include_str!("../../../validation/reference/provenance_m6_prechem.toml");
+    assert_eq!(read_prechem_rows(csv, provenance).unwrap().len(), 28);
+
+    let first = "1000,20000,H3O^1,805954,32718374,969247673.05992162";
+    let second = "1000,20000,H^0,213896,2554108,265375101.95173156";
+    for changed in [
+        csv.replace("after_dissociation_before_irt", "after_zero_time_reactions"),
+        csv.replace("G4EmDNAChemistry_option3", "G4EmDNAChemistry_option1"),
+        csv.replace("seed 20261020", "seed 20261021"),
+        csv.replace(first, ""),
+        csv.replace(second, first),
+        csv.replace(first, "1000,20000,H3O^1,-1,32718374,969247673.05992162"),
+        csv.replace(first, "1000,20000,H3O^1,805954,1,969247673.05992162"),
+        csv.replace(first, "1000,20000,H3O^1,805954,32718374,NaN"),
+        csv.replace(first, "1000,20000,H3O^1,805954,32718374,-1"),
+        csv.replace(first, "1000,20000,H3O^1,805954,32718374"),
+        csv.replace("sum_r2_nm2", "sum_r_nm"),
+    ] {
+        assert!(
+            read_prechem_rows(&changed, provenance).is_err(),
+            "accepted altered CSV"
+        );
+    }
+    for changed in [
+        provenance.replace("after_dissociation_before_irt", "after_zero_time_reactions"),
+        provenance.replace("G4EmDNAChemistry_option3", "G4EmDNAChemistry_option1"),
+        provenance.replace(
+            "seed                     = 20261020",
+            "seed                     = 20261021",
+        ),
+        provenance.replace(
+            "compiler                 = \"MSVC 19.50.35729 x64, Ninja, RelWithDebInfo, link /STACK:536870912\"",
+            "compiler                 = \"\"",
+        ),
+        provenance.replace("data_commit              =", "missing_data_commit      ="),
+        provenance.replace(
+            "generator_dirty          = false",
+            "generator_dirty          = \"false\"",
+        ),
+        provenance.replace(
+            "scheduler_snapshot_ps    = 1.0",
+            "scheduler_snapshot_ps    = 0.0",
+        ),
+    ] {
+        assert!(
+            read_prechem_rows(csv, &changed).is_err(),
+            "accepted altered provenance: {changed}"
+        );
+    }
+}
+
+#[test]
+fn m6_count_z_requires_finite_quantities_and_exact_zero_error_equality() {
+    assert!(count_z_passes(1.0, 1.0, 0.0, 0.0));
+    assert!(!count_z_passes(1.0, 2.0, 0.0, 0.0));
+    assert!(count_z_passes(1.0, 1.1, 0.1, 0.0));
+    assert!(!count_z_passes(1.0, 2.0, 0.1, 0.0));
+    for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        for values in [
+            [bad, 1.0, 0.1, 0.1],
+            [1.0, bad, 0.1, 0.1],
+            [1.0, 1.0, bad, 0.1],
+            [1.0, 1.0, 0.1, bad],
+        ] {
+            assert!(!count_z_passes(values[0], values[1], values[2], values[3]));
+        }
+    }
+}
+
 #[test]
 #[ignore = "requires validation/reference/physchem.csv from Geant4 11.4.1"]
 fn m6_reference_contains_products_requiring_zero_time_chemistry() {
@@ -169,13 +406,15 @@ fn assert_counts_and_rms(rows: &[Row]) {
             let delta = (ours.alive_per_history.value - g4_mean).abs();
             let name = g4.species.chemistry_name();
             let rust_mean = ours.alive_per_history.value;
-            if !(se == 0.0 || delta / se <= 4.5) {
+            if !count_z_passes(g4_mean, rust_mean, g4_se, ours.alive_per_history.std_err) {
                 failures.push(format!(
                     "{energy} {name}: z={:.2} (g4 {g4_mean:.4}, rust {rust_mean:.4})",
                     delta / se
                 ));
             }
-            if g4_mean > 0.1 && rust_mean > 0.1 && delta / g4_mean > 0.15 {
+            if (!g4_mean.is_finite() || !rust_mean.is_finite())
+                || (g4_mean > 0.1 && rust_mean > 0.1 && delta / g4_mean > 0.15)
+            {
                 failures.push(format!(
                     "{energy} {name} count: diff={:.1}% (g4 {g4_mean:.4}, rust {rust_mean:.4})",
                     100.0 * delta / g4_mean
@@ -184,7 +423,10 @@ fn assert_counts_and_rms(rows: &[Row]) {
             if g4.sum > 0.0 {
                 let g4_rms = (g4.sum_r2 / g4.sum).sqrt();
                 let rust_rms = ours.rms_radius_nm.unwrap();
-                if (rust_rms - g4_rms).abs() / g4_rms > 0.20 {
+                if !g4_rms.is_finite()
+                    || !rust_rms.is_finite()
+                    || (rust_rms - g4_rms).abs() / g4_rms > 0.20
+                {
                     failures.push(format!(
                         "{energy} {name} RMS: diff={:.1}% (g4 {g4_rms:.3} nm, rust {rust_rms:.3} nm)",
                         100.0 * (rust_rms - g4_rms).abs() / g4_rms
@@ -213,78 +455,9 @@ fn assert_counts_and_rms(rows: &[Row]) {
 fn m6_prechem_counts_and_rms_match_geant4() {
     let csv = std::fs::read_to_string(reference_dir().join("physchem_prechem.csv"))
         .expect("RR-001 awaiting data: physchem_prechem.csv");
-    assert!(csv.contains("mode physchem_prechem"));
-    assert!(csv.contains("# snapshot_boundary: after_dissociation_before_irt; global_time_ps: 1; chemical_reactions: 0"));
-    let provenance: toml::Value = toml::from_str(
-        &std::fs::read_to_string(reference_dir().join("provenance_m6_prechem.toml"))
-            .expect("RR-001 awaiting provenance_m6_prechem.toml"),
-    )
-    .unwrap();
-    for (key, expected) in [
-        ("geant4_version", "11.4.1"),
-        ("g4emlow_version", "8.8"),
-        ("g4emlow_md5", "328330009df633f7e9b3a9f445745298"),
-        ("physics_constructor", "G4EmDNAPhysics_option2"),
-        ("chemistry_constructor", "G4EmDNAChemistry_option3"),
-        ("chemistry_time_step_model", "IRT"),
-        ("snapshot_boundary", "after_dissociation_before_irt"),
-        ("fluo_auger", "off"),
-    ] {
-        assert_eq!(provenance[key].as_str(), Some(expected), "{key}");
-    }
-    assert_eq!(provenance["scheduler_snapshot_ps"].as_float(), Some(1.0));
-    assert_eq!(provenance["seed"].as_integer(), Some(20261020));
-    assert_eq!(
-        provenance["command_line"].as_str(),
-        Some(
-            "g4rs_ref physchem_prechem ../../reference/physchem_prechem.csv 20261020 1000:20000,10000:2000,100000:200,900000:20"
-        )
-    );
-    for key in ["geant4_commit", "generator", "date", "compiler", "platform"] {
-        assert!(
-            provenance
-                .get(key)
-                .and_then(toml::Value::as_str)
-                .is_some_and(|value| !value.trim().is_empty()),
-            "missing or empty {key}"
-        );
-    }
-    assert!(provenance["generator_dirty"].as_bool().is_some());
-    let rows = parse_rows(&csv);
-    let expected_species = BTreeSet::from([
-        Species::H3Op,
-        Species::OH,
-        Species::OHm,
-        Species::e_aq,
-        Species::H,
-        Species::H2,
-        Species::Oxy,
-    ]);
-    assert_eq!(rows.len(), 28, "seven species at each of four energies");
-    for (energy, n) in [
-        (1_000.0, 20_000),
-        (10_000.0, 2_000),
-        (100_000.0, 200),
-        (900_000.0, 20),
-    ] {
-        let case: Vec<_> = rows.iter().filter(|r| r.energy == energy).collect();
-        assert_eq!(case.len(), 7, "{energy}: incomplete or duplicate species");
-        assert_eq!(
-            case.iter().map(|r| r.species).collect::<BTreeSet<_>>(),
-            expected_species
-        );
-        for row in case {
-            assert_eq!(row.n, n);
-            assert!(row.sum.is_finite() && row.sum > 0.0);
-            assert!(row.sum2.is_finite() && row.sum2 >= 0.0);
-            assert!(row.sum_r2.is_finite() && row.sum_r2 > 0.0);
-            assert!(
-                row.sum2 + 1e-12 * row.sum2 >= row.sum * row.sum / row.n as f64,
-                "{energy} {:?}: inconsistent count moments",
-                row.species
-            );
-        }
-    }
+    let provenance = std::fs::read_to_string(reference_dir().join("provenance_m6_prechem.toml"))
+        .expect("RR-001 awaiting provenance_m6_prechem.toml");
+    let rows = read_prechem_rows(&csv, &provenance).expect("invalid RR-001 prechem evidence");
     assert_counts_and_rms(&rows);
 }
 

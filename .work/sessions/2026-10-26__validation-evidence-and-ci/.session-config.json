@@ -1,0 +1,234 @@
+{
+  "session_id": "2026-10-26__validation-evidence-and-ci",
+  "feature_name": "validation-evidence-and-ci",
+  "scratch_dir": ".scratch/tests/2026-10-26__validation-evidence-and-ci",
+  "created_at": "2026-10-26T09:42:13.123Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-26T09:42:13.123Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T09:50:28.600Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T09:51:11.678Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T10:12:17.929Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/validation-evidence-and-ci",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-26T10:12:17.955Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-m2-reference-validation.md",
+        "02-plan/tickets/02-m3-reference-validation.md",
+        "02-plan/tickets/03-m6-stage-evidence.md",
+        "02-plan/tickets/04-gate-inventory-runner.md",
+        "02-plan/tickets/05-ci-support-status.md"
+      ],
+      "detail": {
+        "tickets": 5
+      }
+    },
+    {
+      "at": "2026-10-26T10:13:56.804Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-m2-reference-validation.md",
+        "03-implement/01-m2-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-m2-reference-validation"
+      }
+    },
+    {
+      "at": "2026-10-26T10:38:58.707Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-m2-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-m2-reference-validation",
+        "commit": "e75d2d8"
+      }
+    },
+    {
+      "at": "2026-10-26T10:39:10.422Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-m3-reference-validation.md",
+        "03-implement/02-m3-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-m3-reference-validation"
+      }
+    },
+    {
+      "at": "2026-10-26T10:55:24.336Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-m3-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-m3-reference-validation",
+        "commit": "a59072a"
+      }
+    },
+    {
+      "at": "2026-10-26T10:55:36.814Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-m6-stage-evidence.md",
+        "03-implement/03-m6-stage-evidence/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-m6-stage-evidence"
+      }
+    },
+    {
+      "at": "2026-10-26T11:02:10.140Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-m6-stage-evidence/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-m6-stage-evidence",
+        "commit": "1ebc209"
+      }
+    },
+    {
+      "at": "2026-10-26T11:02:21.571Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-gate-inventory-runner.md",
+        "03-implement/04-gate-inventory-runner/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-gate-inventory-runner"
+      }
+    },
+    {
+      "at": "2026-10-26T11:17:48.142Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-gate-inventory-runner/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-gate-inventory-runner",
+        "commit": "3a7a15a"
+      }
+    },
+    {
+      "at": "2026-10-26T11:18:00.276Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-ci-support-status.md",
+        "03-implement/05-ci-support-status/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-ci-support-status"
+      }
+    },
+    {
+      "at": "2026-10-26T11:28:19.972Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-ci-support-status/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-ci-support-status",
+        "commit": "3cebdf5"
+      }
+    },
+    {
+      "at": "2026-10-26T11:28:56.006Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-26T11:29:23.895Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/21"
+      }
+    },
+    {
+      "at": "2026-10-26T11:29:23.897Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T11:29:25.813Z",
+      "event": "scratch_cleaned",
+      "phase": "finished",
+      "detail": {
+        "policy": "build-artifacts",
+        "removed": [
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target/debug/build",
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target/debug/incremental/build_script_build-1dq95hh1raev2",
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target/debug/incremental/build_script_build-2ctjd8o604zk5",
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/target"
+        ],
+        "freedBytes": 578322638
+      }
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "test/validation-evidence-and-ci",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-26T10:12:17.929Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/21"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 3,
+    "path": ".work/changelog/2026-10-26__validation-evidence-and-ci.md",
+    "written_at": "2026-10-26T11:28:55.991Z"
+  },
+  "finished_at": "2026-10-26T11:29:23.897Z"
+}

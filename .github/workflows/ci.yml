@@ -10,19 +10,26 @@ env:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: .scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target
     steps:
       - uses: actions/checkout@v4
-      # Reads rust-toolchain.toml (pinned stable + rustfmt + clippy).
       - name: Install pinned toolchain
-        run: rustup show active-toolchain || rustup toolchain install
+        run: rustup toolchain install 1.97.0 --profile minimal --component rustfmt,clippy
       - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
+            .scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock', 'rust-toolchain.toml') }}
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      - name: Check required data and reference fixtures
+        run: python scripts/run_validation_gates.py --tier required
