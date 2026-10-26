@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture and compare exact, same-platform crate split regression snapshots."""
+"""Check resolved crate boundaries and exact same-platform regression snapshots."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = "geant4-rs/crate-split-snapshot/v1"
-SCRATCH = ROOT / ".scratch/tests/2026-10-26__g4-crate-namespace-migration"
+SCRATCH = ROOT / ".scratch/tests/2026-10-26__physics-only-simulation-build"
 CRATE_RENAMES = {f"dna-{part}": f"g4-{part}" for part in
                  ("core", "data", "physics", "chemistry", "sim")}
 
@@ -155,12 +155,79 @@ def compare(baseline: dict, candidate: dict, *, root: Path = ROOT,
         raise ValueError(changed)
 
 
-def capture(directory: Path, package: str, *, root: Path = ROOT) -> None:
+def resolved_tree(output: str) -> tuple[str, dict[str, set[str]]]:
+    """Parse Cargo's depth-prefixed normal/build tree, preserving package identities."""
+    graph: dict[str, set[str]] = {}
+    stack: list[str] = []
+    root = ""
+    for line in output.splitlines():
+        match = re.fullmatch(r"(\d+)(\S+ v\S+.*)", line)
+        if not match:
+            raise ValueError(f"invalid Cargo tree line: {line!r}")
+        depth, package = int(match[1]), match[2].removesuffix(" (*)")
+        if depth > len(stack) or (depth == 0 and root):
+            raise ValueError("invalid Cargo tree depth or multiple roots")
+        graph.setdefault(package, set())
+        if depth:
+            graph[stack[depth - 1]].add(package)
+        else:
+            root = package
+        stack[depth:] = [package]
+    if not root:
+        raise ValueError("empty Cargo tree")
+    return root, graph
+
+
+def check_reachable(root: str, graph: dict[str, set[str]], forbidden: set[str]) -> set[str]:
+    """Reject forbidden package names only along paths reachable from the root."""
+    seen: set[str] = set()
+    pending = [(root, [root])]
+    while pending:
+        node, path = pending.pop()
+        if node in seen:
+            continue
+        seen.add(node)
+        if node.split()[0] in forbidden:
+            raise ValueError("forbidden dependency: " + " -> ".join(path))
+        if node not in graph:
+            raise ValueError(f"missing resolved node: {node}")
+        pending.extend((child, path + [child]) for child in sorted(graph[node]))
+    return seen
+
+
+def check_graph() -> None:
+    metadata = json.loads(command(["cargo", "metadata", "--format-version", "1", "--no-deps", "--locked"]))
+    members = set(metadata["workspace_members"])
+    names = {p["name"] for p in metadata["packages"] if p["id"] in members}
+    if names != set(CRATE_RENAMES.values()):
+        raise ValueError(f"unexpected workspace packages: {sorted(names)}")
+    checks = [
+        ("g4-core", False, {"g4-data", "g4-physics", "g4-chemistry", "g4-sim"}),
+        ("g4-physics", False, {"g4-chemistry", "g4-sim"}),
+        ("g4-chemistry", False, {"g4-data", "g4-physics", "g4-sim"}),
+        ("g4-sim", False, set()),
+        ("g4-sim", True, {"g4-chemistry"}),
+    ]
+    for package, no_default, forbidden in checks:
+        args = ["cargo", "tree", "--locked", "--color", "never", "-p", package, "--edges", "normal,build",
+                "--prefix", "depth", "--no-dedupe", "--format", "{p}"]
+        if no_default:
+            args.append("--no-default-features")
+        root, graph = resolved_tree(command(args))
+        if root.split()[0] != package:
+            raise ValueError(f"unexpected resolved root: {root}")
+        reachable = check_reachable(root, graph, forbidden)
+        print(f"PASS: {package} {'no-default' if no_default else 'default'}: {len(reachable)} reachable normal/build packages")
+
+
+def capture(directory: Path, package: str, *, root: Path = ROOT,
+            no_default_features: bool = False) -> None:
     revision = command(["git", "rev-parse", "HEAD"], root=root)
     directory = directory.resolve()
     parent = (root / "target/crate-split-baseline").resolve()
-    if directory.parent != parent or not directory.name.startswith(revision + "-"):
-        raise ValueError(f"capture must be a new target/crate-split-baseline/{revision}-<unique-run-id> directory")
+    scratch_parent = (root / ".scratch/tests/2026-10-26__physics-only-simulation-build/evidence").resolve()
+    if directory.parent not in (parent, scratch_parent) or not directory.name.startswith(revision + "-"):
+        raise ValueError(f"capture must be a new {revision}-<unique-run-id> directory under {parent} or {scratch_parent}")
     if len(directory.name) <= len(revision) + 1:
         raise ValueError("capture directory needs a unique run ID")
     if subprocess.run(["git", "check-ignore", "--quiet", str(directory)], cwd=root).returncode:
@@ -170,10 +237,12 @@ def capture(directory: Path, package: str, *, root: Path = ROOT) -> None:
     inputs = input_identity(root)
     toolchain = toolchain_identity()
     env = os.environ.copy()
-    env["CARGO_TARGET_DIR"] = str(SCRATCH / "cargo-target")
-    for profile in ("physics", "physchem"):
-        args = ["cargo", "run", "--locked", "--quiet", "-p", package,
-                "--example", "crate_split_snapshot", "--", "--" + profile]
+    env.setdefault("CARGO_TARGET_DIR", str(SCRATCH / "cargo-target"))
+    for profile in (("physics",) if no_default_features else ("physics", "physchem")):
+        args = ["cargo", "run", "--locked", "--quiet", "-p", package]
+        if no_default_features:
+            args.append("--no-default-features")
+        args += ["--example", "crate_split_snapshot", "--", "--" + profile]
         result = subprocess.run(args, cwd=root, env=env, check=True, capture_output=True, text=True, encoding="utf-8")
         document = json.loads(result.stdout)
         if document.get("schema") != SCHEMA or document.get("profile") != profile or len(document.get("runs", [])) != 3:
@@ -192,16 +261,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--capture", type=Path)
+    mode.add_argument("--check-graph", action="store_true")
     mode.add_argument("--compare", nargs=2, type=Path, metavar=("BASELINE", "CANDIDATE"))
     parser.add_argument("--allow-crate-rename", action="store_true",
                         help="compare only the planned dna-* to g4-* local package rename")
     parser.add_argument("--package", default="g4-sim")
+    parser.add_argument("--no-default-features", action="store_true")
     args = parser.parse_args()
     try:
+        if args.no_default_features and not args.capture:
+            raise ValueError("--no-default-features requires --capture")
+        if args.allow_crate_rename and not args.compare:
+            raise ValueError("--allow-crate-rename requires --compare")
+        if args.check_graph:
+            check_graph()
+            return 0
         if args.capture:
-            if args.allow_crate_rename:
-                raise ValueError("--allow-crate-rename requires --compare")
-            capture(args.capture, args.package)
+            capture(args.capture, args.package, no_default_features=args.no_default_features)
         else:
             documents = [json.loads(p.read_text(encoding="utf-8")) for p in args.compare]
             compare(*documents, allow_crate_rename=args.allow_crate_rename)

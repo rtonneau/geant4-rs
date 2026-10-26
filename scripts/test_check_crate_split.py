@@ -1,6 +1,7 @@
 """Mutation tests for the exact crate-ownership snapshot comparator."""
 import copy
 import hashlib
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -115,7 +116,7 @@ NEW_LOCK = (OLD_LOCK.replace("dna-core", "g4-core")
 
 class RenameSnapshotTests(unittest.TestCase):
     def setUp(self):
-        scratch = checker.ROOT / ".scratch/tests/2026-10-26__g4-crate-namespace-migration"
+        scratch = checker.SCRATCH
         scratch.mkdir(parents=True, exist_ok=True)
         self.temporary = tempfile.TemporaryDirectory(dir=scratch)
         self.addCleanup(self.temporary.cleanup)
@@ -218,6 +219,67 @@ class RenameSnapshotTests(unittest.TestCase):
                 mutate(candidate)
                 with self.assertRaises(ValueError):
                     checker.compare(self.baseline, candidate, root=self.root, allow_crate_rename=True)
+
+
+class GraphTests(unittest.TestCase):
+    def test_valid_graph_and_disconnected_member(self):
+        graph = {"g4-physics": {"g4-core"}, "g4-core": set(), "g4-chemistry": {"g4-physics"}}
+        self.assertEqual(checker.check_reachable("g4-physics", graph, {"g4-chemistry"}),
+                         {"g4-physics", "g4-core"})
+
+    def test_direct_and_transitive_forbidden_edges(self):
+        for middle in ("g4-chemistry", "third-party"):
+            graph = {"g4-physics": {middle}, "third-party": {"g4-chemistry"}, "g4-chemistry": set()}
+            with self.subTest(middle=middle), self.assertRaisesRegex(ValueError, "forbidden dependency"):
+                checker.check_reachable("g4-physics", graph, {"g4-chemistry"})
+
+    def test_default_and_no_default_sim(self):
+        graph = {"g4-sim": {"g4-physics", "g4-chemistry"}, "g4-physics": set(), "g4-chemistry": set()}
+        checker.check_reachable("g4-sim", graph, set())
+        with self.assertRaisesRegex(ValueError, "g4-chemistry"):
+            checker.check_reachable("g4-sim", graph, {"g4-chemistry"})
+        graph["g4-sim"].remove("g4-chemistry")
+        checker.check_reachable("g4-sim", graph, {"g4-chemistry"})
+
+    def test_tree_parser_retains_transitive_edges(self):
+        root, graph = checker.resolved_tree("0g4-physics v0.1.0 (local)\n1helper v1.0.0\n2g4-chemistry v0.1.0 (local)")
+        with self.assertRaisesRegex(ValueError, "helper.*g4-chemistry"):
+            checker.check_reachable(root, graph, {"g4-chemistry"})
+
+    def test_malformed_or_incomplete_graph_rejected(self):
+        for output in ("", "garbage", "0root v1\n2child v1", "0root v1\n0other v1"):
+            with self.subTest(output=output), self.assertRaises(ValueError):
+                checker.resolved_tree(output)
+        with self.assertRaisesRegex(ValueError, "missing resolved node"):
+            checker.check_reachable("root", {"root": {"missing"}}, set())
+
+
+class CaptureTests(unittest.TestCase):
+    def test_profiles_and_exclusive_directory(self):
+        checker.SCRATCH.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=checker.SCRATCH) as temp:
+            root = Path(temp)
+            revision = "a" * 40
+            for no_default in (False, True):
+                directory = root / "target/crate-split-baseline" / (revision + "-" + str(no_default))
+                def run(args, **kwargs):
+                    if args[0] == "git":
+                        return subprocess.CompletedProcess(args, 0)
+                    self.assertEqual("--no-default-features" in args, no_default)
+                    profile = args[-1][2:]
+                    return subprocess.CompletedProcess(args, 0, json.dumps({
+                        "schema": checker.SCHEMA, "profile": profile, "runs": [{}, {}, {}]}))
+                with patch.object(checker, "command", return_value=revision), \
+                     patch.object(checker, "input_identity", return_value={"input": "hash"}), \
+                     patch.object(checker, "toolchain_identity", return_value={"tool": "same"}), \
+                     patch.object(checker.subprocess, "run", side_effect=run):
+                    checker.capture(directory, "g4-sim", root=root, no_default_features=no_default)
+                    expected = {"physics.json"} if no_default else {"physics.json", "physchem.json"}
+                    self.assertEqual({p.name for p in directory.iterdir()}, expected)
+                    before = {p.name: p.read_bytes() for p in directory.iterdir()}
+                    with self.assertRaises(FileExistsError):
+                        checker.capture(directory, "g4-sim", root=root, no_default_features=no_default)
+                    self.assertEqual(before, {p.name: p.read_bytes() for p in directory.iterdir()})
 
 
 if __name__ == "__main__":

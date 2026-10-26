@@ -1,7 +1,8 @@
 # Crate ownership regression evidence
 
 Species ownership moved from core to chemistry in S01; S02 renames the five
-workspace packages to `g4-*`. Optional chemistry belongs to a later session.
+workspace packages to `g4-*`. S03 makes simulation chemistry optional, enabled
+by default.
 This snapshot checks behavior across both migrations; it does not extend a
 model's scientific validation range or replace the maintained Geant4 reference gates.
 
@@ -27,6 +28,39 @@ crate paths using the table above.
 Commit the coherent rename before capturing: rename comparison verifies the
 candidate lockfile against its recorded commit. Compare S01 baselines with
 `--allow-crate-rename`; comparisons between two new captures use strict mode.
+
+## Supported simulation profiles (S03)
+
+| Build | Available behavior |
+|---|---|
+| Default (`chemistry` enabled) | Physical orchestration, raw handoff CSV, coupled physicochemistry and spatial diagnostics |
+| `--no-default-features` | Physical orchestration and raw handoff CSV; no reachable `g4-chemistry` dependency |
+| `--no-default-features --features chemistry` | Same APIs as the default build |
+
+Library consumers select the physical profile with `default-features = false`
+on their `g4-sim` dependency. In both profiles,
+`g4_sim::run::{run, run_detailed, run_summary, run_summary_with_sink,
+run_with_sink, RunOutput, PhysChemSink, CsvPhysChemWriter}` stay available.
+`run_with_physchem`, `run_physchem_summary`,
+`run_physchem_summary_with_diagnostics` and `PhysChemRunOutput` remain at their
+existing `g4_sim::run` paths when `chemistry` is enabled. Chemistry-only scoring,
+spatial diagnostics and associated error variants require that feature.
+
+The historical `dna_core::species::*` import becomes
+`g4_chemistry::{Species, SpeciesInstance, SPECIES_CSV_HEADER}`. Raw
+`g4_core::physchem` records do not require chemistry. `g4-bio` is future-only:
+it may consume physical events and chemical results; no biology crate or API
+is implemented here.
+
+`python scripts/check_crate_split.py --check-graph` separately resolves each
+root's normal/build tree using `cargo tree -p ... --edges normal,build`.
+It traverses reachable package identities, rejecting data/physics/chemistry/sim
+below core, chemistry/sim below physics, data/physics/sim below chemistry,
+and chemistry below no-default simulation. Disconnected workspace members
+are harmless. Dev dependencies are excluded from this graph contract;
+the simulation manifest has no chemistry dev-dependency and separate
+package-scoped `--all-targets` checks/tests/Clippy exercise that build surface.
+Workspace feature unification is not evidence for the no-default profile.
 
 ## Species ownership
 
@@ -214,3 +248,105 @@ All required checks exited 0: formatting, workspace Clippy with warnings denied,
 workspace tests (397 passed, 19 intentionally ignored), M2 (4 selected tests),
 M3 (2 selected tests) and the exact M6 prechem selector (1 selected test). Logs are
 `ticket-02-{fmt,clippy,workspace,m2,m3,m6}.log` in the same evidence directory.
+
+## S03 physics-only boundary evidence, 2026-10-26
+
+Runtime revision: `fa9da5474629905c5df15b5f2df62b68ea293882` (ticket 01
+committed); checker, CI and documentation changes were in the working tree.
+The pre-S01 runtime revision remains
+`2385672da77b70c1495a2ececea39cd2bf4a82cd`. No physics algorithms, reference
+fixtures or data files changed in this ticket. No Geant4 generator ran.
+The recorded Windows/toolchain identity is the same as the pre-S01 baseline.
+Linux CI has not been executed locally.
+
+All S03 artifacts are under
+`.scratch/tests/2026-10-26__physics-only-simulation-build/evidence/` (`$evidence`
+below); Cargo output is in its sibling `cargo-target/` and Python bytecode in
+`python-cache/`. Logs and captures are outside the disposable build tree.
+`ticket02-matrix.json` records exact commands/exit codes; corresponding output
+is retained in `ticket02-<check>.log`.
+
+The snapshot checker also accepts exclusive, ignored capture directories
+immediately below this session's evidence directory, using the same
+`<full-revision>-<unique-run-id>` naming rule as the historical target location.
+This keeps all new run artifacts in session scratch. Old capture paths and
+commands above remain valid. Default capture writes both profiles;
+`--no-default-features` writes only `physics.json`. Existing directories,
+including incomplete attempts, are never reused.
+
+Executed capture directories beneath `$evidence`:
+
+- Default: `fa9da5474629905c5df15b5f2df62b68ea293882-default-00617e4cc2f149f6b718a81ba8bb66d9`
+- No-default: `fa9da5474629905c5df15b5f2df62b68ea293882-no-default-4fbc62be7ce54eb9aab63dfec6178479`
+
+With `$default` and `$physical` set to those full paths, the executed commands
+were (all exited 0):
+
+```powershell
+python scripts/check_crate_split.py --capture $default --package g4-sim
+python scripts/check_crate_split.py --capture $physical --package g4-sim --no-default-features
+python scripts/check_crate_split.py --compare "$default/physics.json" "$physical/physics.json"
+$old = '.scratch/tests/2026-10-26__crate-domain-ownership/evidence'
+python scripts/check_crate_split.py --compare "$old/baseline-physics.json" "$default/physics.json" --allow-crate-rename
+python scripts/check_crate_split.py --compare "$old/baseline-physchem.json" "$default/physchem.json" --allow-crate-rename
+```
+
+The preserved pre-S01 evidence copies were used because the old target capture
+directory is no longer present. Both profiles contain 24 histories (eight per
+energy). Default and no-default physics are byte-identical, including input
+and toolchain metadata. Both default profiles match the pre-S01 scientific
+payload exactly under the existing verified rename comparator. No additional
+comparison exclusions were introduced. `ticket02-snapshots.log` contains the
+commands and verdicts; `ticket02-snapshot-summary.json` and each capture retain
+all 28 input hashes and full toolchain metadata.
+
+| Evidence | SHA-256 |
+|---|---|
+| Both physics captures | `9d4540a118055be9e15ecdda0b6e28ffa8c2f93f1f61f9d2a2f5e29249d5f0ce` |
+| Default physchem capture | `0b73c44d5952daa5d2b2031cf8a553ac03138bf6b062c4970433a5f4ead13274` |
+| Current `Cargo.lock` | `ed521c73735f0bd4767e2763205c32b2cb4102e3c6da0216abb97f8b2944b4c1` |
+| `data/MANIFEST.toml` | `746cb24790d4db0bb600aa688f3880aef2fdb095e7acb830888c449ec257f6c5` |
+| Entire input map, canonical JSON | `02c927624685d3b3a992ee2c40152bb2183e8f9a14f39b9aeb59e7c04c9dc12d` |
+
+The four chemistry input hashes remain those in the pre-S01 table. The only
+input-map change from pre-S01 is the already-verified local crate rename in
+`Cargo.lock`.
+
+### Executed final verification matrix
+
+All commands below exited 0 on the recorded Windows toolchain.
+
+| Check/log suffix | Command | Executed result |
+|---|---|---|
+| checker | `python -m unittest discover -s scripts -p test_check_crate_split.py` | 24 Python tests passed |
+| graph | `python scripts/check_crate_split.py --check-graph` | 5 roots/profiles passed; reachable counts 31/33/32/45/44 |
+| fmt | `cargo fmt --all -- --check` | Passed |
+| clippy | `cargo clippy --workspace --all-targets --locked -- -D warnings` | Passed |
+| workspace | `cargo test --workspace --locked` | 399 passed; 19 intentionally ignored |
+| m2 | `cargo test -p g4-sim --test geant4_reference --locked -- --ignored` | 4 passed; 0 intentionally ignored |
+| m3 | `cargo test -p g4-sim --test slowing_down_reference --locked -- --ignored` | 2 passed; 0 intentionally ignored |
+| m6 | `cargo test -p g4-sim --test physchem_reference --locked m6_prechem_counts_and_rms_match_geant4 -- --ignored --exact` | 1 passed; 0 intentionally ignored |
+| physics-check | `cargo check -p g4-physics --all-targets --locked` | Passed |
+| chemistry-check | `cargo check -p g4-chemistry --all-targets --locked` | Passed |
+| no-default-check | `cargo check -p g4-sim --no-default-features --all-targets --locked` | Passed |
+| no-default-test | `cargo test -p g4-sim --no-default-features --all-targets --locked` | 35 passed; 7 intentionally ignored |
+| no-default-clippy | `cargo clippy -p g4-sim --no-default-features --all-targets --locked -- -D warnings` | Passed |
+| chemistry-feature | `cargo test -p g4-sim --test chemistry_feature --locked` | 1 passed; 0 intentionally ignored |
+
+The no-default suite executes `physics_only`, determinism, physical sanity and
+the ordinary physical reference-test families; seven ignored cases are not
+counted as passes. The default workspace suite executes the chemistry families,
+and the separate `chemistry_feature` consumer executes one test. Selected ignored
+reference comparisons are explicitly counted above, using the maintained M2/M3/M6
+selection in `validation/gates.json`. CI retains its existing required-data gate
+and adds package-scoped no-default check/test/Clippy plus checker unit and graph
+checks. The statistical selection remains an explicit local gate, as before.
+
+The checker tests cover direct/transitive forbidden paths, disconnected chemistry,
+both simulation profiles, malformed trees and missing nodes, plus exclusive
+captures with correct profile selection. The prior exact-comparison mutation
+tests remain active. The final checker rerun is retained as
+`ticket02-checker-final.log`. No science tolerance or baseline bytes were changed.
+The final graph rerun also passed with CI's `CARGO_TERM_COLOR=always` setting
+(`ticket02-graph-final.log`); the parser's Cargo invocation explicitly disables
+color so ANSI escapes cannot corrupt depth-prefixed identities.

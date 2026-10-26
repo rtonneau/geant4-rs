@@ -1,6 +1,13 @@
 # C. Architecture comparison
 
-Current repo state: one placeholder crate (`geant4-rs`, edition 2024, `src/lib.rs` with an `add` stub). Nothing to preserve beyond the name/edition.
+Current state (S03): five library crates, with default-on optional `chemistry`
+in `g4-sim`. Core owns shared event records and penetration helpers; chemistry
+owns species. Physics and chemistry are independent, and no-default simulation
+links only the physical stage. Both profiles retain raw handoff CSV. See the
+[feature/import guide and executed checks](crate-separation.md).
+`g4-bio` is future-only and may consume both physical events and chemical results.
+The options and milestone notes below record the architecture's evolution;
+their early ownership descriptions are historical.
 
 ## Options
 **A. Single crate, module tree.** `core`, `data`, `physics`, `transport`, `physchem`, `chemistry`, `scoring`, `sim`, `config`, `bin/cli`.
@@ -33,7 +40,7 @@ Current repo state: one placeholder crate (`geant4-rs`, edition 2024, `src/lib.r
 Two independent validation paths remain outside that production boundary. `sbs` is a validation-only transcription of the Geant4 11.4.1 adaptive TDC encounter stepper, not a selectable chemistry engine. `tests/kinetics_ode.rs` contains an exact Gillespie SSA and an `rsoda` LSODA mass-action solve; both are test-only and expose no production ODE API. The additive `g4rs_ref two_body_h_h` mode and its ignored Rust consumer form the external L3 gate, which is still **awaiting data** under RR-003.
 
 ## Recommendation: **B**, with these rules
-1. Dependency DAG: `core <- physics`, `core <- chemistry`, `{physics, chemistry} <- sim <- cli`. `physics` and `chemistry` never depend on each other; they exchange only `g4-core` types (`PhysChemEvent`, `SpeciesInstance`) via `sim`.
+1. Dependency DAG: `core <- data <- physics`, `core <- chemistry`, `{physics, optional chemistry} <- sim`; a CLI is future work. `physics` and `chemistry` never depend on each other; `g4-core::physchem` event records cross the stage boundary via `sim`. `SpeciesInstance` belongs to `g4-chemistry`.
 2. Closed sets are enums (`ParticleKind`, `ChargeState`, `ProcessKind`, `ReactionKind`); open sets (cross-section/final-state models, chemistry engines) are traits used as `Box<dyn ...>` **at configuration time only**; per-step hot paths use enum dispatch over a per-(particle, material) `ProcessTable` built once, to avoid dyn calls in the inner loop.
 3. A new particle = new `ParticleKind` variant + a `ProcessTable` constructor registering its models; the transport loop is untouched.
 4. A new chemistry algorithm = another `impl ChemistryEngine`; transport and scoring untouched. Scoring consumes `PhysicsEvent`s and `ChemistrySnapshot`s through observer traits, never model internals.

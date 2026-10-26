@@ -17,6 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CARGO_TARGET_DIR: .scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target
+      PYTHONPYCACHEPREFIX: .scratch/tests/2026-10-26__physics-only-simulation-build/python-cache
     steps:
       - uses: actions/checkout@v4
       - name: Install pinned toolchain
@@ -31,5 +32,13 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
+      - name: Check physics-only simulation independently
+        run: cargo check -p g4-sim --no-default-features --all-targets --locked
+      - run: cargo test -p g4-sim --no-default-features --all-targets --locked
+      - run: cargo clippy -p g4-sim --no-default-features --all-targets --locked -- -D warnings
+      - name: Test dependency and snapshot checker
+        run: python -m unittest discover -s scripts -p test_check_crate_split.py
+      - name: Enforce resolved crate boundaries
+        run: python scripts/check_crate_split.py --check-graph
       - name: Check required data and reference fixtures
         run: python scripts/run_validation_gates.py --tier required

@@ -8,7 +8,7 @@ A native Rust implementation of selected Geant4-DNA electron transport, physicoc
 - `crates/g4-data` — readers and interpolation for the committed G4EMLOW 8.8 DNA tables.
 - `crates/g4-physics` — option2 electron models, secondary cascades and energy accounting.
 - `crates/g4-chemistry` — chemical species, the 1 ps physicochemical stage, option3 reaction data, diffusion and isolated pair kernels.
-- `crates/g4-sim` — independent-history orchestration, scoring and JSON output.
+- `crates/g4-sim` — independent-history orchestration, scoring and JSON output; default-on optional `chemistry` feature.
 - `data/` — committed Geant4 tables with SHA-256 manifest; `validation/reference/` — committed Geant4 comparison fixtures and provenance.
 - `validation/gates.json` — versioned maintained-gate inventory; `scripts/run_validation_gates.py` — fail-closed evidence preflight and comparison runner.
 
@@ -20,8 +20,18 @@ The supported compiler policy is the pinned Rust 1.97.0 toolchain in `rust-toolc
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
+cargo check -p g4-sim --no-default-features --all-targets --locked
+cargo test -p g4-sim --no-default-features --all-targets --locked
+cargo clippy -p g4-sim --no-default-features --all-targets --locked -- -D warnings
+python -m unittest discover -s scripts -p test_check_crate_split.py
+python scripts/check_crate_split.py --check-graph
 python scripts/run_validation_gates.py --tier required
 ```
+
+`g4-sim` consumers can use `default-features = false` for physics and raw
+physicochemical handoff CSV without linking chemistry. Default builds retain
+coupled physicochemistry and diagnostics. See [the feature and import guide](docs/crate-separation.md).
+`g4-bio` remains future-only and may consume both physical events and chemical results.
 
 The required tier verifies the committed data and reference fixtures, including identities and SHA-256 hashes; missing required evidence fails. The maintained statistical selection comprises four M2 reference tests, two M3 reference tests and the M6 RR-001 pre-IRT 1 ps comparison. Run it explicitly with `python scripts/run_validation_gates.py --tier statistical`; it is not part of ordinary CI. The inventory records historical exclusions, including the post-zero-time M6 comparisons and scratch-producing spatial diagnostics. Do not run all ignored tests as a substitute for this selection.
 
