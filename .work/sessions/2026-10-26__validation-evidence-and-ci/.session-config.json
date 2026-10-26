@@ -101,6 +101,30 @@
         "ticket": "02-m3-reference-validation",
         "commit": "a59072a"
       }
+    },
+    {
+      "at": "2026-10-26T10:55:36.814Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-m6-stage-evidence.md",
+        "03-implement/03-m6-stage-evidence/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-m6-stage-evidence"
+      }
+    },
+    {
+      "at": "2026-10-26T11:02:10.140Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-m6-stage-evidence/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-m6-stage-evidence",
+        "commit": "1ebc209"
+      }
     }
   ],
   "current_phase": "ship",
