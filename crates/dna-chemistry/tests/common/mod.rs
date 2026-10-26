@@ -4,12 +4,12 @@
 use serde_json::Value;
 use std::path::PathBuf;
 
+use dna_chemistry::SpeciesInstance;
 use dna_chemistry::irt::ReactionTime;
 use dna_chemistry::molecule::{Molecule, MoleculeId};
 use dna_chemistry::reaction_parameters::TwoBodyReactionParameters;
 use dna_chemistry::reactions::ReactionTable;
 use dna_chemistry::species::SpeciesTable;
-use dna_core::species::SpeciesInstance;
 use dna_core::units::Time;
 use dna_core::vec3::Vec3;
 

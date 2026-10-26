@@ -4,10 +4,10 @@ A native Rust implementation of selected Geant4-DNA electron transport, physicoc
 
 ## Layout
 
-- `crates/dna-core` — units, reproducible RNG streams, species/events and provenance types.
+- `crates/dna-core` — units, reproducible RNG streams, shared physicochemical event records and provenance types.
 - `crates/dna-data` — readers and interpolation for the committed G4EMLOW 8.8 DNA tables.
 - `crates/dna-physics` — option2 electron models, secondary cascades and energy accounting.
-- `crates/dna-chemistry` — 1 ps physicochemical stage, option3 reaction data, diffusion and isolated pair kernels.
+- `crates/dna-chemistry` — chemical species, the 1 ps physicochemical stage, option3 reaction data, diffusion and isolated pair kernels.
 - `crates/dna-sim` — independent-history orchestration, scoring and JSON output.
 - `data/` — committed Geant4 tables with SHA-256 manifest; `validation/reference/` — committed Geant4 comparison fixtures and provenance.
 - `validation/gates.json` — versioned maintained-gate inventory; `scripts/run_validation_gates.py` — fail-closed evidence preflight and comparison runner.

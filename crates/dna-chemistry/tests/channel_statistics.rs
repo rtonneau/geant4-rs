@@ -13,10 +13,10 @@ mod common;
 
 use common::chi2_pvalue;
 use dna_chemistry::PhysChemEngine;
+use dna_chemistry::Species;
 use dna_chemistry::channels::StateKind;
 use dna_core::physchem::{PhysChemEvent, PhysChemKind};
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::Species;
 use dna_core::testing::ScriptedRng;
 use dna_core::units::Energy;
 use dna_core::vec3::Vec3;

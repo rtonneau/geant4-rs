@@ -1,5 +1,5 @@
 //! Chemical species of the physicochemical and chemical stages, and the plain-data record that
-//! the physicochemical stage hands to the chemical stage (docs/03: exchanged `dna-core` types).
+//! the physicochemical stage hands to the chemical stage, owned by `dna-chemistry`.
 //!
 //! The set is closed and is the list of molecular configurations created by
 //! `G4ChemDissociationChannels_option1::ConstructMolecule`
@@ -9,8 +9,8 @@
 //! the reaction network (M7) and are not listed. Diffusion coefficients, charges and radii live in
 //! `data/chemistry/species_option3.toml` (loaded by `dna-chemistry`), not here.
 
-use crate::units::Time;
-use crate::vec3::Vec3;
+use dna_core::units::Time;
+use dna_core::vec3::Vec3;
 
 /// A chemical species (molecular configuration) of the Geant4-DNA water radiolysis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

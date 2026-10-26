@@ -4,12 +4,12 @@
 //! The three registered regimes use G4EmDNAChemistry_option3.cc:146,200,215.
 
 use dna_chemistry::ChemistryError;
+use dna_chemistry::Species;
 use dna_chemistry::reaction_parameters::TwoBodyReactionParameters as Parameters;
 use dna_chemistry::reactions::{
     BulkParticipant, KineticIntent, ObservedRate, Reaction, ReactionParticipant, ReactionTable,
 };
 use dna_chemistry::species::{SpeciesProps, SpeciesTable};
-use dna_core::species::Species;
 use dna_core::units::{Diffusivity, Length};
 
 fn close(actual: f64, expected: f64) {

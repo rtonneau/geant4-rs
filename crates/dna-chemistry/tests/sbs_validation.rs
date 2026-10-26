@@ -35,12 +35,12 @@
 mod common;
 
 use common::{isolated_pair, option3_parameters};
+use dna_chemistry::Species;
 use dna_chemistry::irt::{ReactionTime, sample_independent_reaction_time};
 use dna_chemistry::molecule::MoleculePair;
 use dna_chemistry::sbs::step_tdc_pair;
 use dna_chemistry::species::SpeciesTable;
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::Species;
 use dna_core::units::Time;
 use dna_core::vec3::Vec3;
 

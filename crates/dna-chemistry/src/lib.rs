@@ -14,7 +14,8 @@
 //! provides stable identity and rejects self-pairs. [`reaction_parameters`]
 //! derives validated TDC/PDC parameters, and [`irt`] samples one pair's elapsed
 //! reaction-time outcome. Callers own RNG streams; integrated histories use
-//! `Stage::Chemistry`. The M6 `dna-core` records are unchanged.
+//! `Stage::Chemistry`. [`Species`] and [`SpeciesInstance`] are owned here;
+//! physical handoff records remain in `dna_core::physchem`.
 
 pub mod channels;
 pub mod diffusion;
@@ -30,9 +31,11 @@ pub mod reactions;
 pub mod sbs;
 pub(crate) mod special;
 pub mod species;
+mod species_types;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};
 pub use error::ChemistryError;
+pub use species_types::{SPECIES_CSV_HEADER, Species, SpeciesInstance};
 
 /// SHA-256 of the four embedded option3 chemistry input files, in the documented order:
 /// species, dissociation channels, physicochemical parameters, reactions.

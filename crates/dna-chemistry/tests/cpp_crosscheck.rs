@@ -9,6 +9,7 @@
 mod common;
 
 use common::{CPP_BOOKKEEPING_KEYS, CPP_SPECIES_KEYS, fixture};
+use dna_chemistry::Species;
 use dna_chemistry::channels::{ChannelTable, StateKind};
 use dna_chemistry::displacer::{self, autoionisation_r_mean_nm};
 use dna_chemistry::params::PhysChemParams;
@@ -16,7 +17,6 @@ use dna_chemistry::reactions::{
     KineticIntent, ObservedRate, ReactionParticipant, ReactionTable, SourceClass,
 };
 use dna_chemistry::species::{SpeciesTable, atoms};
-use dna_core::species::Species;
 
 fn rel_eq(a: f64, b: f64, tol: f64) -> bool {
     (a - b).abs() <= tol * b.abs().max(f64::MIN_POSITIVE)

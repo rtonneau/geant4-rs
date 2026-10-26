@@ -9,7 +9,7 @@
 //! advance species in time or select a snapshot from a time series.
 
 use dna_chemistry::HistoryChemistry;
-use dna_core::species::Species;
+use dna_chemistry::Species;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -274,7 +274,7 @@ impl PhysChemScorer {
 mod tests {
     use super::*;
     use dna_chemistry::PhysChemStats;
-    use dna_core::species::SpeciesInstance;
+    use dna_chemistry::SpeciesInstance;
     use dna_core::units::Time;
     use dna_core::vec3::Vec3;
 

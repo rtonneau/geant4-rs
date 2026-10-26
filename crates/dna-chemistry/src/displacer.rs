@@ -25,10 +25,10 @@
 //!   [`gaussian_penetration`]); finally a triple(2.0 nm) common to all products (the mother displacement).
 //! * `DissociativeAttachment`: triple(0.8 nm), then for each `OH` (not `OH-`) triple(1.1 nm).
 
+use crate::Species;
 use crate::channels::DisplacementKind;
 use dna_core::penetration::{gaussian_penetration, meesungnoen_r_mean_nm};
 use dna_core::sampling::{gaussian_pair, uniform};
-use dna_core::species::Species;
 use dna_core::vec3::Vec3;
 use rand::Rng;
 

@@ -17,12 +17,12 @@
 //! No yield is asserted: the comparison with Geant4 is part B (docs/gps-backlog.md, seed `m6-comparison-report`).
 
 use dna_chemistry::PhysChemEngine;
+use dna_chemistry::Species;
 use dna_chemistry::channels::DisplacementKind;
 use dna_chemistry::species::atoms;
 use dna_core::manifest::Manifest;
 use dna_core::physchem::PhysChemKind;
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::Species;
 use dna_data::datadir::{DataDir, repo_data_dir};
 use dna_physics::models::ElasticRotation;
 use dna_physics::table::ProcessTable;

@@ -3,8 +3,8 @@
 use dna_chemistry::ChemistryError;
 use dna_chemistry::diffusion::diffuse;
 use dna_chemistry::molecule::{Molecule, MoleculeId, MoleculePair};
+use dna_chemistry::{Species, SpeciesInstance};
 use dna_core::rng::{RngStreams, Stage};
-use dna_core::species::{Species, SpeciesInstance};
 use dna_core::testing::ScriptedRng;
 use dna_core::units::{Diffusivity, Time};
 use dna_core::vec3::Vec3;

@@ -1,8 +1,8 @@
 //! Validation of the preregistered schema, inference and observational instrumentation.
 //! Numeric tolerances below (1e-12) test arithmetic, not an M6 scientific acceptance margin.
 
+use dna_chemistry::Species;
 use dna_core::rng::{HistoryRng, RngStreams, Stage};
-use dna_core::species::Species;
 use dna_core::vec3::Vec3;
 use dna_sim::spatial_diagnostic::*;
 use std::collections::BTreeMap;

@@ -1,7 +1,7 @@
 //! Identity for individual chemical molecules, separate from their species records.
 
+use crate::SpeciesInstance;
 use crate::error::ChemistryError;
-use dna_core::species::SpeciesInstance;
 
 /// Stable identity assigned by the chemistry caller; equal species do not imply equal molecules.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

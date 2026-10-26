@@ -46,9 +46,9 @@
 //! `ProcessTable::option2_electron`, `PhysChemEngine::option3`).
 
 use dna_chemistry::PhysChemEngine;
+use dna_chemistry::Species;
 use dna_chemistry::channels::StateKind;
 use dna_chemistry::species::{SpeciesTable, atoms};
-use dna_core::species::Species;
 use dna_data::datadir::{DataDir, repo_data_dir};
 use dna_physics::models::ElasticRotation;
 use dna_physics::table::ProcessTable;

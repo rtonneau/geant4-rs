@@ -1,8 +1,8 @@
 //! Species table: diffusion coefficient, charge and van der Waals radius of every species of the
 //! option3 chemistry (`data/chemistry/species_option3.toml`, provenance and line numbers in the file).
 
+use crate::Species;
 use crate::error::ChemistryError;
-use dna_core::species::Species;
 use dna_core::units::{Diffusivity, Length};
 use serde::Deserialize;
 
