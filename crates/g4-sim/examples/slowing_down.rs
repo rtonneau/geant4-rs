@@ -11,9 +11,9 @@
 //! data reproduces the files bit for bit.
 
 use g4_core::manifest::Manifest;
-use g4_data::datadir::{DataDir, repo_data_dir};
+use g4_data::datadir::{DataDir, VerifiedDataSet, repo_data_dir};
 use g4_physics::models::ElasticRotation;
-use g4_physics::table::ProcessTable;
+use g4_physics::table::VerifiedProcessTable;
 use g4_sim::config::RunConfig;
 use g4_sim::run::run;
 use std::path::PathBuf;
@@ -49,6 +49,8 @@ fn main() {
     let dir = DataDir::new(&root).expect("committed data");
     let manifest = Manifest::load(&root.join("MANIFEST.toml")).expect("manifest");
 
+    let data = VerifiedDataSet::load(&dir, &manifest).expect("verified data");
+
     println!(
         "{:<8} {:>9} {:>7} {:>11} {:>13} {:>10} {:>11} {:>9} {:>8}",
         "rotation",
@@ -62,12 +64,12 @@ fn main() {
         "time [s]"
     );
     for rotation in [ElasticRotation::Geant4, ElasticRotation::Exact] {
-        let table = ProcessTable::option2_electron(&dir, rotation).expect("process table");
+        let table = VerifiedProcessTable::option2_electron(&data, rotation).expect("process table");
         for &(energy, n) in &cases {
             let mut config = RunConfig::new(energy, n);
             config.master_seed = SEED;
             let t = Instant::now();
-            let output = run(&table, &config, &manifest).expect("run");
+            let output = run(&table, &config).expect("run");
             let secs = t.elapsed().as_secs_f64();
             let s = &output.summary;
             println!(

@@ -43,14 +43,17 @@
 //! displaced). Geant4 draws its `u` in `FindReactant`, before the actions; drawing it at the action is the same
 //! distribution, because `u` is independent of everything else.
 
-use crate::channels::{ChannelTable, DecayState};
+use crate::channels::{
+    ChannelTable, DecayState, DisplacementKind, PROBABILITY_SUM_TOLERANCE, StateKind,
+};
 use crate::displacer::{autoionisation_r_mean_nm, displacements};
 use crate::error::ChemistryError;
 use crate::params::PhysChemParams;
-use crate::species::SpeciesTable;
+use crate::species::{SpeciesTable, atoms};
 use crate::{Species, SpeciesInstance};
 use g4_core::physchem::{PhysChemEvent, PhysChemKind};
 use g4_core::sampling::uniform;
+use g4_core::sha256::{Sha256, hex};
 use g4_core::units::Energy;
 use g4_core::vec3::Vec3;
 use rand::Rng;
@@ -212,6 +215,170 @@ struct ElectronGrid {
     cells: HashMap<[i64; 3], Vec<u32>>,
 }
 
+fn validate_species(species: &SpeciesTable) -> Result<(), ChemistryError> {
+    for (expected, props) in Species::ALL.into_iter().zip(species.iter()) {
+        if props.species != expected
+            || !props.diffusivity.nm2_per_ps().is_finite()
+            || props.diffusivity.nm2_per_ps() <= 0.0
+            || !props.radius.nm().is_finite()
+            || props.radius.nm() <= 0.0
+        {
+            return Err(ChemistryError::invalid(
+                "species table",
+                format!("invalid properties for {}", expected.chemistry_name()),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_channels(
+    channels: &ChannelTable,
+    species: &SpeciesTable,
+) -> Result<(), ChemistryError> {
+    for state in channels.states() {
+        if state.channels.is_empty() {
+            return Err(ChemistryError::invalid(
+                "channel table",
+                format!("{} has no channels", state.name),
+            ));
+        }
+        let parent_charge = match state.kind {
+            StateKind::Excitation | StateKind::Recombined => 0,
+            StateKind::Ionisation => 1,
+            StateKind::Attachment => -1,
+        };
+        let mut sum = 0.0;
+        for channel in &state.channels {
+            if !channel.probability.is_finite()
+                || !(0.0..=1.0).contains(&channel.probability)
+                || !channel.decay_energy.ev().is_finite()
+                || channel.decay_energy.ev() < 0.0
+                || channel.products.is_empty() != (channel.displacement == DisplacementKind::None)
+            {
+                return Err(ChemistryError::invalid(
+                    "channel table",
+                    format!("invalid channel {}", channel.name),
+                ));
+            }
+            if !channel.products.is_empty() {
+                let (h, o, q) = channel
+                    .products
+                    .iter()
+                    .fold((0, 0, 0), |(h, o, q), &product| {
+                        let atoms = atoms(product);
+                        (
+                            h + atoms.0,
+                            o + atoms.1,
+                            q + i32::from(species.get(product).charge),
+                        )
+                    });
+                let extra_o = o - 1;
+                if !(0..=1).contains(&extra_o) || h - 2 != 2 * extra_o || q != parent_charge {
+                    return Err(ChemistryError::invalid(
+                        "channel table",
+                        format!(
+                            "channel {} does not balance against the supplied species",
+                            channel.name
+                        ),
+                    ));
+                }
+            }
+            sum += channel.probability;
+        }
+        if !sum.is_finite() || (sum - 1.0).abs() > PROBABILITY_SUM_TOLERANCE {
+            return Err(ChemistryError::invalid(
+                "channel table",
+                format!("{} probabilities do not sum to one", state.name),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn semantic_sha256(
+    species: &SpeciesTable,
+    channels: &ChannelTable,
+    params: &PhysChemParams,
+) -> String {
+    fn byte(hash: &mut Sha256, value: u8) {
+        hash.update(&[value]);
+    }
+    fn count(hash: &mut Sha256, value: usize) {
+        hash.update(&(value as u64).to_le_bytes());
+    }
+    fn number(hash: &mut Sha256, value: f64) {
+        hash.update(&(if value == 0.0 { 0.0 } else { value }).to_le_bytes());
+    }
+    fn name(hash: &mut Sha256, value: &str) {
+        count(hash, value.len());
+        hash.update(value.as_bytes());
+    }
+    let mut hash = Sha256::new();
+    hash.update(b"g4-chemistry/physchem-semantic/v1\0");
+    count(&mut hash, Species::ALL.len());
+    for props in species.iter() {
+        byte(&mut hash, props.species.index() as u8);
+        number(&mut hash, props.diffusivity.nm2_per_ps());
+        byte(&mut hash, props.charge as u8);
+        number(&mut hash, props.radius.nm());
+        byte(&mut hash, u8::from(props.reachable_from_physchem));
+    }
+    count(&mut hash, channels.states().len());
+    for state in channels.states() {
+        name(&mut hash, &state.name);
+        byte(
+            &mut hash,
+            match state.kind {
+                StateKind::Excitation => 0,
+                StateKind::Ionisation => 1,
+                StateKind::Attachment => 2,
+                StateKind::Recombined => 3,
+            },
+        );
+        byte(&mut hash, state.index);
+        match state.orbit_vacated {
+            Some(orbit) => {
+                byte(&mut hash, 1);
+                byte(&mut hash, orbit);
+            }
+            None => byte(&mut hash, 0),
+        }
+        count(&mut hash, state.channels.len());
+        for channel in &state.channels {
+            name(&mut hash, &channel.name);
+            number(&mut hash, channel.probability);
+            number(&mut hash, channel.decay_energy.ev());
+            count(&mut hash, channel.products.len());
+            for product in &channel.products {
+                byte(&mut hash, product.index() as u8);
+            }
+            byte(
+                &mut hash,
+                match channel.displacement {
+                    DisplacementKind::None => 0,
+                    DisplacementKind::A1b1Dissociation => 1,
+                    DisplacementKind::B1a1Dissociation => 2,
+                    DisplacementKind::B1a1Dissociation2 => 3,
+                    DisplacementKind::AutoIonisation => 4,
+                    DisplacementKind::IonisationDissociation => 5,
+                    DisplacementKind::DissociativeAttachment => 6,
+                },
+            );
+        }
+    }
+    number(&mut hash, params.birth_time.ps());
+    number(&mut hash, params.autoionisation_electron_energy.ev());
+    let rec = &params.recombination;
+    byte(&mut hash, u8::from(rec.enabled));
+    number(&mut hash, rec.temperature_k);
+    number(&mut hash, rec.density_g_cm3);
+    number(&mut hash, rec.dielectric_constant);
+    number(&mut hash, rec.onsager_radius.nm());
+    number(&mut hash, rec.search_radius.nm());
+    hex(&hash.finalize())
+}
+
 impl ElectronGrid {
     fn new(cell_nm: f64) -> Self {
         Self {
@@ -276,6 +443,8 @@ pub struct PhysChemEngine {
     channels: ChannelTable,
     params: PhysChemParams,
     electron_r_mean_nm: f64,
+    semantic_sha256: String,
+    source_file_sha256: Option<String>,
 }
 
 impl PhysChemEngine {
@@ -283,7 +452,9 @@ impl PhysChemEngine {
     pub fn option3() -> Result<Self, ChemistryError> {
         let species = SpeciesTable::option3()?;
         let channels = ChannelTable::option3(&species)?;
-        Self::new(species, channels, PhysChemParams::option3()?)
+        let mut engine = Self::new(species, channels, PhysChemParams::option3()?)?;
+        engine.source_file_sha256 = Some(crate::option3_data_sha256());
+        Ok(engine)
     }
 
     pub fn new(
@@ -291,14 +462,47 @@ impl PhysChemEngine {
         channels: ChannelTable,
         params: PhysChemParams,
     ) -> Result<Self, ChemistryError> {
+        validate_species(&species)?;
+        validate_channels(&channels, &species)?;
+        params.validate()?;
         let electron_r_mean_nm =
             autoionisation_r_mean_nm(params.autoionisation_electron_energy.ev());
+        if !electron_r_mean_nm.is_finite() || electron_r_mean_nm <= 0.0 {
+            return Err(ChemistryError::invalid(
+                "physchem engine",
+                "invalid auto-ionisation displacement scale",
+            ));
+        }
+        let semantic_sha256 = semantic_sha256(&species, &channels, &params);
         Ok(Self {
             species,
             channels,
             params,
             electron_r_mean_nm,
+            semantic_sha256,
+            source_file_sha256: None,
         })
+    }
+
+    /// SHA-256 of the engine's validated semantic values, independent of input text and paths.
+    /// Version 1 encodes `g4-chemistry/physchem-semantic/v1\0`, then species in
+    /// [`Species::ALL`] order (species index, diffusivity in nm²/ps, charge as i8,
+    /// radius in nm, reachable flag), then states and channels in execution order.
+    /// Each state encodes name, kind tag, index, optional orbit; each channel encodes
+    /// name, probability, decay energy in eV, ordered product indices, displacement tag.
+    /// Finally it encodes birth time in ps, auto-ionisation energy in eV, and the
+    /// recombination enabled flag, temperature K, density g/cm³, dielectric constant,
+    /// Onsager radius nm and search radius nm, in that order. All counts and UTF-8
+    /// string lengths are little-endian u64; floats are little-endian IEEE-754 f64,
+    /// with negative zero normalized to positive zero; tags and flags are u8.
+    pub fn semantic_sha256(&self) -> &str {
+        &self.semantic_sha256
+    }
+
+    /// SHA-256 of the four embedded option3 source files when constructed by
+    /// [`Self::option3`]. A custom engine has no embedded source-file claim.
+    pub fn source_file_sha256(&self) -> Option<&str> {
+        self.source_file_sha256.as_deref()
     }
 
     pub fn species_table(&self) -> &SpeciesTable {
@@ -316,6 +520,7 @@ impl PhysChemEngine {
     /// Replace the recombination switch (ablation studies and tests).
     pub fn with_recombination_enabled(mut self, enabled: bool) -> Self {
         self.params.recombination.enabled = enabled;
+        self.semantic_sha256 = semantic_sha256(&self.species, &self.channels, &self.params);
         self
     }
 
@@ -546,5 +751,154 @@ impl PhysChemEngine {
             stats.species_counts[s.species.index()] += 1;
         }
         Ok(HistoryChemistry { species, stats })
+    }
+}
+
+#[cfg(test)]
+mod identity_tests {
+    use super::*;
+    use crate::channels::DEFAULT_DISSOCIATION_TOML;
+    use crate::species::DEFAULT_SPECIES_TOML;
+    use g4_core::rng::{RngStreams, Stage};
+
+    fn custom(
+        species_text: &str,
+        channel_text: &str,
+        params: PhysChemParams,
+    ) -> Result<PhysChemEngine, ChemistryError> {
+        let species = SpeciesTable::from_toml(species_text)?;
+        let channels = ChannelTable::from_toml(channel_text, &species)?;
+        PhysChemEngine::new(species, channels, params)
+    }
+
+    #[test]
+    fn identity_tracks_all_constructed_inputs_and_source_origin() {
+        let default = PhysChemEngine::option3().unwrap();
+        let base = custom(
+            DEFAULT_SPECIES_TOML,
+            DEFAULT_DISSOCIATION_TOML,
+            PhysChemParams::option3().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(base.semantic_sha256(), default.semantic_sha256());
+        assert_eq!(base.source_file_sha256(), None);
+        assert_eq!(
+            default.source_file_sha256(),
+            Some(crate::option3_data_sha256().as_str())
+        );
+
+        let species = DEFAULT_SPECIES_TOML.replacen(
+            "van_der_waals_radius_nm = 0.19",
+            "van_der_waals_radius_nm = 0.20",
+            1,
+        );
+        let changed_species = custom(
+            &species,
+            DEFAULT_DISSOCIATION_TOML,
+            PhysChemParams::option3().unwrap(),
+        )
+        .unwrap();
+        assert_ne!(base.semantic_sha256(), changed_species.semantic_sha256());
+
+        let channels = DEFAULT_DISSOCIATION_TOML
+            .replacen("probability = 0.35", "probability = 0.40", 1)
+            .replacen("probability = 0.65", "probability = 0.60", 1);
+        let changed_channel = custom(
+            DEFAULT_SPECIES_TOML,
+            &channels,
+            PhysChemParams::option3().unwrap(),
+        )
+        .unwrap();
+        assert_ne!(base.semantic_sha256(), changed_channel.semantic_sha256());
+
+        let mut params = PhysChemParams::option3().unwrap();
+        params.birth_time = g4_core::units::Time::from_ps(2.0);
+        let changed_param =
+            custom(DEFAULT_SPECIES_TOML, DEFAULT_DISSOCIATION_TOML, params).unwrap();
+        assert_ne!(base.semantic_sha256(), changed_param.semantic_sha256());
+
+        let disabled = default.clone().with_recombination_enabled(false);
+        assert_ne!(default.semantic_sha256(), disabled.semantic_sha256());
+        assert_eq!(
+            default.semantic_sha256(),
+            disabled
+                .clone()
+                .with_recombination_enabled(true)
+                .semantic_sha256()
+        );
+        assert_eq!(default.source_file_sha256(), disabled.source_file_sha256());
+    }
+
+    #[test]
+    fn species_input_order_does_not_change_identity() {
+        let mut blocks: Vec<_> = DEFAULT_SPECIES_TOML.split("[[species]]").collect();
+        let header = blocks.remove(0);
+        blocks.reverse();
+        let reordered = format!("{header}[[species]]{}", blocks.join("[[species]]"));
+        let base = PhysChemEngine::option3().unwrap();
+        let permuted = custom(
+            &reordered,
+            DEFAULT_DISSOCIATION_TOML,
+            PhysChemParams::option3().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(base.semantic_sha256(), permuted.semantic_sha256());
+    }
+
+    #[test]
+    fn invalid_custom_values_are_rejected_and_default_rng_is_unchanged() {
+        let species = SpeciesTable::option3().unwrap();
+        let channels = ChannelTable::option3(&species).unwrap();
+        let mut params = PhysChemParams::option3().unwrap();
+        params.recombination.search_radius = g4_core::units::Length::from_nm(f64::NAN);
+        assert!(matches!(
+            PhysChemEngine::new(species.clone(), channels.clone(), params),
+            Err(ChemistryError::Invalid { .. })
+        ));
+
+        let invalid_species = DEFAULT_SPECIES_TOML.replacen(
+            "diffusion_m2_per_s = 7.0e-9",
+            "diffusion_m2_per_s = nan",
+            1,
+        );
+        let invalid_species = SpeciesTable::from_toml(&invalid_species).unwrap();
+        assert!(matches!(
+            PhysChemEngine::new(
+                invalid_species,
+                channels.clone(),
+                PhysChemParams::option3().unwrap()
+            ),
+            Err(ChemistryError::Invalid { .. })
+        ));
+
+        let changed_charge = DEFAULT_SPECIES_TOML.replacen("charge = 1", "charge = 2", 1);
+        let changed_charge = SpeciesTable::from_toml(&changed_charge).unwrap();
+        assert!(matches!(
+            PhysChemEngine::new(changed_charge, channels, PhysChemParams::option3().unwrap()),
+            Err(ChemistryError::Invalid { .. })
+        ));
+
+        let default = PhysChemEngine::option3().unwrap();
+        let equivalent = custom(
+            DEFAULT_SPECIES_TOML,
+            DEFAULT_DISSOCIATION_TOML,
+            PhysChemParams::option3().unwrap(),
+        )
+        .unwrap();
+        let event = PhysChemEvent {
+            kind: PhysChemKind::Excitation,
+            level_or_shell: 0,
+            position: Vec3::new(0.0, 0.0, 0.0),
+            deposited_energy: Energy::from_ev(8.0),
+            parent_history: 0,
+        };
+        let streams = RngStreams::new(123);
+        let mut first = streams.stream(0, Stage::PhysChem).unwrap();
+        let mut second = streams.stream(0, Stage::PhysChem).unwrap();
+        assert_eq!(
+            default.convert_history(&[event], &mut first).unwrap(),
+            equivalent.convert_history(&[event], &mut second).unwrap()
+        );
+        assert_eq!(first.next_u64(), second.next_u64());
     }
 }

@@ -101,15 +101,25 @@ impl CrossSectionTable {
         let mut components = vec![Vec::with_capacity(energies.len()); n_comp];
         for (i, row) in raw.rows().enumerate() {
             for (c, &v) in row[1..].iter().enumerate() {
-                if v < 0.0 {
-                    return Err(invalid(format!("negative value {v} in row {}", i + 1)));
+                if !v.is_finite() || v < 0.0 {
+                    return Err(invalid(format!("invalid value {v} in row {}", i + 1)));
                 }
-                components[c].push(v * scale_nm2);
+                let scaled = v * scale_nm2;
+                if !scaled.is_finite() {
+                    return Err(invalid(format!(
+                        "scaled component {c} overflows in row {}",
+                        i + 1
+                    )));
+                }
+                components[c].push(scaled);
             }
         }
         let node_sums: Vec<f64> = (0..energies.len())
             .map(|i| components.iter().map(|c| c[i]).sum())
             .collect();
+        if let Some(i) = node_sums.iter().position(|sum| !sum.is_finite()) {
+            return Err(invalid(format!("component sum overflows in row {}", i + 1)));
+        }
         let (log_energies, log_components) = match spec.interpolation {
             Interpolation::LogLog => {
                 let log_of = |v: f64| if v <= 0.0 { LOG_FLOOR } else { v }.log10();
@@ -150,6 +160,20 @@ impl CrossSectionTable {
         self.components.len()
     }
 
+    /// Require the exact number of physical channels expected by a catalog file or model.
+    pub fn require_components(&self, name: &str, expected: usize) -> Result<(), DataError> {
+        if self.n_components() != expected {
+            return Err(DataError::InvalidTable {
+                file: name.to_string(),
+                message: format!(
+                    "expected {expected} cross-section components, found {}",
+                    self.n_components()
+                ),
+            });
+        }
+        Ok(())
+    }
+
     pub fn n_nodes(&self) -> usize {
         self.energies.len()
     }
@@ -187,10 +211,10 @@ impl CrossSectionTable {
         }
         self.range.check(energy)?;
         let x = energy.ev();
-        Ok(Area::from_nm2(match self.interpolation {
+        checked_area(match self.interpolation {
             Interpolation::LogLog => self.log_log_value(component, x),
-            Interpolation::LinLin => self.lin_lin_value(&self.components[component], x),
-        }))
+            Interpolation::LinLin => self.lin_lin_value(&self.components[component], x)?,
+        })
     }
 
     /// Sum over all components at `energy` (`G4DNACrossSectionDataSet::FindValue`; for the
@@ -198,12 +222,12 @@ impl CrossSectionTable {
     pub fn total(&self, energy: Energy) -> Result<Area, DataError> {
         self.range.check(energy)?;
         let x = energy.ev();
-        Ok(Area::from_nm2(match self.interpolation {
+        checked_area(match self.interpolation {
             Interpolation::LogLog => (0..self.components.len())
                 .map(|c| self.log_log_value(c, x))
                 .sum(),
-            Interpolation::LinLin => self.lin_lin_value(&self.node_sums, x),
-        }))
+            Interpolation::LinLin => self.lin_lin_value(&self.node_sums, x)?,
+        })
     }
 
     /// `G4EMDataSet::FindValue` for in-range `x`: first/last node exactly, else log-log between
@@ -224,7 +248,7 @@ impl CrossSectionTable {
     }
 
     /// Sanche `PartialCrossSection`/`TotalCrossSection` interpolation of `values` at `x`.
-    fn lin_lin_value(&self, values: &[f64], x: f64) -> f64 {
+    fn lin_lin_value(&self, values: &[f64], x: f64) -> Result<f64, DataError> {
         let n = self.energies.len();
         // "Protection against out of boundary access" (Sanche.cc:290-296).
         let t = if x == self.energies[n - 1] {
@@ -233,12 +257,29 @@ impl CrossSectionTable {
             x
         };
         let t2 = self.energies.partition_point(|&e| e <= t);
+        // On very narrow grids the Geant4 protection can move below the first node,
+        // or round back to the last node. Neither case has a bracketing interval.
+        if t2 == 0 || t2 == n {
+            return Err(DataError::UndefinedLookup(format!(
+                "adjusted energy {t} eV has no linear interpolation interval"
+            )));
+        }
         let t1 = t2 - 1;
         let (e1, e2) = (self.energies[t1], self.energies[t2]);
         let (xs1, xs2) = (values[t1], values[t2]);
         let a = (xs2 - xs1) / (e2 - e1);
         let b = xs2 - a * e2;
-        a * t + b
+        Ok(a * t + b)
+    }
+}
+
+fn checked_area(value: f64) -> Result<Area, DataError> {
+    if value.is_finite() && value >= 0.0 {
+        Ok(Area::from_nm2(value))
+    } else {
+        Err(DataError::UndefinedLookup(format!(
+            "interpolated cross section {value} nm^2 must be finite and nonnegative"
+        )))
     }
 }
 
@@ -247,6 +288,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use g4_core::error::DnaError;
+    use proptest::prelude::*;
 
     fn loglog(scale_nm2: f64) -> XsSpec {
         XsSpec {
@@ -392,5 +434,139 @@ mod tests {
         assert!(matches!(bad("1 2\n1 3\n"), DataError::InvalidTable { .. }));
         assert!(matches!(bad("2 2\n1 3\n"), DataError::InvalidTable { .. }));
         assert!(matches!(bad("1 -2\n2 3\n"), DataError::InvalidTable { .. }));
+    }
+
+    #[test]
+    fn rejects_nonfinite_raw_values_scaling_overflow_and_sum_overflow() {
+        for interpolation in [Interpolation::LinLin, Interpolation::LogLog] {
+            for token in ["NaN", "inf", "-inf"] {
+                assert!(matches!(
+                    CrossSectionTable::from_text(
+                        "raw",
+                        &format!("1 {token}\n2 1\n"),
+                        XsSpec {
+                            scale: Area::from_nm2(1.0),
+                            interpolation
+                        },
+                    ),
+                    Err(DataError::Parse { .. })
+                ));
+            }
+            for (text, scale) in [
+                ("1 1e308\n2 1e308\n", 2.0),
+                ("1 1e308 1e308\n2 1 1\n", 1.0),
+                ("1 1 1\n2 1e308 1e308\n", 1.0),
+            ] {
+                assert!(matches!(
+                    CrossSectionTable::from_text(
+                        "overflow",
+                        text,
+                        XsSpec {
+                            scale: Area::from_nm2(scale),
+                            interpolation
+                        },
+                    ),
+                    Err(DataError::InvalidTable { .. })
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn narrow_endpoint_and_overflowing_interpolation_return_typed_errors() {
+        let spec = XsSpec {
+            scale: Area::from_nm2(1.0),
+            interpolation: Interpolation::LinLin,
+        };
+        let narrow =
+            CrossSectionTable::from_text("narrow", "1 1\n1.0000000000001 2\n", spec).unwrap();
+        for result in [
+            narrow.component(0, Energy::from_ev(1.0000000000001)),
+            narrow.total(Energy::from_ev(1.0000000000001)),
+        ] {
+            assert!(matches!(result, Err(DataError::UndefinedLookup(_))));
+        }
+        // Finite nodes and sums, but the Sanche slope/intercept calculation overflows.
+        let large = CrossSectionTable::from_text("large", "1 1e300\n1.0000000000001 1e308\n", spec)
+            .unwrap();
+        for result in [
+            large.component(0, Energy::from_ev(1.00000000000005)),
+            large.total(Energy::from_ev(1.00000000000005)),
+        ] {
+            assert!(matches!(result, Err(DataError::UndefinedLookup(_))));
+        }
+        // Distinct energies can have identical logarithms; never return NaN from 0/0.
+        let lo = 1e100_f64;
+        let mid = f64::from_bits(lo.to_bits() + 1);
+        let hi = f64::from_bits(lo.to_bits() + 2);
+        let table =
+            CrossSectionTable::from_text("log gap", &format!("{lo} 1\n{hi} 2\n"), loglog(1.0))
+                .unwrap();
+        for result in [
+            table.component(0, Energy::from_ev(mid)),
+            table.total(Energy::from_ev(mid)),
+        ] {
+            assert!(matches!(result, Err(DataError::UndefinedLookup(_))));
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn overflow_is_rejected_for_finite_inputs(
+            value in 1e200_f64..1e300,
+            scale in 1e200_f64..1e300,
+            linear in any::<bool>(),
+        ) {
+            let spec = XsSpec {
+                scale: Area::from_nm2(scale),
+                interpolation: if linear { Interpolation::LinLin } else { Interpolation::LogLog },
+            };
+            let result = CrossSectionTable::from_text("prop", &format!("1 {value}\n2 {value}\n"), spec);
+            prop_assert!(matches!(result, Err(DataError::InvalidTable { .. })), "{result:?}");
+        }
+
+        #[test]
+        fn queries_return_finite_nonnegative_values_or_typed_errors(
+            a in -300_i32..=300,
+            b in -300_i32..=300,
+            scale_exp in -50_i32..=50,
+            fraction in 0.0_f64..=1.0,
+            linear in any::<bool>(),
+        ) {
+            let spec = XsSpec {
+                scale: Area::from_nm2(10_f64.powi(scale_exp)),
+                interpolation: if linear { Interpolation::LinLin } else { Interpolation::LogLog },
+            };
+            let text = format!("1 {} {}\n2 {} {}\n", 10_f64.powi(a), 10_f64.powi(b), 10_f64.powi(b), 10_f64.powi(a));
+            match CrossSectionTable::from_text("prop", &text, spec) {
+                Ok(table) => {
+                    let energy = Energy::from_ev(1.0 + fraction);
+                    for result in [table.component(0, energy), table.component(1, energy), table.total(energy)] {
+                        match result {
+                            Ok(value) => prop_assert!(value.nm2().is_finite() && value.nm2() >= 0.0),
+                            Err(error) => prop_assert!(matches!(error, DataError::UndefinedLookup(_))),
+                        }
+                    }
+                }
+                Err(error) => prop_assert!(matches!(error, DataError::InvalidTable { .. }), "{error:?}"),
+            }
+        }
+
+        #[test]
+        fn narrow_upper_endpoints_never_panic(ulps in 1_u64..4000) {
+            let upper = f64::from_bits(1.0_f64.to_bits() + ulps);
+            for interpolation in [Interpolation::LinLin, Interpolation::LogLog] {
+                let table = CrossSectionTable::from_text(
+                    "narrow", &format!("1 1\n{upper} 2\n"),
+                    XsSpec { scale: Area::from_nm2(1.0), interpolation },
+                ).unwrap();
+                for result in [table.component(0, Energy::from_ev(upper)), table.total(Energy::from_ev(upper))] {
+                    match result {
+                        Ok(value) => prop_assert!((1.0..=2.0).contains(&value.nm2())),
+                        Err(error) => prop_assert!(matches!(error, DataError::UndefinedLookup(_))),
+                    }
+                }
+            }
+        }
     }
 }

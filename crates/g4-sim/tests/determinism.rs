@@ -5,9 +5,9 @@
 //! * The JSON output carries the provenance (seed, manifest hash, models).
 
 use g4_core::manifest::Manifest;
-use g4_data::datadir::{DataDir, repo_data_dir};
+use g4_data::datadir::{DataDir, VerifiedDataSet, repo_data_dir};
 use g4_physics::models::{ElasticRotation, ProcessKind};
-use g4_physics::table::ProcessTable;
+use g4_physics::table::{ProcessTable, VerifiedProcessTable};
 use g4_sim::config::RunConfig;
 use g4_sim::history::HistoryResult;
 use g4_sim::run::{CsvPhysChemWriter, run, run_detailed, run_summary, run_summary_with_sink};
@@ -261,12 +261,18 @@ fn json_output_carries_provenance_models_and_config() {
     };
     let mut config = RunConfig::new(1.0e3, 20);
     config.master_seed = 4242;
-    let out = run(&table, &config, &manifest).unwrap();
+    let dir = DataDir::new(repo_data_dir()).unwrap();
+    let snapshot = VerifiedDataSet::load(&dir, &manifest).unwrap();
+    let verified =
+        VerifiedProcessTable::option2_electron(&snapshot, ElasticRotation::Geant4).unwrap();
+    let out = run(&verified, &config).unwrap();
+    assert_eq!(out.summary, run_summary(&table, &config).unwrap());
     let text = out.to_json_pretty().unwrap();
     let j: serde_json::Value = serde_json::from_str(&text).unwrap();
 
-    assert_eq!(j["schema"], "geant4-rs/dna-sim/run/v2");
+    assert_eq!(j["schema"], "geant4-rs/dna-sim/run/v4");
     assert_eq!(j["provenance"]["master_seed"], 4242);
+    assert_eq!(j["provenance"]["inputs"]["verification"], "verified");
     assert_eq!(j["provenance"]["manifest_sha256"], manifest.hash());
     assert_eq!(j["provenance"]["geant4_reference_version"], "11.4.1");
     assert_eq!(j["provenance"]["dataset"], "G4EMLOW");

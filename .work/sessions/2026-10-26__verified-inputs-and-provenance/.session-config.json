@@ -1,0 +1,274 @@
+{
+  "session_id": "2026-10-26__verified-inputs-and-provenance",
+  "feature_name": "verified-inputs-and-provenance",
+  "scratch_dir": ".scratch/tests/2026-10-26__verified-inputs-and-provenance",
+  "created_at": "2026-10-26T18:32:06.802Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-26T18:32:06.802Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:36:26.552Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:36:38.606Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T18:45:50.518Z",
+      "event": "auto_started",
+      "phase": "plan",
+      "detail": {
+        "target": "finish",
+        "steps": "write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-26T18:47:40.681Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/verified-inputs-and-provenance",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-26T18:47:40.713Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-validate-table-domains.md",
+        "02-plan/tickets/02-verified-byte-snapshot.md",
+        "02-plan/tickets/03-transport-domains.md",
+        "02-plan/tickets/04-chemistry-semantic-identity.md",
+        "02-plan/tickets/05-provenance-envelope.md",
+        "02-plan/tickets/06-bind-output-and-regressions.md"
+      ],
+      "detail": {
+        "tickets": 6
+      }
+    },
+    {
+      "at": "2026-10-26T18:49:27.954Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-validate-table-domains.md",
+        "03-implement/01-validate-table-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-validate-table-domains"
+      }
+    },
+    {
+      "at": "2026-10-26T18:57:53.607Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-validate-table-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-validate-table-domains",
+        "commit": "a14f5ca"
+      }
+    },
+    {
+      "at": "2026-10-26T18:58:09.575Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-verified-byte-snapshot.md",
+        "03-implement/02-verified-byte-snapshot/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-verified-byte-snapshot"
+      }
+    },
+    {
+      "at": "2026-10-26T19:11:44.385Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-verified-byte-snapshot/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-verified-byte-snapshot",
+        "commit": "58b80e3"
+      }
+    },
+    {
+      "at": "2026-10-26T19:11:57.926Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-transport-domains.md",
+        "03-implement/03-transport-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-transport-domains"
+      }
+    },
+    {
+      "at": "2026-10-26T19:19:35.794Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-transport-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-transport-domains",
+        "commit": "ae80435"
+      }
+    },
+    {
+      "at": "2026-10-26T19:19:49.728Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-chemistry-semantic-identity.md",
+        "03-implement/04-chemistry-semantic-identity/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-chemistry-semantic-identity"
+      }
+    },
+    {
+      "at": "2026-10-26T19:29:22.708Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-chemistry-semantic-identity/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-chemistry-semantic-identity",
+        "commit": "c923773"
+      }
+    },
+    {
+      "at": "2026-10-26T19:29:37.742Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-provenance-envelope.md",
+        "03-implement/05-provenance-envelope/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-provenance-envelope"
+      }
+    },
+    {
+      "at": "2026-10-26T19:37:32.579Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-provenance-envelope/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-provenance-envelope",
+        "commit": "94ca1d0"
+      }
+    },
+    {
+      "at": "2026-10-26T19:37:47.101Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-bind-output-and-regressions.md",
+        "03-implement/06-bind-output-and-regressions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-bind-output-and-regressions"
+      }
+    },
+    {
+      "at": "2026-10-26T20:04:03.934Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/06-bind-output-and-regressions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-bind-output-and-regressions",
+        "commit": "eacf9fd"
+      }
+    },
+    {
+      "at": "2026-10-26T20:04:40.861Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-10-26T20:05:02.560Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/25"
+      }
+    },
+    {
+      "at": "2026-10-26T20:05:02.562Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T20:05:07.896Z",
+      "event": "scratch_cleaned",
+      "phase": "finished",
+      "detail": {
+        "policy": "build-artifacts",
+        "removed": [
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/cargo-target/debug/build",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/cargo-target/debug/incremental/build_script_build-01323r5lvtew8",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/cargo-target/debug/incremental/build_script_build-0am1oqo2p4e76",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/cargo-target/debug/incremental/build_script_build-2aocdghdazq96",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/cargo-target/debug/incremental/build_script_build-3a1s38dpigkko",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/target",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/ticket-06-baseline/scripts/__pycache__",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/ticket-06-baseline-target/debug/build",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/ticket-06-candidate/scripts/__pycache__",
+          ".scratch/tests/2026-10-26__verified-inputs-and-provenance/ticket-06-candidate-target/debug/build"
+        ],
+        "freedBytes": 1636223662
+      }
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "feat/verified-inputs-and-provenance",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-26T18:47:40.681Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/25"
+  },
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "minor",
+    "floor": "minor",
+    "reason": null,
+    "bullets": 3,
+    "path": ".work/changelog/2026-10-26__verified-inputs-and-provenance.md",
+    "written_at": "2026-10-26T20:04:40.846Z"
+  },
+  "finished_at": "2026-10-26T20:05:02.562Z"
+}

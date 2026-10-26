@@ -9,6 +9,14 @@ links only the physical stage. Both profiles retain raw handoff CSV. See the
 The options and milestone notes below record the architecture's evolution;
 their early ownership descriptions are historical.
 
+## Verified input and output boundary (R02)
+
+`g4-data::VerifiedDataSet` captures and verifies the full manifest once, then parses those same bytes. `g4-physics::table::VerifiedProcessTable` owns the resulting option2 models and immutable manifest identity. Its `table()` accessor supports raw transport and scoring without permitting mutation of the verified models. No conversion from an arbitrary `ProcessTable` can assert verification.
+
+The production `g4-sim::run::{run, run_with_sink, run_with_physchem}` functions accept that wrapper instead of a raw table plus a separate manifest. Output v4 binds `provenance.inputs` to the wrapper and, for coupled runs, `provenance.chemistry` to the supplied engine's semantic values and optional embedded source hash. The provenance accessor is read-only; JSON writing serializes the captured envelope. Explicitly named `run_unverified_*_for_testing` functions retain synthetic-table coverage with an unverified schema and no manifest identity.
+
+These changes preserve the dependency DAG: provenance contains only plain chemistry identity strings in `g4-core`; it does not depend on chemistry types. `g4-data` and `g4-physics` remain chemistry-independent. The no-default-feature simulation profile includes verified physical output and raw handoff CSV but no coupled API or chemistry dependency.
+
 ## Options
 **A. Single crate, module tree.** `core`, `data`, `physics`, `transport`, `physchem`, `chemistry`, `scoring`, `sim`, `config`, `bin/cli`.
 **B. Small layered workspace (4 library crates + CLI).**

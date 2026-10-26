@@ -22,12 +22,14 @@ use approx::assert_relative_eq;
 use common::{data, ev};
 use g4_core::rng::{RngStreams, Stage};
 use g4_core::vec3::Vec3;
+use g4_physics::error::PhysicsError;
 use g4_physics::models::{ElasticRotation, ProcessKind};
 use g4_physics::table::ProcessTable;
 use g4_physics::transport::{
     HistoryOutcome, NoObserver, Primary, SecondaryRecorder, Termination, TransportConfig,
     transport_electron,
 };
+use rand::Rng;
 use rayon::prelude::*;
 
 fn table() -> Option<ProcessTable> {
@@ -52,6 +54,53 @@ fn primary(e: f64, id: u64) -> Primary {
         position: Vec3::ZERO,
         direction: Vec3::new(0.0, 0.0, 1.0),
         history_id: id,
+    }
+}
+
+#[test]
+fn invalid_primary_positions_are_rejected_without_sampling() {
+    let Some(table) = table() else { return };
+    let streams = RngStreams::new(71);
+    for (position, component) in [
+        (Vec3::new(f64::NAN, 0.0, 0.0), "x"),
+        (Vec3::new(0.0, f64::INFINITY, 0.0), "y"),
+        (Vec3::new(0.0, 0.0, f64::NEG_INFINITY), "z"),
+    ] {
+        let mut rng = streams.stream(0, Stage::Physics).unwrap();
+        let mut input = primary(100.0, 0);
+        input.position = position;
+        let err = transport_electron(
+            &table,
+            &TransportConfig::default(),
+            input,
+            &mut rng,
+            &mut NoObserver,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            PhysicsError::InvalidPrimaryPosition { component: c, .. } if c == component
+        ));
+        let mut untouched = streams.stream(0, Stage::Physics).unwrap();
+        assert_eq!(rng.next_u64(), untouched.next_u64());
+    }
+}
+
+#[test]
+fn invalid_ledger_limits_are_rejected_without_sampling() {
+    let Some(table) = table() else { return };
+    let streams = RngStreams::new(72);
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0] {
+        let mut rng = streams.stream(0, Stage::Physics).unwrap();
+        let cfg = TransportConfig {
+            ledger_limit_relative: value,
+            ..TransportConfig::default()
+        };
+        let err = transport_electron(&table, &cfg, primary(100.0, 0), &mut rng, &mut NoObserver)
+            .unwrap_err();
+        assert!(matches!(err, PhysicsError::InvalidLedgerLimit { .. }));
+        let mut untouched = streams.stream(0, Stage::Physics).unwrap();
+        assert_eq!(rng.next_u64(), untouched.next_u64());
     }
 }
 

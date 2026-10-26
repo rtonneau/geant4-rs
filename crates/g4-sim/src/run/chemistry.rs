@@ -4,7 +4,7 @@ use super::*;
 use crate::history::run_history_with_observer;
 use crate::physchem_scoring::{PhysChemScorer, PhysChemSummary};
 use crate::spatial_diagnostic::{RustSpatialObserver, SpatialDiagnosticSink};
-use g4_chemistry::{PhysChemEngine, option3_data_sha256};
+use g4_chemistry::PhysChemEngine;
 use g4_core::rng::Stage;
 
 /// Run the physical and physicochemical stages and score both in fixed history order.
@@ -108,9 +108,7 @@ pub fn run_physchem_summary_with_diagnostics(
 #[derive(Debug, Clone, Serialize)]
 pub struct PhysChemRunOutput {
     pub schema: &'static str,
-    pub provenance: Provenance,
-    /// SHA-256 over the embedded option3 species, channel and parameter TOML files.
-    pub chemistry_data_sha256: String,
+    provenance: Provenance,
     pub models: Vec<ModelInfo>,
     pub elastic_rotation: String,
     pub config: RunConfig,
@@ -119,6 +117,11 @@ pub struct PhysChemRunOutput {
 }
 
 impl PhysChemRunOutput {
+    /// Verified physics identity and the semantic identity of the engine used by this run.
+    pub fn provenance(&self) -> &Provenance {
+        &self.provenance
+    }
+
     pub fn to_json_pretty(&self) -> Result<String, SimError> {
         serde_json::to_string_pretty(self).map_err(|e| SimError::Json(e.to_string()))
     }
@@ -131,30 +134,52 @@ impl PhysChemRunOutput {
     }
 }
 
-/// Run and score the physical and physicochemical stages, with chemistry-data provenance.
+/// Run both stages using the verified physics context and the constructed engine's identity.
+/// Custom engines record their actual semantic hash and no embedded option3 source claim.
 pub fn run_with_physchem(
+    table: &VerifiedProcessTable,
+    engine: &PhysChemEngine,
+    config: &RunConfig,
+) -> Result<PhysChemRunOutput, SimError> {
+    physchem_output(
+        table.table(),
+        engine,
+        config,
+        verified_provenance(table, config),
+        "geant4-rs/dna-sim/run/v4",
+    )
+}
+
+/// Synthetic test escape hatch; the physics input remains explicitly unverified.
+/// Chemistry still records the actual engine identity, including custom parameters.
+pub fn run_unverified_with_physchem_for_testing(
     table: &ProcessTable,
     engine: &PhysChemEngine,
     config: &RunConfig,
-    manifest: &g4_core::manifest::Manifest,
+) -> Result<PhysChemRunOutput, SimError> {
+    physchem_output(
+        table,
+        engine,
+        config,
+        Provenance::unverified(config.master_seed),
+        "geant4-rs/dna-sim/run-unverified/v1",
+    )
+}
+
+fn physchem_output(
+    table: &ProcessTable,
+    engine: &PhysChemEngine,
+    config: &RunConfig,
+    provenance: Provenance,
+    schema: &'static str,
 ) -> Result<PhysChemRunOutput, SimError> {
     let (summary, physchem) = run_physchem_summary(table, engine, config)?;
-    let rotation = table
-        .chain(g4_physics::models::ProcessKind::Elastic)
-        .map(|c| c.models())
-        .unwrap_or(&[])
-        .iter()
-        .find_map(|m| match m {
-            g4_physics::models::ElectronModel::Elastic(c) => Some(format!("{:?}", c.rotation())),
-            _ => None,
-        })
-        .unwrap_or_else(|| "n/a".to_owned());
     Ok(PhysChemRunOutput {
-        schema: "geant4-rs/dna-sim/run/v3",
-        provenance: Provenance::new(manifest, config.master_seed),
-        chemistry_data_sha256: option3_data_sha256(),
+        schema,
+        provenance: provenance
+            .with_chemistry(engine.semantic_sha256(), engine.source_file_sha256()),
         models: table.describe(),
-        elastic_rotation: rotation,
+        elastic_rotation: elastic_rotation(table),
         config: config.clone(),
         summary,
         physchem,

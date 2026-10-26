@@ -10,7 +10,7 @@ use g4_core::units::{Area, Energy};
 use g4_data::DataError;
 use g4_data::blocks::{AngularCdfTable, BlockTable, IonisationCdfTable};
 use g4_data::catalog::{DnaFile, Format, Table};
-use g4_data::datadir::{DataDir, repo_data_dir};
+use g4_data::datadir::{DataDir, VerifiedDataSet, repo_data_dir};
 use g4_data::xs::{CrossSectionTable, Interpolation};
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -66,10 +66,12 @@ fn catalog_lists_exactly_the_manifest_files() {
 fn all_20_files_load_after_checksum_verification() {
     require_data!();
     let (dir, manifest) = (data(), manifest());
-    dir.verify(&manifest).unwrap();
+    let snapshot = VerifiedDataSet::load(&dir, &manifest).unwrap();
+    assert_eq!(snapshot.identity(), &manifest);
+    assert_eq!(snapshot.identity().files(), manifest.files());
     for &file in DnaFile::ALL {
-        let table = dir.load_verified(file, &manifest).unwrap();
-        match (&table, file.format()) {
+        let table = snapshot.table(file).unwrap();
+        match (table, file.format()) {
             (Table::CrossSection(t), Format::CrossSection(spec)) => {
                 assert_eq!(t.n_components(), file.n_components(), "{file:?}");
                 assert_eq!(t.interpolation(), spec.interpolation);
@@ -84,6 +86,31 @@ fn all_20_files_load_after_checksum_verification() {
             "{file:?}"
         );
     }
+}
+
+#[test]
+fn catalog_rejects_missing_and_extra_cross_section_components() {
+    let scratch = std::env::temp_dir().join(format!("g4-data-shapes-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).unwrap();
+    let path = scratch.join("shape.dat");
+    for &file in DnaFile::ALL {
+        if !matches!(file.format(), Format::CrossSection(_)) {
+            continue;
+        }
+        for count in [file.n_components() - 1, file.n_components() + 1] {
+            let values = " 1".repeat(count);
+            std::fs::write(&path, format!("1{values}\n2{values}\n")).unwrap();
+            assert!(
+                matches!(file.load_from(&path), Err(DataError::InvalidTable { .. })),
+                "{file:?} accepted {count} components"
+            );
+        }
+        let values = " 1".repeat(file.n_components());
+        std::fs::write(&path, format!("1{values}\n2{values}\n")).unwrap();
+        assert!(file.load_from(&path).is_ok(), "{file:?}");
+    }
+    std::fs::remove_file(&path).unwrap();
+    std::fs::remove_dir(&scratch).unwrap();
 }
 
 #[test]
@@ -558,6 +585,7 @@ fn tables_are_shareable_read_only_across_threads() {
     assert_send_sync::<AngularCdfTable>();
     assert_send_sync::<IonisationCdfTable>();
     assert_send_sync::<Table>();
+    assert_send_sync::<VerifiedDataSet>();
 
     let table = Arc::new(xs(DnaFile::ChampionElasticE));
     let energies: Vec<f64> = (0..200)
@@ -580,4 +608,156 @@ fn tables_are_shareable_read_only_across_threads() {
     for h in handles {
         assert_eq!(h.join().unwrap(), serial);
     }
+}
+
+/// Independent copies under the test runner's scratch TEMP/TMP directory.
+struct SnapshotCopy(DataDir);
+
+impl SnapshotCopy {
+    fn new(tag: &str) -> Self {
+        let root =
+            std::env::temp_dir().join(format!("g4-data-snapshot-{tag}-{}", std::process::id()));
+        std::fs::create_dir_all(root.join("dna")).unwrap();
+        for entry in manifest().files() {
+            std::fs::copy(data().root().join(&entry.path), root.join(&entry.path)).unwrap();
+        }
+        std::fs::copy(
+            repo_data_dir().join("MANIFEST.toml"),
+            root.join("MANIFEST.toml"),
+        )
+        .unwrap();
+        Self(DataDir::new(root).unwrap())
+    }
+}
+
+impl Drop for SnapshotCopy {
+    fn drop(&mut self) {
+        std::fs::remove_dir_all(self.0.root()).unwrap();
+    }
+}
+
+#[test]
+fn snapshot_verifies_missing_and_corrupt_files_unused_by_electron_option2() {
+    require_data!();
+    let copy = SnapshotCopy::new("unused");
+    let manifest = manifest();
+    let path = copy.0.path(DnaFile::RuddIonisationP);
+    let mut bytes = std::fs::read(&path).unwrap();
+    std::fs::remove_file(&path).unwrap();
+    assert!(matches!(
+        VerifiedDataSet::load(&copy.0, &manifest),
+        Err(DataError::Core(DnaError::MissingDataFile { path }))
+            if path == DnaFile::RuddIonisationP.relative_path()
+    ));
+    bytes[0] ^= 1; // Same size, wrong digest.
+    std::fs::write(&path, &bytes).unwrap();
+    assert!(matches!(
+        VerifiedDataSet::load(&copy.0, &manifest),
+        Err(DataError::Core(DnaError::ChecksumMismatch { path, .. }))
+            if path == DnaFile::RuddIonisationP.relative_path()
+    ));
+    bytes.push(b'\n'); // Wrong size as well.
+    std::fs::write(path, bytes).unwrap();
+    assert!(matches!(
+        VerifiedDataSet::load(&copy.0, &manifest),
+        Err(DataError::Core(DnaError::ChecksumMismatch { expected, .. }))
+            if expected.ends_with(" bytes")
+    ));
+}
+
+#[test]
+fn snapshot_refuses_a_wrong_manifest_and_unlisted_table() {
+    require_data!();
+    let manifest = manifest();
+    let text = std::fs::read_to_string(repo_data_dir().join("MANIFEST.toml")).unwrap();
+    let wrong = Manifest::from_toml_str(
+        &text.replace(&manifest.files()[0].sha256, &manifest.files()[1].sha256),
+    )
+    .unwrap();
+    assert!(matches!(
+        VerifiedDataSet::load(&data(), &wrong),
+        Err(DataError::Core(DnaError::ChecksumMismatch { .. }))
+    ));
+
+    // The first listed table exists on disk, but is not attested by this reduced manifest.
+    let first = text.find("[[file]]").unwrap();
+    let second =
+        first + "[[file]]".len() + text[first + "[[file]]".len()..].find("[[file]]").unwrap();
+    let reduced =
+        Manifest::from_toml_str(&format!("{}{}", &text[..first], &text[second..])).unwrap();
+    let snapshot = VerifiedDataSet::load(&data(), &reduced).unwrap();
+    assert!(matches!(
+        snapshot.table(DnaFile::ChampionElasticE),
+        Err(DataError::Core(DnaError::InvalidManifest(message)))
+            if message.contains("not listed")
+    ));
+}
+
+#[test]
+fn snapshot_identity_survives_relocation_but_changed_bytes_require_new_identity() {
+    use g4_core::sha256::{Sha256, hex};
+
+    require_data!();
+    let manifest = manifest();
+    let original = VerifiedDataSet::load(&data(), &manifest).unwrap();
+    let copy = SnapshotCopy::new("relocation");
+    let relocated_manifest = Manifest::load(&copy.0.root().join("MANIFEST.toml")).unwrap();
+    let relocated = VerifiedDataSet::load(&copy.0, &relocated_manifest).unwrap();
+    assert_eq!(original.identity(), relocated.identity());
+
+    let file = DnaFile::MeltonAttachmentE;
+    let Table::CrossSection(before) = relocated.table(file).unwrap() else {
+        unreachable!()
+    };
+    let before_values = before.node_values_nm2(0).unwrap().to_vec();
+    let entry = manifest
+        .files()
+        .iter()
+        .find(|entry| entry.path == file.relative_path())
+        .unwrap();
+    let mut bytes = std::fs::read(copy.0.path(file)).unwrap();
+    bytes.extend_from_slice(b"\n# changed bytes, unchanged numerical values\n");
+    std::fs::write(copy.0.path(file), &bytes).unwrap();
+    assert!(matches!(
+        VerifiedDataSet::load(&copy.0, &manifest),
+        Err(DataError::Core(DnaError::ChecksumMismatch { .. }))
+    ));
+    let text = std::fs::read_to_string(copy.0.root().join("MANIFEST.toml")).unwrap();
+    let updated = text.replace("\r\n", "\n").replace(
+        &format!("bytes = {}\nsha256 = \"{}\"", entry.bytes, entry.sha256),
+        &format!(
+            "bytes = {}\nsha256 = \"{}\"",
+            bytes.len(),
+            hex(&Sha256::digest(&bytes))
+        ),
+    );
+    let new_manifest = Manifest::from_toml_str(&updated).unwrap();
+    let changed = VerifiedDataSet::load(&copy.0, &new_manifest).unwrap();
+    assert_ne!(changed.identity(), original.identity());
+    assert_ne!(changed.identity().hash(), original.identity().hash());
+    assert_eq!(relocated.identity(), original.identity());
+    let Table::CrossSection(after) = relocated.table(file).unwrap() else {
+        unreachable!()
+    };
+    assert_eq!(after.node_values_nm2(0).unwrap(), before_values);
+}
+
+#[test]
+fn snapshot_applies_catalog_shape_checks_to_verified_bytes() {
+    use g4_core::sha256::{Sha256, hex};
+
+    let root = std::env::temp_dir().join(format!("g4-data-snapshot-shape-{}", std::process::id()));
+    std::fs::create_dir_all(root.join("dna")).unwrap();
+    let copy = SnapshotCopy(DataDir::new(root).unwrap());
+    let file = DnaFile::ChampionElasticE;
+    let bytes = b"1 1 2\n2 1 2\n"; // Champion requires one value column, not two.
+    std::fs::write(copy.0.path(file), bytes).unwrap();
+    let manifest = Manifest::from_toml_str(&format!(
+        "dataset = \"G4EMLOW\"\nversion = \"test\"\n[[file]]\npath = \"{}\"\ngroup = \"test\"\nbytes = {}\nsha256 = \"{}\"\n",
+        file.relative_path(), bytes.len(), hex(&Sha256::digest(bytes))
+    )).unwrap();
+    assert!(matches!(
+        VerifiedDataSet::load(&copy.0, &manifest),
+        Err(DataError::InvalidTable { .. })
+    ));
 }

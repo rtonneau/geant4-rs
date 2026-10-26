@@ -39,7 +39,7 @@ use g4_core::units::{Area, Energy, EnergyRange};
 use g4_core::vec3::Vec3;
 use g4_data::blocks::IonisationCdfTable;
 use g4_data::catalog::{DnaFile, Table};
-use g4_data::datadir::DataDir;
+use g4_data::datadir::{DataDir, VerifiedDataSet};
 use g4_data::xs::CrossSectionTable;
 use rand::Rng;
 
@@ -61,6 +61,11 @@ pub struct BornIonisation {
 
 impl BornIonisation {
     pub fn new(table: CrossSectionTable, cdf: IonisationCdfTable) -> Result<Self, PhysicsError> {
+        // Five shells in G4DNAWaterIonisationStructure.cc (Geant4 11.4.1).
+        table.require_components(
+            DnaFile::BornIonisationE.relative_path(),
+            DnaFile::BornIonisationE.n_components(),
+        )?;
         let window = window(BORN_IONISATION_WINDOW_EV.0, BORN_IONISATION_WINDOW_EV.1);
         ensure_table_covers(
             "sigma_ionisation_e_born",
@@ -87,6 +92,17 @@ impl BornIonisation {
             _ => unreachable!("catalog: BornIonisationCdfE is an ionisation CDF table"),
         };
         Self::new(table, cdf)
+    }
+
+    /// Build from the checked snapshot without reading the source directory again.
+    pub fn from_verified_data(data: &VerifiedDataSet) -> Result<Self, PhysicsError> {
+        let Table::CrossSection(table) = data.table(DnaFile::BornIonisationE)? else {
+            unreachable!("catalog: BornIonisationE is a cross-section table")
+        };
+        let Table::IonisationCdf(cdf) = data.table(DnaFile::BornIonisationCdfE)? else {
+            unreachable!("catalog: BornIonisationCdfE is an ionisation CDF table")
+        };
+        Self::new(table.clone(), cdf.clone())
     }
 
     /// Partial cross sections of the five shells at `energy` (nm^2).

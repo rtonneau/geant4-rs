@@ -75,9 +75,18 @@ pub struct Recombination {
 
 impl Recombination {
     fn from_raw(r: &RawRecombination) -> Result<Self, ChemistryError> {
-        if r.temperature_k <= 0.0
+        if !r.temperature_k.is_finite()
+            || r.temperature_k <= 0.0
+            || !r.density_g_cm3.is_finite()
             || r.density_g_cm3 <= 0.0
+            || !r.search_radius_in_onsager_radii.is_finite()
             || r.search_radius_in_onsager_radii <= 0.0
+            || !r.y0.is_finite()
+            || !r.a.into_iter().chain(r.b).chain(r.s).all(f64::is_finite)
+            || !r.k_boltzmann_mev_per_k.is_finite()
+            || r.k_boltzmann_mev_per_k <= 0.0
+            || !r.e_si.is_finite()
+            || r.e_si <= 0.0
         {
             return Err(ChemistryError::invalid(
                 FILE,
@@ -141,20 +150,41 @@ impl PhysChemParams {
             file: FILE,
             message: e.to_string(),
         })?;
-        if raw.creation.birth_time_ps < 0.0 || raw.autoionisation.electron_kinetic_energy_ev <= 0.1
-        {
-            return Err(ChemistryError::invalid(
-                FILE,
-                "birth time must be >= 0 and the auto-ionisation electron energy above 0.1 eV (r_mean > 0)",
-            ));
-        }
-        Ok(Self {
+        let params = Self {
             birth_time: Time::from_ps(raw.creation.birth_time_ps),
             autoionisation_electron_energy: Energy::from_ev(
                 raw.autoionisation.electron_kinetic_energy_ev,
             ),
             recombination: Recombination::from_raw(&raw.recombination)?,
-        })
+        };
+        params.validate()?;
+        Ok(params)
+    }
+
+    /// Check the physical domain of the stored values, including values changed after parsing.
+    pub(crate) fn validate(&self) -> Result<(), ChemistryError> {
+        let rec = &self.recombination;
+        let valid = self.birth_time.ps().is_finite()
+            && self.birth_time.ps() >= 0.0
+            && self.autoionisation_electron_energy.ev().is_finite()
+            && self.autoionisation_electron_energy.ev() > 0.1
+            && rec.temperature_k.is_finite()
+            && rec.temperature_k > 0.0
+            && rec.density_g_cm3.is_finite()
+            && rec.density_g_cm3 > 0.0
+            && rec.dielectric_constant.is_finite()
+            && rec.dielectric_constant > 0.0
+            && rec.onsager_radius.nm().is_finite()
+            && rec.onsager_radius.nm() > 0.0
+            && rec.search_radius.nm().is_finite()
+            && rec.search_radius.nm() > 0.0;
+        if !valid {
+            return Err(ChemistryError::invalid(
+                FILE,
+                "birth time, electron energy or recombination values are outside their finite physical domains",
+            ));
+        }
+        Ok(())
     }
 }
 

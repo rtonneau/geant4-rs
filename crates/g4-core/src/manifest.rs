@@ -9,7 +9,6 @@ use crate::error::DnaError;
 use crate::sha256::{Sha256, hex};
 use serde::Deserialize;
 use std::collections::HashSet;
-use std::io::Read;
 use std::path::Path;
 
 /// One data file entry; `path` is relative to the data root (e.g. `dna/sigma_...dat`).
@@ -43,6 +42,18 @@ impl Manifest {
             toml::from_str(text).map_err(|e| DnaError::InvalidManifest(e.to_string()))?;
         let mut seen = HashSet::new();
         for f in &raw.files {
+            // Use one portable spelling so identity never contains a machine root or aliases
+            // another entry through traversal, Windows prefixes or separator differences.
+            if f.path.contains(['\\', ':'])
+                || f.path
+                    .split('/')
+                    .any(|part| matches!(part, "" | "." | ".."))
+            {
+                return Err(DnaError::InvalidManifest(format!(
+                    "{}: path must be a relative forward-slash path without . or .. components",
+                    f.path
+                )));
+            }
             let valid_hex = f.sha256.len() == 64
                 && f.sha256
                     .bytes()
@@ -91,39 +102,34 @@ impl Manifest {
     pub fn verify(&self, data_root: &Path) -> Result<(), DnaError> {
         self.files
             .iter()
-            .try_for_each(|f| self.verify_file(data_root, f))
+            .try_for_each(|f| self.verify_path(data_root, &f.path))
     }
 
     /// Check one listed file (`rel_path` as written in the manifest, e.g. `dna/sigma_x.dat`).
     /// A path the manifest does not list is an error: an unlisted file cannot be vouched for.
     pub fn verify_path(&self, data_root: &Path, rel_path: &str) -> Result<(), DnaError> {
-        let entry = self
-            .files
-            .iter()
-            .find(|f| f.path == rel_path)
-            .ok_or_else(|| DnaError::InvalidManifest(format!("{rel_path} is not listed")))?;
-        self.verify_file(data_root, entry)
+        self.read_verified(data_root, rel_path).map(|_| ())
     }
 
-    fn verify_file(&self, data_root: &Path, f: &ManifestFile) -> Result<(), DnaError> {
+    /// Read a listed file once, returning precisely the bytes whose size and SHA-256 match.
+    /// Callers that parse these bytes do not reopen the source after verification.
+    pub fn read_verified(&self, data_root: &Path, rel_path: &str) -> Result<Vec<u8>, DnaError> {
+        let f = self.entry(rel_path)?;
         let full = data_root.join(&f.path);
-        let mut file = std::fs::File::open(&full).map_err(|e| match e.kind() {
+        let bytes = std::fs::read(&full).map_err(|e| match e.kind() {
             std::io::ErrorKind::NotFound => DnaError::MissingDataFile {
                 path: f.path.clone(),
             },
             _ => io_error(&full, &e),
         })?;
-        let mut hasher = Sha256::new();
-        let mut len = 0u64;
-        let mut buf = vec![0u8; 1 << 16];
-        loop {
-            let n = file.read(&mut buf).map_err(|e| io_error(&full, &e))?;
-            if n == 0 {
-                break;
-            }
-            hasher.update(&buf[..n]);
-            len += n as u64;
-        }
+        self.verify_bytes(rel_path, &bytes)?;
+        Ok(bytes)
+    }
+
+    /// Check captured bytes against a listed file, without reading any filesystem path.
+    pub fn verify_bytes(&self, rel_path: &str, bytes: &[u8]) -> Result<(), DnaError> {
+        let f = self.entry(rel_path)?;
+        let len = bytes.len() as u64;
         if len != f.bytes {
             return Err(DnaError::ChecksumMismatch {
                 path: f.path.clone(),
@@ -131,7 +137,7 @@ impl Manifest {
                 actual: format!("{len} bytes"),
             });
         }
-        let actual = hex(&hasher.finalize());
+        let actual = hex(&Sha256::digest(bytes));
         if actual != f.sha256 {
             return Err(DnaError::ChecksumMismatch {
                 path: f.path.clone(),
@@ -140,6 +146,13 @@ impl Manifest {
             });
         }
         Ok(())
+    }
+
+    fn entry(&self, rel_path: &str) -> Result<&ManifestFile, DnaError> {
+        self.files
+            .iter()
+            .find(|f| f.path == rel_path)
+            .ok_or_else(|| DnaError::InvalidManifest(format!("{rel_path} is not listed")))
     }
 }
 
@@ -269,5 +282,49 @@ sha256 = "{ABC_SHA}"
             m.verify(&s.0),
             Err(DnaError::ChecksumMismatch { .. })
         ));
+    }
+
+    #[test]
+    fn captured_bytes_are_checked_without_reopening_the_file() {
+        let s = Scratch::new("captured");
+        let path = s.0.join("dna/abc.dat");
+        std::fs::write(&path, b"abc").unwrap();
+        let m = Manifest::from_toml_str(&sample_toml()).unwrap();
+        let captured = m.read_verified(&s.0, "dna/abc.dat").unwrap();
+        std::fs::write(&path, b"abd").unwrap();
+        assert_eq!(captured, b"abc");
+        m.verify_bytes("dna/abc.dat", &captured).unwrap();
+        assert!(matches!(
+            m.read_verified(&s.0, "dna/abc.dat"),
+            Err(DnaError::ChecksumMismatch { .. })
+        ));
+        assert!(matches!(
+            m.verify_bytes("dna/unlisted.dat", b"abc"),
+            Err(DnaError::InvalidManifest(_))
+        ));
+    }
+
+    #[test]
+    fn manifest_paths_are_portable_relative_paths() {
+        for path in [
+            "",
+            "/dna/abc.dat",
+            "../abc.dat",
+            "dna/../abc.dat",
+            "dna/./abc.dat",
+            "dna//abc.dat",
+            "C:/dna/abc.dat",
+            "dna\\abc.dat",
+        ] {
+            // Escape backslashes for the TOML basic string.
+            let text = sample_toml().replace("dna/abc.dat", &path.replace('\\', "\\\\"));
+            assert!(
+                matches!(
+                    Manifest::from_toml_str(&text),
+                    Err(DnaError::InvalidManifest(_))
+                ),
+                "accepted {path:?}"
+            );
+        }
     }
 }

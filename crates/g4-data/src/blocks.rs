@@ -60,10 +60,9 @@ impl BlockTable {
             file: name.to_string(),
             message,
         };
-        if raw.n_cols() != 2 + n_value_cols {
+        if Some(raw.n_cols()) != n_value_cols.checked_add(2) {
             return Err(invalid(format!(
-                "expected {} columns, found {}",
-                2 + n_value_cols,
+                "expected two key columns and {n_value_cols} value columns, found {} columns",
                 raw.n_cols()
             )));
         }
@@ -71,7 +70,7 @@ impl BlockTable {
         let mut blocks: Vec<Block> = Vec::new();
         for (i, row) in raw.rows().enumerate() {
             let e = row[0];
-            if row[2..].iter().any(|&v| v < 0.0) {
+            if row[1..].iter().any(|&v| v < 0.0) {
                 return Err(invalid(format!("negative value in row {}", i + 1)));
             }
             if energies.last() != Some(&e) {
@@ -114,6 +113,21 @@ impl BlockTable {
         &self.blocks
     }
 
+    fn require_columns(&self, name: &str, expected: usize) -> Result<(), DataError> {
+        for (index, block) in self.blocks.iter().enumerate() {
+            if block.cols.len() != expected {
+                return Err(DataError::InvalidTable {
+                    file: name.to_string(),
+                    message: format!(
+                        "block {index}: expected {expected} value columns, found {}",
+                        block.cols.len()
+                    ),
+                });
+            }
+        }
+        Ok(())
+    }
+
     pub fn energy_range(&self) -> EnergyRange {
         EnergyRange::new(
             Energy::from_ev(self.energies[0]),
@@ -136,6 +150,12 @@ fn bracket_energy(
         k *= LAST_ENERGY_PROTECTION;
     }
     let i2 = energies.partition_point(|&e| e <= k);
+    // The relative endpoint adjustment need not fit inside a very narrow grid.
+    if i2 == 0 || i2 == energies.len() {
+        return Err(DataError::UndefinedLookup(format!(
+            "adjusted energy {k} eV has no interpolation interval"
+        )));
+    }
     Ok((i2 - 1, i2, k))
 }
 
@@ -188,6 +208,7 @@ impl AngularCdfTable {
     }
 
     pub fn from_blocks(name: &str, table: &BlockTable) -> Result<Self, DataError> {
+        table.require_columns(name, 1)?;
         let invalid = |message: String| DataError::InvalidTable {
             file: name.to_string(),
             message,
@@ -283,6 +304,7 @@ impl IonisationCdfTable {
     }
 
     pub fn from_blocks(name: &str, table: &BlockTable) -> Result<Self, DataError> {
+        table.require_columns(name, N_SHELLS)?;
         let mut nodes = Vec::with_capacity(table.blocks.len());
         for (b, block) in table.blocks.iter().enumerate() {
             let mut shells = Vec::with_capacity(N_SHELLS);
@@ -667,6 +689,53 @@ mod tests {
         assert!(IonisationDcsTable::from_text("t", "10 1 0\n").is_err());
     }
 
+    #[test]
+    fn from_blocks_rejects_missing_and_extra_value_columns() {
+        for count in 0..=6 {
+            let values = " 1".repeat(count);
+            let text = format!("1 0{values}\n1 1{values}\n2 0{values}\n2 1{values}\n");
+            let blocks = BlockTable::from_text("shape", &text, count).unwrap();
+            if count != 1 {
+                assert!(matches!(
+                    AngularCdfTable::from_blocks("shape", &blocks),
+                    Err(DataError::InvalidTable { .. })
+                ));
+            }
+            if count != N_SHELLS {
+                assert!(matches!(
+                    IonisationCdfTable::from_blocks("shape", &blocks),
+                    Err(DataError::InvalidTable { .. })
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn narrow_block_endpoint_is_a_typed_error() {
+        assert_narrow_endpoint(1.0000000000001);
+    }
+
+    fn assert_narrow_endpoint(upper: f64) {
+        let angle = AngularCdfTable::from_text(
+            "narrow",
+            &format!("1 0 0\n1 1 90\n{upper} 0 0\n{upper} 1 180\n"),
+        )
+        .unwrap();
+        let cdf = IonisationCdfTable::from_text(
+            "narrow",
+            &format!("1 1 0 0 0 0 0\n1 2 1 1 1 1 1\n{upper} 1 0 0 0 0 0\n{upper} 3 1 1 1 1 1\n"),
+        )
+        .unwrap();
+        assert!(matches!(
+            angle.angle_deg(Energy::from_ev(upper), 0.5),
+            Err(DataError::UndefinedLookup(_))
+        ));
+        assert!(matches!(
+            cdf.transferred_energy_ev(0, Energy::from_ev(upper), 0.5),
+            Err(DataError::UndefinedLookup(_))
+        ));
+    }
+
     /// Strategy: probability nodes `0 < ... < 1` with non-decreasing angles in `[0, 180]`,
     /// bracketed by the `(0, 0)` and `(1, 180)` end nodes.
     fn block_strategy() -> impl Strategy<Value = Vec<(f64, f64)>> {
@@ -683,6 +752,20 @@ mod tests {
     }
 
     proptest! {
+        #[test]
+        fn narrow_block_upper_endpoints_never_panic(ulps in 1_u64..4000) {
+            assert_narrow_endpoint(f64::from_bits(1.0_f64.to_bits() + ulps));
+        }
+
+        #[test]
+        fn malformed_block_shapes_are_typed_errors(count in 0_usize..20) {
+            let values = " 1".repeat(count);
+            let text = format!("1 0{values}\n1 1{values}\n2 0{values}\n2 1{values}\n");
+            let blocks = BlockTable::from_text("prop", &text, count).unwrap();
+            prop_assert_eq!(AngularCdfTable::from_blocks("prop", &blocks).is_ok(), count == 1);
+            prop_assert_eq!(IonisationCdfTable::from_blocks("prop", &blocks).is_ok(), count == N_SHELLS);
+        }
+
         /// Whatever valid blocks are tabulated, the angle is non-decreasing in the cumulative
         /// probability for every incident energy, and stays inside the tabulated angle range.
         #[test]

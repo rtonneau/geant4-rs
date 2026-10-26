@@ -14,8 +14,9 @@ use crate::models::{
     ElectronModel, MeltonAttachment, ProcessKind, SancheVibrational, Solvation,
 };
 use crate::water::WATER_MOLECULES_PER_NM3;
+use g4_core::manifest::Manifest;
 use g4_core::units::{Energy, EnergyRange};
-use g4_data::datadir::DataDir;
+use g4_data::datadir::{DataDir, VerifiedDataSet};
 use serde::Serialize;
 
 /// Models of one process ordered by ascending energy window.
@@ -119,12 +120,69 @@ pub struct ProcessTable {
     molecules_per_nm3: f64,
 }
 
+/// Production option2 models permanently bound to the manifest of their verified input bytes.
+///
+/// Construction accepts only a [`VerifiedDataSet`]; there is no operation that labels an
+/// arbitrary [`ProcessTable`] as verified. Both the table and its identity are read-only.
+#[derive(Debug, Clone)]
+pub struct VerifiedProcessTable {
+    table: ProcessTable,
+    identity: Manifest,
+}
+
+impl VerifiedProcessTable {
+    /// Build the standard option2 electron models from captured, checked tables only.
+    /// The full supplied manifest was verified when the snapshot was loaded, including files
+    /// not used by these models. Model windows and sampling policies match the unverified path.
+    pub fn option2_electron(
+        data: &VerifiedDataSet,
+        rotation: ElasticRotation,
+    ) -> Result<Self, PhysicsError> {
+        let table = ProcessTable::from_models(
+            vec![
+                ElectronModel::Elastic(ChampionElastic::from_verified_data(data, rotation)?),
+                ElectronModel::Excitation(BornExcitation::from_verified_data(data)?),
+                ElectronModel::Ionisation(BornIonisation::from_verified_data(data)?),
+                ElectronModel::Vibrational(SancheVibrational::from_verified_data(data)?),
+                ElectronModel::Attachment(MeltonAttachment::from_verified_data(data)?),
+            ],
+            Some(Solvation::new()),
+        )?;
+        Ok(Self {
+            table,
+            identity: data.identity().clone(),
+        })
+    }
+
+    /// The frozen process table, suitable for transport and inspection.
+    pub fn table(&self) -> &ProcessTable {
+        &self.table
+    }
+
+    /// Verified manifest identity, retaining its original file order and no source root.
+    pub fn identity(&self) -> &Manifest {
+        &self.identity
+    }
+}
+
 impl ProcessTable {
     /// `G4EmDNAPhysics_option2` electron processes (M3: complete below 1 MeV): Champion elastic
     /// (7.4 eV - 1 MeV), Born excitation (9 eV - 1 MeV), Born1 ionisation (11 eV - 1 MeV), Sanche
     /// vibrational excitation (2 - 100 eV), Melton attachment (4 - 13 eV) and solvation (0 - 7.4
     /// eV), in liquid water of Geant4 `G4_WATER` density.
+    ///
+    /// Compatibility entry point without checksum verification or a verified identity.
+    /// Production inputs should use [`VerifiedProcessTable::option2_electron`].
     pub fn option2_electron(
+        dir: &DataDir,
+        rotation: ElasticRotation,
+    ) -> Result<Self, PhysicsError> {
+        Self::option2_electron_unverified(dir, rotation)
+    }
+
+    /// Load option2 tables without checksum verification, for tests and exploratory input.
+    /// This cannot produce a [`VerifiedProcessTable`] or claim a verified manifest identity.
+    pub fn option2_electron_unverified(
         dir: &DataDir,
         rotation: ElasticRotation,
     ) -> Result<Self, PhysicsError> {
@@ -220,10 +278,13 @@ impl ProcessTable {
         let mut per_nm = [0.0; ProcessKind::COUNT];
         for p in ProcessKind::ALL {
             if let Some(model) = self.select(p, e) {
-                per_nm[p.index()] = model.cross_section(e)?.nm2() * self.molecules_per_nm3;
+                let value = model.cross_section(e)?.nm2() * self.molecules_per_nm3;
+                per_nm[p.index()] = checked_macroscopic_component(e, p, model.name(), value)?;
             }
         }
-        Ok(MacroscopicCrossSections { per_nm })
+        let xs = MacroscopicCrossSections { per_nm };
+        checked_macroscopic_total(e, xs.total())?;
+        Ok(xs)
     }
 
     /// Inventory of the registered models for the output metadata.
@@ -287,10 +348,68 @@ impl ProcessTable {
     }
 }
 
+fn checked_macroscopic_component(
+    energy: Energy,
+    process: ProcessKind,
+    model: &'static str,
+    value_per_nm: f64,
+) -> Result<f64, PhysicsError> {
+    if !value_per_nm.is_finite() || value_per_nm < 0.0 {
+        return Err(PhysicsError::InvalidMacroscopicCrossSection {
+            energy_ev: energy.ev(),
+            process,
+            model,
+            value_per_nm,
+        });
+    }
+    Ok(value_per_nm)
+}
+
+fn checked_macroscopic_total(energy: Energy, value_per_nm: f64) -> Result<(), PhysicsError> {
+    if !value_per_nm.is_finite() || value_per_nm < 0.0 {
+        return Err(PhysicsError::InvalidMacroscopicTotal {
+            energy_ev: energy.ev(),
+            value_per_nm,
+        });
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use g4_core::units::Area;
+
+    #[test]
+    fn invalid_macroscopic_components_and_overflowed_total_are_errors() {
+        let energy = Energy::from_ev(100.0);
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, -1.0] {
+            let err =
+                checked_macroscopic_component(energy, ProcessKind::Elastic, "test model", invalid)
+                    .unwrap_err();
+            assert!(matches!(
+                err,
+                PhysicsError::InvalidMacroscopicCrossSection {
+                    energy_ev: 100.0,
+                    process: ProcessKind::Elastic,
+                    model: "test model",
+                    ..
+                }
+            ));
+        }
+        assert_eq!(
+            checked_macroscopic_component(energy, ProcessKind::Elastic, "test model", 0.0),
+            Ok(0.0)
+        );
+        let overflowed = MacroscopicCrossSections::new([f64::MAX, f64::MAX, 0.0, 0.0, 0.0]);
+        assert!(matches!(
+            checked_macroscopic_total(energy, overflowed.total()),
+            Err(PhysicsError::InvalidMacroscopicTotal {
+                energy_ev: 100.0,
+                value_per_nm: f64::INFINITY,
+            })
+        ));
+    }
 
     /// A model that only has a window, to test the selection rule in isolation.
     #[derive(Debug)]
