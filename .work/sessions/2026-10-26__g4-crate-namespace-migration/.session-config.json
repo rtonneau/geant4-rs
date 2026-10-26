@@ -1,0 +1,71 @@
+{
+  "session_id": "2026-10-26__g4-crate-namespace-migration",
+  "feature_name": "g4-crate-namespace-migration",
+  "scratch_dir": ".scratch/tests/2026-10-26__g4-crate-namespace-migration",
+  "created_at": "2026-10-26T13:58:13.017Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-26T13:58:13.017Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T14:03:55.325Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T14:04:07.543Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T14:55:30.022Z",
+      "event": "auto_started",
+      "phase": "plan",
+      "detail": {
+        "target": "finish",
+        "steps": "write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-26T14:59:26.071Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "refactor/g4-crate-namespace-migration",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-26T14:59:26.087Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-validate-rename-snapshots.md",
+        "02-plan/tickets/02-rename-five-crates.md"
+      ],
+      "detail": {
+        "tickets": 2
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "refactor/g4-crate-namespace-migration",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-26T14:59:26.071Z",
+    "pr_url": null
+  }
+}
