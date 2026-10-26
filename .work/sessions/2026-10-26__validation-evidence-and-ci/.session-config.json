@@ -53,6 +53,30 @@
       "detail": {
         "tickets": 5
       }
+    },
+    {
+      "at": "2026-10-26T10:13:56.804Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-m2-reference-validation.md",
+        "03-implement/01-m2-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-m2-reference-validation"
+      }
+    },
+    {
+      "at": "2026-10-26T10:38:58.707Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-m2-reference-validation/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-m2-reference-validation",
+        "commit": "e75d2d8"
+      }
     }
   ],
   "current_phase": "ship",
@@ -61,5 +85,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-26T10:12:17.929Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent+inline"
 }
