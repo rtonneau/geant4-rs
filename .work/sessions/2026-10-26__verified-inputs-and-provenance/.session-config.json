@@ -183,9 +183,33 @@
         "ticket": "05-provenance-envelope",
         "commit": "94ca1d0"
       }
+    },
+    {
+      "at": "2026-10-26T19:37:47.101Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-bind-output-and-regressions.md",
+        "03-implement/06-bind-output-and-regressions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-bind-output-and-regressions"
+      }
+    },
+    {
+      "at": "2026-10-26T20:04:03.934Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/06-bind-output-and-regressions/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-bind-output-and-regressions",
+        "commit": "eacf9fd"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/verified-inputs-and-provenance",
     "base_branch": "main",
