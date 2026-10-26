@@ -125,6 +125,30 @@
         "ticket": "03-m6-stage-evidence",
         "commit": "1ebc209"
       }
+    },
+    {
+      "at": "2026-10-26T11:02:21.571Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-gate-inventory-runner.md",
+        "03-implement/04-gate-inventory-runner/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-gate-inventory-runner"
+      }
+    },
+    {
+      "at": "2026-10-26T11:17:48.142Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-gate-inventory-runner/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-gate-inventory-runner",
+        "commit": "3a7a15a"
+      }
     }
   ],
   "current_phase": "ship",
