@@ -12,11 +12,16 @@
 //! endpoint draws; finite arithmetic is checked; explicit outcomes replace the
 //! C++ negative-time sentinel. The source's exact-zero distance substitution of
 //! 0.001 nm is retained, even for synthetic reaction radii smaller than that.
-//! Neutral PDC preserves the positive-gap rejection envelope, evaluated with
+//! PDC preserves the positive-gap rejection envelope, evaluated with
 //! scaled variables and logarithmic acceptance to retain its small positive tail.
 //! At exact equality the source envelope is singular; the continuum limiting
-//! law is sampled directly (see `sample_neutral_pdc`). Exhaustion means exactly
+//! law is sampled directly (see `sample_pdc_continuum`). Exhaustion means exactly
 //! 10,000 rejected attempts, rather than the source's sentinel after 10,001.
+//! Charged PDC uses the same envelope with transformed radius R and distance L:
+//! `a = 1/R + k_act/(4 pi D R^2)`, `b = (L-R)/2`. These are algebraic
+//! reductions of the source's alpha/sinh/coth expressions, including its A+A
+//! factor. The gap is evaluated without subtracting nearly equal transforms.
+//! Strict contact uses their mathematically equivalent raw-distance ordering.
 
 use crate::error::ChemistryError;
 use crate::molecule::MoleculePair;
@@ -57,7 +62,9 @@ pub enum ReactionTime {
 /// separation consume an ultimate-probability draw; if successful, a positive
 /// gap consumes proposal/acceptance draw pairs (at most 10,000), while equality
 /// consumes exponential/half-normal draws for the limiting continuum law.
-/// Charged PDC is unsupported. Arithmetic overflow/underflow of a selected
+/// Charged PDC has the same draw contract, with transformed lengths in its
+/// continuum law. Equality uses the same limiting law as neutral PDC.
+/// Arithmetic overflow/underflow of a selected
 /// positive reaction time is an error, never [`ReactionTime::NoReaction`].
 pub fn sample_independent_reaction_time(
     pair: MoleculePair<'_>,
@@ -65,9 +72,6 @@ pub fn sample_independent_reaction_time(
     rng: &mut impl Rng,
 ) -> Result<ReactionTime, ChemistryError> {
     let reaction_id = parameters.reaction_id();
-    if parameters.pdc().is_some() && parameters.onsager_radius().nm() != 0.0 {
-        return Err(ChemistryError::UnsupportedIrtKinetics { reaction_id });
-    }
     let first = pair.first().instance();
     let second = pair.second().instance();
     let species = [first.species, second.species];
@@ -101,6 +105,9 @@ pub fn sample_independent_reaction_time(
     }
     let distance = if distance == 0.0 { 1e-3 } else { distance };
     if parameters.pdc().is_some() {
+        if parameters.onsager_radius().nm() != 0.0 {
+            return sample_charged_pdc(distance, parameters, rng);
+        }
         return sample_neutral_pdc(distance, parameters, rng);
     }
     let sigma = parameters.effective_radius().nm();
@@ -172,6 +179,93 @@ fn sample_neutral_pdc(
     // G4DNAIRT: a=(k_act/k_obs)/sigma, b=(r0-sigma)/2, elapsed=X/D.
     let a = (rates.activation_rate().nm3_per_ps() / observed) / sigma;
     let b = (distance - sigma) / 2.0;
+    sample_pdc_continuum(a, b, parameters, rng)
+}
+
+fn sample_charged_pdc(
+    distance: f64,
+    parameters: &TwoBodyReactionParameters,
+    rng: &mut impl Rng,
+) -> Result<ReactionTime, ChemistryError> {
+    let reaction_id = parameters.reaction_id();
+    let radius = parameters.reaction_radius().nm();
+    let sigma = parameters.effective_radius().nm();
+    // R(r)=rc/expm1(rc/r) is strictly increasing for either sign of rc.
+    // Raw ordering retains strict contact when adjacent transforms round equal.
+    if radius > distance {
+        return Ok(if uniform(rng) < parameters.contact_probability() {
+            ReactionTime::Immediate
+        } else {
+            ReactionTime::NoReaction
+        });
+    }
+    let effective = parameters
+        .effective_distance(Length::from_nm(distance))?
+        .nm();
+    let rates = parameters.pdc().expect("PDC dispatch requires PDC rates");
+    let winf = (sigma / effective)
+        * (parameters.observed_rate().nm3_per_ps() / rates.diffusion_rate().nm3_per_ps());
+    pdc_positive(
+        reaction_id,
+        "charged PDC ultimate reaction probability",
+        winf,
+    )?;
+    if uniform(rng) >= winf {
+        return Ok(ReactionTime::NoReaction);
+    }
+
+    // Substituting v and alpha in G4DNAIRT.cc:328-330 gives
+    // a=1/R+k_act/(4*pi*D*R^2). Rates here are already per molecule.
+    // k_diff=4*pi*D*R for A+B but half of that for A+A (source id 51).
+    let symmetry = if parameters.reactants()[0] == parameters.reactants()[1] {
+        0.5
+    } else {
+        1.0
+    };
+    let a = (1.0
+        + symmetry * (rates.activation_rate().nm3_per_ps() / rates.diffusion_rate().nm3_per_ps()))
+        / sigma;
+    let b = if distance == radius {
+        0.0
+    } else {
+        // coth(x/2)=1+2/expm1(x), so b=(R(r)-R(sigma))/2.
+        // Factor that difference with expm1; exprel also retains the neutral
+        // limit when x*f rounds to zero. All exponentials have nonpositive
+        // arguments. A nonzero gap lost to underflow is an error, not equality.
+        let x = parameters.onsager_radius().nm() / radius;
+        let fraction = (distance - radius) / distance;
+        let gap = if x > 0.0 {
+            effective * fraction * exprel(-x * fraction) / exprel(-x)
+        } else {
+            effective
+                * (parameters.onsager_radius().nm() / distance).exp()
+                * fraction
+                * exprel(x * fraction)
+                / exprel(x)
+        };
+        let b = gap / 2.0;
+        pdc_positive(reaction_id, "charged PDC transformed gap", b)?;
+        b
+    };
+    sample_pdc_continuum(a, b, parameters, rng)
+}
+
+// Used only with finite nonpositive arguments, including the removable zero.
+fn exprel(value: f64) -> f64 {
+    if value == 0.0 {
+        1.0
+    } else {
+        value.exp_m1() / value
+    }
+}
+
+fn sample_pdc_continuum(
+    a: f64,
+    b: f64,
+    parameters: &TwoBodyReactionParameters,
+    rng: &mut impl Rng,
+) -> Result<ReactionTime, ChemistryError> {
+    let reaction_id = parameters.reaction_id();
     pdc_positive(reaction_id, "PDC a", a)?;
     let root_diffusion = parameters.relative_diffusivity().nm2_per_ps().sqrt();
     if b == 0.0 {

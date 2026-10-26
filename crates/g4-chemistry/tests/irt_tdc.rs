@@ -351,15 +351,15 @@ fn first_order_or_bulk_reactions_cannot_be_supplied_to_the_pair_sampler() {
 }
 
 #[test]
-fn unsupported_charged_pdc_is_an_error_before_any_contact_or_rng_draw() {
+fn charged_pdc_contact_is_supported_and_consumes_one_probability_draw() {
     let p = parameters(42);
     let [a, b] = molecules(p, 0.0, 0.0);
-    let mut rng = ScriptedRng::new(&[]);
-    assert!(matches!(
+    let mut rng = ScriptedRng::new(&[0.001]);
+    assert_eq!(
         sample_independent_reaction_time(MoleculePair::new(&a, &b).unwrap(), &p, &mut rng),
-        Err(ChemistryError::UnsupportedIrtKinetics { .. })
-    ));
-    assert_eq!(rng.consumed(), 0);
+        Ok(ReactionTime::Immediate)
+    );
+    assert_eq!(rng.consumed(), 1);
 }
 
 #[test]

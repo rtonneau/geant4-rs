@@ -17,7 +17,7 @@ pub enum ChemistryError {
         field: &'static str,
         value: f64,
     },
-    /// Finite IRT inputs produced unrepresentable sampling arithmetic.
+    /// Finite IRT inputs produced singular or unrepresentable sampling arithmetic.
     #[error("reaction {reaction_id}: IRT arithmetic domain failure in {operation}")]
     IrtDomain {
         reaction_id: u16,
