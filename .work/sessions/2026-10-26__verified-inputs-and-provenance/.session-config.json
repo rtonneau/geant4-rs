@@ -135,6 +135,30 @@
         "ticket": "03-transport-domains",
         "commit": "ae80435"
       }
+    },
+    {
+      "at": "2026-10-26T19:19:49.728Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-chemistry-semantic-identity.md",
+        "03-implement/04-chemistry-semantic-identity/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-chemistry-semantic-identity"
+      }
+    },
+    {
+      "at": "2026-10-26T19:29:22.708Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-chemistry-semantic-identity/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-chemistry-semantic-identity",
+        "commit": "c923773"
+      }
     }
   ],
   "current_phase": "ship",
