@@ -111,6 +111,30 @@
         "ticket": "02-verified-byte-snapshot",
         "commit": "58b80e3"
       }
+    },
+    {
+      "at": "2026-10-26T19:11:57.926Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-transport-domains.md",
+        "03-implement/03-transport-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-transport-domains"
+      }
+    },
+    {
+      "at": "2026-10-26T19:19:35.794Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-transport-domains/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-transport-domains",
+        "commit": "ae80435"
+      }
     }
   ],
   "current_phase": "ship",
