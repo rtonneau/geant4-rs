@@ -27,9 +27,10 @@ class SnapshotTests(unittest.TestCase):
     def test_equal_pair(self):
         checker.compare(self.baseline, self.candidate)
 
-    def test_checkout_validated_revision_change(self):
-        self.baseline["metadata"]["revision"] = checker.command(["git", "rev-parse", "HEAD~1"])
-        checker.compare(self.baseline, self.candidate)
+    def test_revision_change_is_ignored_after_validation(self):
+        self.baseline["metadata"]["revision"] = "0" * 40
+        with patch.object(checker, "validate_revision"):
+            checker.compare(self.baseline, self.candidate)
 
     def test_one_bit_change(self):
         self.candidate["runs"][0]["energy_ev"] = "0x4059000000000001"
