@@ -173,14 +173,62 @@
         "ticket": "05-ci-support-status",
         "commit": "3cebdf5"
       }
+    },
+    {
+      "at": "2026-10-26T11:28:56.006Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "patch"
+      }
+    },
+    {
+      "at": "2026-10-26T11:29:23.895Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/21"
+      }
+    },
+    {
+      "at": "2026-10-26T11:29:23.897Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T11:29:25.813Z",
+      "event": "scratch_cleaned",
+      "phase": "finished",
+      "detail": {
+        "policy": "build-artifacts",
+        "removed": [
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target/debug/build",
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target/debug/incremental/build_script_build-1dq95hh1raev2",
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/cargo-target/debug/incremental/build_script_build-2ctjd8o604zk5",
+          ".scratch/tests/2026-10-26__validation-evidence-and-ci/target"
+        ],
+        "freedBytes": 578322638
+      }
     }
   ],
-  "current_phase": "finish-pending",
+  "current_phase": "finished",
   "git": {
     "branch": "test/validation-evidence-and-ci",
     "base_branch": "main",
     "branch_created_at": "2026-10-26T10:12:17.929Z",
-    "pr_url": null
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/21"
   },
-  "ship_mode": "subagent+inline"
+  "ship_mode": "subagent+inline",
+  "changelog": {
+    "bump": "patch",
+    "floor": "patch",
+    "reason": null,
+    "bullets": 3,
+    "path": ".work/changelog/2026-10-26__validation-evidence-and-ci.md",
+    "written_at": "2026-10-26T11:28:55.991Z"
+  },
+  "finished_at": "2026-10-26T11:29:23.897Z"
 }
