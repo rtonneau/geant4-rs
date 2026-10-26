@@ -158,9 +158,33 @@
         "ticket": "04-reaction-placement",
         "commit": "281de82"
       }
+    },
+    {
+      "at": "2026-10-26T21:34:55.751Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-coverage-and-gates.md",
+        "03-implement/05-coverage-and-gates/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-coverage-and-gates"
+      }
+    },
+    {
+      "at": "2026-10-26T21:58:33.261Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-coverage-and-gates/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-coverage-and-gates",
+        "commit": "0f1ea63"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/option3-reaction-execution",
     "base_branch": "main",
