@@ -1,0 +1,71 @@
+{
+  "session_id": "2026-10-26__crate-domain-ownership",
+  "feature_name": "crate-domain-ownership",
+  "scratch_dir": ".scratch/tests/2026-10-26__crate-domain-ownership",
+  "created_at": "2026-10-26T11:51:40.464Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-26T11:51:40.464Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T12:08:03.240Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T12:08:12.766Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-26T12:43:31.952Z",
+      "event": "auto_started",
+      "phase": "plan",
+      "detail": {
+        "target": "finish",
+        "steps": "write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-26T12:45:55.016Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "refactor/crate-domain-ownership-r01",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-26T12:45:55.035Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-capture-pre-refactor-evidence.md",
+        "02-plan/tickets/02-move-species-to-chemistry.md"
+      ],
+      "detail": {
+        "tickets": 2
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "refactor/crate-domain-ownership-r01",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-26T12:45:55.016Z",
+    "pr_url": null
+  }
+}
