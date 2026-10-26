@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "description": "Maintained Geant4 statistical validation gates. Fixture hashes identify committed evidence; they are not scientific acceptance thresholds.",
+  "data_manifest": {
+    "path": "data/MANIFEST.toml",
+    "sha256": "746cb24790d4db0bb600aa688f3880aef2fdb095e7acb830888c449ec257f6c5"
+  },
+  "gates": [
+    {
+      "id": "M2-xs",
+      "milestone": "M2",
+      "profile": "cross sections V2/V3",
+      "target": "dna-sim/geant4_reference",
+      "test": "v2_v3_cross_sections_per_volume_match_geant4",
+      "fixtures": ["xs_per_volume.csv", "provenance.toml"]
+    },
+    {
+      "id": "M2-mfp",
+      "milestone": "M2",
+      "profile": "mean free path V5, seed 1",
+      "target": "dna-sim/geant4_reference",
+      "test": "v5_first_interaction_mean_free_path_matches_geant4",
+      "fixtures": ["mfp_first_interaction.csv", "provenance.toml"]
+    },
+    {
+      "id": "M2-track",
+      "milestone": "M2",
+      "profile": "primary track with 100 eV cut V5, seed 1",
+      "target": "dna-sim/geant4_reference",
+      "test": "v5_primary_track_with_100_ev_cut_matches_geant4",
+      "fixtures": ["track_cut100eV.csv", "provenance.toml"]
+    },
+    {
+      "id": "M2-seed2",
+      "milestone": "M2",
+      "profile": "independent seed-2 consistency against seed 1 and Rust",
+      "target": "dna-sim/geant4_reference",
+      "test": "seed2_geant4_runs_are_consistent_with_seed1_and_with_rust",
+      "fixtures": ["mfp_first_interaction.csv", "track_cut100eV.csv", "mfp_first_interaction_seed2.csv", "track_cut100eV_seed2.csv", "provenance.toml"]
+    },
+    {
+      "id": "M3-xs",
+      "milestone": "M3",
+      "profile": "low-energy cross sections V2",
+      "target": "dna-sim/slowing_down_reference",
+      "test": "m3_v2_low_energy_cross_sections_match_geant4",
+      "fixtures": ["xs_lowenergy.csv", "provenance_m3.toml"]
+    },
+    {
+      "id": "M3-cascade",
+      "milestone": "M3",
+      "profile": "full-cascade slowing-down V5, spectra and radial profile",
+      "target": "dna-sim/slowing_down_reference",
+      "test": "m3_v5_full_slowing_down_matches_geant4",
+      "fixtures": ["slow_sums.csv", "slow_spectra.csv", "slow_radial.csv", "provenance_m3.toml"]
+    },
+    {
+      "id": "M6-prechem",
+      "milestone": "M6",
+      "profile": "RR-001 dissociation-only snapshot at 1 ps before IRT",
+      "target": "dna-sim/physchem_reference",
+      "test": "m6_prechem_counts_and_rms_match_geant4",
+      "fixtures": ["physchem_prechem.csv", "provenance_m6_prechem.toml"]
+    }
+  ],
+  "fixtures": {
+    "xs_per_volume.csv": {"path": "validation/reference/xs_per_volume.csv", "bytes": 31537, "sha256": "b66fba2ca1490e5b70bde6361148e7ddd24fa8f0f4c3ae3013afcbe37bbebaca"},
+    "mfp_first_interaction.csv": {"path": "validation/reference/mfp_first_interaction.csv", "bytes": 1413, "sha256": "44134e3fcdd658bfa96f8d377efecda20e6d99baef6c1108dcfbae09dc8f928a"},
+    "track_cut100eV.csv": {"path": "validation/reference/track_cut100eV.csv", "bytes": 1583, "sha256": "a7cdcf5ecf326c837c04274a10676e84f0a02a7d3d6fc2702ae43870a0728529"},
+    "mfp_first_interaction_seed2.csv": {"path": "validation/reference/mfp_first_interaction_seed2.csv", "bytes": 1414, "sha256": "e788c3cea95134ade2f4688d40b8ff5d6ddaf9d3744bf9dd658feec161305159"},
+    "track_cut100eV_seed2.csv": {"path": "validation/reference/track_cut100eV_seed2.csv", "bytes": 1584, "sha256": "2ba1bcc5b46601c985d74ce6591137e1ea49db21f334419c95045cca8235af9a"},
+    "xs_lowenergy.csv": {"path": "validation/reference/xs_lowenergy.csv", "bytes": 45215, "sha256": "b376a01ef2818a13c92010f4791a3d87730607e380af9bbfc3b1e841200728a8"},
+    "slow_sums.csv": {"path": "validation/reference/slow_sums.csv", "bytes": 2807, "sha256": "f656d989bea36229a8da9c1e0ad35332c489319acbd3bca05d6e43dcad71d3be"},
+    "slow_spectra.csv": {"path": "validation/reference/slow_spectra.csv", "bytes": 28070, "sha256": "204c341dc1fd37b2405fb3a5e16505ec9ab8cffc42658446b4b7640061a42ee4"},
+    "slow_radial.csv": {"path": "validation/reference/slow_radial.csv", "bytes": 5968, "sha256": "627b3b3485d5ccd63eba6c04e21942e7148df63ec5c55ed7c6e00120d54816a0"},
+    "provenance.toml": {"path": "validation/reference/provenance.toml", "bytes": 955, "sha256": "623883c66cb5a1dd92892da57a7cfa5148817c2dc73700f9824d349349ead2ab"},
+    "provenance_m3.toml": {"path": "validation/reference/provenance_m3.toml", "bytes": 998, "sha256": "fc235d85143fec99cf4f12010660c10da6a47b6df16e76b39cfd1452fd9e7f5d"},
+    "physchem_prechem.csv": {"path": "validation/reference/physchem_prechem.csv", "bytes": 1958, "sha256": "1de25c82227d0d7c12039ea6422e28feb711078426b1d52db6f73e8154614d8e"},
+    "provenance_m6_prechem.toml": {"path": "validation/reference/provenance_m6_prechem.toml", "bytes": 1325, "sha256": "8df4072b7f5d519bfe0351f83a5bba8adb0f330d6964bd994acf9544d62c21aa"}
+  },
+  "historical_exclusions": [
+    {"test": "m6_reference_contains_products_requiring_zero_time_chemistry", "reason": "Historical M6 post-zero-time snapshot, not stage-matched RR-001 pre-IRT evidence."},
+    {"test": "m6_initial_species_counts_and_rms_match_geant4", "reason": "Historical M6 post-zero-time comparison; excluded from the maintained stage-matched gate."},
+    {"test": "m6_initial_species_comparison_report", "reason": "Descriptive report only; historical post-zero-time evidence."},
+    {"test": "m6_recombination_ordering_ablation", "reason": "Exploratory diagnostic, not a maintained reference comparison."},
+    {"test": "m6_spatial_diagnostic_900kev", "reason": "Scratch-producing spatial diagnostic is excluded from the maintained tier."},
+    {"test": "m6_900kev_spatial_diagnostic", "reason": "Exploratory spatial diagnostic is excluded from the maintained tier."},
+    {"test": "audit_channel_budgets", "reason": "Historical M6 budget diagnostic is excluded."},
+    {"test": "audit_relations_geant4_csv", "reason": "Historical M6 reference diagnostic is excluded."},
+    {"test": "audit_multiseed_rust", "reason": "Historical M6 multiseed diagnostic is excluded."}
+  ]
+}
