@@ -226,7 +226,12 @@ fn mobile_reactants(reaction: &Reaction) -> Result<[Species; 2], ChemistryError>
     }
 }
 
-fn input(id: u16, field: &'static str, value: f64, allow_zero: bool) -> Result<(), ChemistryError> {
+pub(crate) fn input(
+    id: u16,
+    field: &'static str,
+    value: f64,
+    allow_zero: bool,
+) -> Result<(), ChemistryError> {
     if !value.is_finite() || value < 0.0 || (!allow_zero && value == 0.0) {
         Err(ChemistryError::InvalidReactionParameter {
             reaction_id: id,

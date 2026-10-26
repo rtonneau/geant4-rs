@@ -5,6 +5,11 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A full source table changed the identity or ordering of an audited channel.
+    #[error(
+        "reaction {reaction_id}: inconsistent Geant4 option3 source signature or embedded rate"
+    )]
+    ReactionSourceMismatch { reaction_id: u16 },
     /// A molecule supplied to isolated IRT has a non-finite coordinate.
     #[error("molecule {id:?}: invalid IRT {field} = {value}")]
     InvalidIrtInput {

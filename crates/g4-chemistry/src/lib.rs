@@ -25,6 +25,7 @@ pub mod error;
 pub mod irt;
 pub mod molecule;
 pub mod params;
+pub mod reaction_network;
 pub mod reaction_parameters;
 pub mod reactions;
 /// Validation-only step-by-step oracle; not a production chemistry scheduler.

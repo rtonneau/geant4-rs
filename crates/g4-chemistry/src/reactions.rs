@@ -154,10 +154,43 @@ pub struct ReactionTable {
 }
 
 impl ReactionTable {
+    /// Load the audited source literals, requiring the original positive rates.
     pub fn option3() -> Result<Self, ChemistryError> {
-        Self::from_toml(DEFAULT_REACTIONS_TOML)
+        Self::from_embedded_toml(DEFAULT_REACTIONS_TOML)
     }
 
+    fn from_embedded_toml(text: &str) -> Result<Self, ChemistryError> {
+        let table = Self::from_toml(text)?;
+        // Independent executable-rate anchors from ConstructReactionTable,
+        // G4EmDNAChemistry_option3.cc:146-661 (not its adjacent comments).
+        // Custom rates belong exclusively to from_toml, including disabled unary rates.
+        const SOURCE_RATES: [f64; 72] = [
+            0.503e10, 2.50e10, 2.02e10, 2.00e10, 2.02e10, 2.02e10, 2.20e10, 0.636e10, 1.13e11,
+            9.0e10, 1.55e10, 3.50e7, 2.51e7, 2.10e10, 1.00e10, 1.00e10, 0.55e10, 2.88e7, 3.28e7,
+            2.95e10, 6.30e9, 7.90e9, 1.07e10, 8.32e9, 1.00e9, 8.50e9, 1.10e10, 4.71e8, 1.60e9,
+            5.55e8, 4.77e3, 1.21e8, 1.74e10, 1.29e10, 6.30e9, 4.20e8, 4.00e9, 3.70e9, 9.80e5,
+            9.70e7, 5.30e9, 2.11e10, 1.29e10, 3.51e9, 2.31e10, 4.78e10, 5.00e10, 4.78e10, 6.00e8,
+            3.50e8, 1.00e8, 7.00e8, 2.66e3, 7.15e5, 5.94e0, 1.58e1, 1.50e-1, 1.36e6, 1.00e3,
+            1.36e6, 2.09e3, 4.73e3, 1.12e4, 1.12e4, 4.95e3, 4.73e3, 8.91e3, 2.48e0, 6.24e2, 4.66e1,
+            6.24e2, 4.16e1,
+        ];
+        for (reaction, expected) in table.iter().zip(SOURCE_RATES) {
+            let actual = match reaction.rate {
+                ObservedRate::Bimolecular { per_molar_s } => per_molar_s,
+                ObservedRate::FirstOrder { per_s } => per_s,
+            };
+            if actual != expected {
+                return Err(ChemistryError::ReactionSourceMismatch {
+                    reaction_id: reaction.id,
+                });
+            }
+        }
+        Ok(table)
+    }
+
+    /// Load a full 72-entry Geant4-provenance table. Zero rates are allowed only
+    /// for first-/pseudo-first-order entries and mean an explicitly disabled channel.
+    /// Runtime compilation additionally validates source signatures and derived parameters.
     pub fn from_toml(text: &str) -> Result<Self, ChemistryError> {
         let raw: RawFile = toml::from_str(text).map_err(|e| ChemistryError::Parse {
             file: FILE,
@@ -272,6 +305,14 @@ impl ReactionTable {
         self.reactions.iter()
     }
 
+    /// Validate and derive every source entry before any reaction sampling.
+    pub fn compile(
+        &self,
+        species: &SpeciesTable,
+    ) -> Result<crate::reaction_network::ReactionNetwork, ChemistryError> {
+        crate::reaction_network::ReactionNetwork::compile(self, species)
+    }
+
     pub fn get(&self, id: u16) -> Option<&Reaction> {
         let index = usize::from(id.checked_sub(1)?);
         self.reactions
@@ -317,10 +358,15 @@ fn parse_rate(
         ObservedRate::Bimolecular { per_molar_s } => per_molar_s,
         ObservedRate::FirstOrder { per_s } => per_s,
     };
-    if !value.is_finite() || value <= 0.0 {
+    if !value.is_finite()
+        || value < 0.0
+        || (value == 0.0 && matches!(rate, ObservedRate::Bimolecular { .. }))
+    {
         return Err(ChemistryError::invalid(
             FILE,
-            format!("reaction {id} has a non-positive or non-finite observed rate"),
+            format!(
+                "reaction {id} has an invalid observed rate (zero is allowed only for unary kinetics)"
+            ),
         ));
     }
     Ok(rate)
@@ -470,6 +516,22 @@ mod tests {
                 ReactionParticipant::Mobile(Species::O2m),
             ]
         );
+    }
+
+    #[test]
+    fn embedded_rates_are_strict_even_when_custom_rates_are_valid() {
+        for (literal, altered) in [
+            ("rate_per_s = 2.66e3", "rate_per_s = 0.0"),
+            ("rate_per_s = 7.15e5", "rate_per_s = 12.0"),
+            ("rate_per_molar_s = 0.503e10", "rate_per_molar_s = 1.0e9"),
+        ] {
+            let text = replace_once(DEFAULT_REACTIONS_TOML, literal, altered);
+            assert!(ReactionTable::from_toml(&text).is_ok());
+            assert!(matches!(
+                ReactionTable::from_embedded_toml(&text),
+                Err(ChemistryError::ReactionSourceMismatch { .. })
+            ));
+        }
     }
 
     #[test]
