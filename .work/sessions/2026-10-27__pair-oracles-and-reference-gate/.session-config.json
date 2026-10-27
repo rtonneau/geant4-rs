@@ -183,9 +183,33 @@
         "ticket": "05-geant4-pair-producer",
         "commit": "e2d04ea"
       }
+    },
+    {
+      "at": "2026-10-27T08:55:33.877Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-strict-consumer-and-gate.md",
+        "03-implement/06-strict-consumer-and-gate/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-strict-consumer-and-gate"
+      }
+    },
+    {
+      "at": "2026-10-27T09:17:10.669Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/06-strict-consumer-and-gate/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-strict-consumer-and-gate",
+        "commit": "d91567e"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "test/pair-oracles-and-reference-gate",
     "base_branch": "main",
