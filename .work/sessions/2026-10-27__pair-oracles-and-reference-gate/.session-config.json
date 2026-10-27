@@ -54,6 +54,39 @@
       "detail": {
         "tickets": 6
       }
+    },
+    {
+      "at": "2026-10-27T08:11:26.449Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish"
+      }
+    },
+    {
+      "at": "2026-10-27T08:13:04.978Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-register-pair-cases.md",
+        "03-implement/01-register-pair-cases/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-register-pair-cases"
+      }
+    },
+    {
+      "at": "2026-10-27T08:18:12.939Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-register-pair-cases/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-register-pair-cases",
+        "commit": "dadbe13"
+      }
     }
   ],
   "current_phase": "ship",
@@ -62,5 +95,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-27T06:47:49.999Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "subagent+inline"
 }
