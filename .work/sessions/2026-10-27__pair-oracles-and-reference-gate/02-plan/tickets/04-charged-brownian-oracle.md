@@ -1,7 +1,7 @@
 # Ticket 04: charged-brownian-oracle
 
 **Model:** heavy
-**Effort:** xhigh
+**Effort:** light
 
 **Acceptance Criteria:**
 - [ ] Extend the independent Brownian oracle to attractive/repulsive Coulomb drift and absorbing/radiation boundaries for charged TDC/PDC, including applicable A+A.

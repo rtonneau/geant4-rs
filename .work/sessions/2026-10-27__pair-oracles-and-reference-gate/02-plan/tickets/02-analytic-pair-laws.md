@@ -1,7 +1,7 @@
 # Ticket 02: analytic-pair-laws
 
 **Model:** heavy
-**Effort:** xhigh
+**Effort:** light
 
 **Acceptance Criteria:**
 - [ ] Evaluate neutral formulas analytically and charged/PDC CDF and eventual nonreaction through independently computed high-precision anchors; never call the production sampler to construct expectations.

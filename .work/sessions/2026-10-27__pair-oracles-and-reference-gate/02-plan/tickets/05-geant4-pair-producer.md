@@ -1,7 +1,7 @@
 # Ticket 05: geant4-pair-producer
 
 **Model:** heavy
-**Effort:** high
+**Effort:** light
 
 **Acceptance Criteria:**
 - [ ] Add a new g4rs_ref mode for the R04 matrix using option3 IRT, exact channel parameters/units, output path, seed and pair count arguments, with complete-only CSV marker.

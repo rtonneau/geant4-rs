@@ -1,7 +1,7 @@
 # Ticket 01: register-pair-cases
 
 **Model:** medium
-**Effort:** high
+**Effort:** medium
 
 **Acceptance Criteria:**
 - [ ] Commit the literal option3 and dimensionless case matrix before statistical runs; cover all four regimes, applicable A+B/A+A, contact/1.5/3 radii, five observation scales and eventual nonreaction.

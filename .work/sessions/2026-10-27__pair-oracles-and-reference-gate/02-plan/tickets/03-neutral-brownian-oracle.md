@@ -1,7 +1,7 @@
 # Ticket 03: neutral-brownian-oracle
 
 **Model:** heavy
-**Effort:** xhigh
+**Effort:** light
 
 **Acceptance Criteria:**
 - [ ] Add test-only independent Brownian stepping for neutral TDC and PDC with absorbing/radiation boundaries; do not call production diffusion, SBS or IRT sampling code.
