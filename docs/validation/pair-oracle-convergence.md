@@ -1,0 +1,82 @@
+# R04 independent Brownian oracle convergence
+
+The neutral oracle currently reports **INCONCLUSIVE**. This is executable
+numerical evidence, not closure of the Brownian part of G1. A successful Rust
+test means the experiment and verdict checks ran; it does not mean scientific
+agreement passed.
+
+## Independent algorithm
+
+`tests/pair_oracle/neutral.rs` integrates the relative radial diffusion in
+dimensionless units a=D=1: `dr = (2/r) dt + sqrt(2) dW + dL`, outside r=1.
+It uses Euler frozen radial drift and the exact conditional minimum of the
+one-dimensional Brownian bridge during each step. Negative minima produce a
+Skorokhod reflection increment L. TDC absorbs at the first bridge contact;
+PDC kills when L exceeds an independent exponential threshold of rate kappa.
+Contact TDC is immediate; contact PDC accumulates local time from zero.
+Reaction is recorded at the step endpoint, with every observation landing
+exactly on a step boundary. The drift, reflection and reaction-time placement
+remain discretization errors that require refinement. There is no production
+diffusion, SBS, IRT or Gaussian sampling call. Only the general history RNG is
+shared; Box–Muller normals and bridge uniforms are generated here.
+
+The neutral boundary coefficient is `kappa=f/(1-f)`, where f=kobs/kdiff.
+Here kdiff includes the source A+A half factor, while relative motion uses the
+sum of both diffusivities. Thus the synthetic neutral PDC f=0.5 has kappa=1.
+Inputs come from the independent analytic fixture; rates are converted using
+the exact Avogadro constant. Geant4 11.4.1 source checked for conventions:
+`source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc:298-339` and the
+reaction-parameter provenance described in `pair-case-matrix.md`. The oracle
+does not copy the source's independent-reaction-time sampler.
+
+## Precision, refinement and unresolved tail
+
+Seed 20261027402 and history ID
+`((case*3+distance)*5+level)*1000000+pair` make levels independent and preserve
+prefixes during sample expansion. All six neutral cases and three distances
+run at least 10,000 pairs and the first three frozen h levels. Samples grow
+only through 10k, 20k, 40k, 80k, 160k, 320k, 640k, 1m. Refinement uses only
+1/16, 1/32, 1/64, 1/128, 1/256. Three combined SE must be below 0.005 before
+precision is called adequate; half-count stabilization prevents zero SE for
+unobserved rare events. Both absolute change <0.005 and compatibility within
+three combined SE are required. Sample expansion depends only on that width,
+not on significance. At least three levels run even for deterministic contact.
+
+The default runtime budget is 10k pairs and three levels. Set
+`PAIR_ORACLE_MAX_PAIRS=1000000` and `PAIR_ORACLE_LEVELS=5` to allow the entire
+precommitted schedule. A runtime budget ending before adequate precision or
+refinement explicitly reports INCONCLUSIVE. This budget is computational,
+not a change to the scientific acceptance criteria.
+
+Survivors at tau=100 remain unresolved: they are **not** eventual nonreactors.
+No analytic tail continuation is counted as independent Brownian evidence.
+The eventual endpoint and hence the complete case remain INCONCLUSIVE even
+if all finite endpoints converge. Independent eventual-mass resolution and
+fully precise finite-time runs remain necessary before Brownian G1 can pass.
+
+## Reproduction and retained evidence
+
+Run `cargo test --release -p g4-chemistry --test pair_brownian neutral -- --nocapture`.
+Every case/distance/sample size/level/observation prints counts, unconditional
+CDF, independent anchor, last-level difference and three-SE width. Separate
+rows retain unresolved survivor counts and the final scientific verdict.
+The initial run log is retained under
+`.scratch/tests/2026-10-27__pair-oracles-and-reference-gate/evidence/ticket03-neutral.log`.
+No reference data file or Geant4 generator is changed or run by this experiment.
+
+Initial run (2026-10-27), n=10,000 at each of h=1/16, 1/32, 1/64:
+
+| Case | Survivors at tau=100, h=1/64 (r/a=1, 1.5, 3) | Complete verdict |
+|---|---|---|
+| option3-1 | 0, 3519, 7094 | INCONCLUSIVE |
+| option3-2 | 0, 3498, 6931 | INCONCLUSIVE |
+| option3-11 | 4706, 6647, 8432 | INCONCLUSIVE |
+| option3-17 | 2650, 5229, 7821 | INCONCLUSIVE |
+| syn-neutral-tdc-ab | 0, 3569, 6990 | INCONCLUSIVE |
+| syn-neutral-pdc-aa | 5152, 6843, 8542 | INCONCLUSIVE |
+
+Only the three immediate TDC contact finite-time series met the finite
+convergence/precision test at this budget. The raw log retains all 270
+finite-time endpoint records, including all intermediate levels; the table
+does not replace them. Two Rust tests passed, including rejection of
+underpowered equal estimates and an outside-limit difference.
