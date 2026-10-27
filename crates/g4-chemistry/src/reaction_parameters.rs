@@ -11,7 +11,7 @@
 //! Rates are converted from M^-1 s^-1 to nm^3/ps per molecule; source literals
 //! remain untouched. TDC A+A radii use D_A, although motion uses 2 D_A.
 //! PDC uses the physical radius sum, halving its diffusion rate for A+A.
-//! Charged PDC construction is supported; this does not imply a charged PDC sampler.
+//! Both neutral and charged PDC parameters feed the isolated IRT sampler.
 //! Invalid arithmetic and k_obs >= k_diff are errors instead of C++ sentinel data.
 
 use crate::Species;
@@ -226,7 +226,12 @@ fn mobile_reactants(reaction: &Reaction) -> Result<[Species; 2], ChemistryError>
     }
 }
 
-fn input(id: u16, field: &'static str, value: f64, allow_zero: bool) -> Result<(), ChemistryError> {
+pub(crate) fn input(
+    id: u16,
+    field: &'static str,
+    value: f64,
+    allow_zero: bool,
+) -> Result<(), ChemistryError> {
     if !value.is_finite() || value < 0.0 || (!allow_zero && value == 0.0) {
         Err(ChemistryError::InvalidReactionParameter {
             reaction_id: id,

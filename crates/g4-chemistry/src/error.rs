@@ -5,6 +5,20 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// Conditional placement cannot represent the source expression or its branch.
+    #[error("reaction {reaction_id}: placement domain failure in {operation}")]
+    PlacementDomain {
+        reaction_id: u16,
+        operation: &'static str,
+    },
+    /// Placement was requested for a disabled unary channel.
+    #[error("reaction {reaction_id}: disabled unary channel cannot be placed")]
+    DisabledReactionPlacement { reaction_id: u16 },
+    /// A full source table changed the identity or ordering of an audited channel.
+    #[error(
+        "reaction {reaction_id}: inconsistent Geant4 option3 source signature or embedded rate"
+    )]
+    ReactionSourceMismatch { reaction_id: u16 },
     /// A molecule supplied to isolated IRT has a non-finite coordinate.
     #[error("molecule {id:?}: invalid IRT {field} = {value}")]
     InvalidIrtInput {
@@ -12,7 +26,7 @@ pub enum ChemistryError {
         field: &'static str,
         value: f64,
     },
-    /// Finite IRT inputs produced unrepresentable sampling arithmetic.
+    /// Finite IRT inputs produced singular or unrepresentable sampling arithmetic.
     #[error("reaction {reaction_id}: IRT arithmetic domain failure in {operation}")]
     IrtDomain {
         reaction_id: u16,
@@ -58,6 +72,9 @@ pub enum ChemistryError {
         reaction_id: u16,
         operation: &'static str,
     },
+    /// A positive unary rate produced an unrepresentable elapsed time in ps.
+    #[error("reaction {reaction_id}: unary clock delay is outside the finite positive time domain")]
+    UnaryClockDomain { reaction_id: u16 },
     /// A reaction pair names the same physical molecule twice.
     #[error("reaction pair contains molecule {id:?} twice")]
     DuplicateMoleculeId { id: MoleculeId },
