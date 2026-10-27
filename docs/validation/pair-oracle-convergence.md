@@ -80,3 +80,55 @@ convergence/precision test at this budget. The raw log retains all 270
 finite-time endpoint records, including all intermediate levels; the table
 does not replace them. Two Rust tests passed, including rejection of
 underpowered equal estimates and an outside-limit difference.
+
+## Charged physical oracle
+
+`tests/pair_oracle/charged.rs` integrates the physical Coulomb potential
+`U/kT=c/r`, where `c=rc/a` is signed: positive is repulsive. The radial
+backward generator is `d²/dr² + (2/r+c/r²)d/dr`; thus the Euler drift includes
+both radial entropy and the Coulomb force. It uses the same independently
+implemented bridge minimum, reflection/local-time boundary, observation
+alignment, seed and frozen schedules as the neutral experiment. It never
+maps distance through the IRT effective-distance approximation. The six
+charged cases include literal and synthetic A+A, attractive and repulsive
+TDC/PDC. A+A changes the macroscopic rate convention, never the relative
+particle diffusion coefficient.
+
+The physical boundary is calibrated to the preregistered macroscopic rate
+fraction `f=kobs/kdiff` (including the A+A half factor in both rates):
+`kappa = f/(1-f) * c/(1-exp(-c))`. TDC absorbs at contact. This gives the
+exact eventual reaction probability
+`u(r)=f*expm1(c/r)/expm1(c)`, with f=1 for TDC. It follows by solving
+`u''+(2/r+c/r²)u'=0`, `u(infinity)=0`, and the radiation backward condition
+`u'(1)=kappa*(u(1)-1)`. These equations also document the boundary convention
+independently of Geant4's charged alpha, whose A+A factors need not give this
+same physical radiation boundary.
+
+The new `pair_coulomb_anchors.json` fixture records drift and eventual mass
+computed independently with mpmath at 80 and 160 digits; rounded results must
+agree. Regenerate with `analytic.py --physical --output
+crates/g4-chemistry/tests/fixtures/pair_coulomb_anchors.json` using the Python
+setup documented above. Existing approximation anchors remain unchanged.
+Executable checks compare drift and boundary to these anchors, test both
+force signs, immediate absorbing contact and exact zero-charge recovery of
+the neutral integrator with identical streams.
+
+Every timestep prints the physical eventual upper bound and the separate
+Geant4 finite-time CDF. A resolved violation of the physical upper bound is
+FAIL, using the frozen 216-endpoint Bonferroni threshold and 0.005 effect
+limit. Exact eventual physical-versus-approximation differences >=0.005
+are separately FAIL. Smaller exact eventual differences are labelled
+PASS(eventual-only), never a complete physical PASS. Finite-time Coulomb CDF
+anchors have not been solved here: satisfying the eventual upper bound is
+not finite-time agreement, and is explicitly INCONCLUSIVE. Survivors at
+tau=100 are unresolved, not eventual nonreactors. Thus G1 remains OPEN even
+where refinement converges; full finite-time physical-law validation and
+independent tail resolution are still required.
+
+The initial charged run used n=10,000 and three levels and passed both
+executable tests. The complete raw refinement and verdict log is retained at
+`.scratch/tests/2026-10-27__pair-oracles-and-reference-gate/evidence/ticket04-charged.log`.
+Run `cargo test --release -p g4-chemistry --test pair_brownian charged -- --nocapture`.
+The source conventions were checked directly against Geant4 11.4.1
+`source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc:286-356`.
+No Geant4 generator or simulation was run.

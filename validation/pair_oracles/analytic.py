@@ -24,7 +24,7 @@ IDS = [1, 2, 8, 9, 11, 17, 42, 51]
 TAU = ['0.01', '0.1', '1', '10', '100']
 
 
-def generate(dps):
+def generate(dps, physical=False):
     mp.mp.dps = dps
     m = mp.mpf
     na = m('6.02214076e23')
@@ -83,6 +83,20 @@ def generate(dps):
                     f=min(m(1),w*mp.erfc(abs(L-a)/(2*root)))
                 probs.append(float(f))
             points.append(dict(ratio=float(ratio),probabilities=probs+[float(1-min(m(1),w))]))
+        if physical:
+            if not rc:
+                continue
+            charge = rc/a
+            fraction = k/kd if c['pdc'] else m(1)
+            # Radial backward generator: u''+(2/r+c/r²)u'.
+            # u'(1)=kappa*(u(1)-1); u(infinity)=0.
+            kappa = fraction/(1-fraction)*charge/(-mp.expm1(-charge)) if c['pdc'] else None
+            output.append(dict(name=c['name'], charge=float(charge),
+                               kappa=float(kappa) if kappa else None,
+                               points=[dict(ratio=float(r), drift=float(2/r+charge/r**2),
+                                            eventual=float(fraction*mp.expm1(charge/r)/mp.expm1(charge)))
+                                       for r in map(m,['1','1.5','3'])]))
+            continue
         output.append(dict(name=c['name'],id=c['id'],radius=float(a),diffusion=float(d),
                            rate_per_molar_s=float(k*na/m('1e12')),points=points))
     return output
@@ -91,13 +105,14 @@ def generate(dps):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--physical',action='store_true')
     args=parser.parse_args()
-    anchors=generate(80)
+    anchors=generate(80,args.physical)
     # Round only after evaluation; independently repeat at doubled precision.
-    assert anchors == generate(160), 'anchors unstable under precision doubling'
+    assert anchors == generate(160,args.physical), 'anchors unstable under precision doubling'
     threshold=float(mp.sqrt(2)*mp.erfinv(1-mp.mpf('.001')/216))
     result=dict(mpmath_version=mp.__version__,precision_digits=[80,160],geant4_version='11.4.1',
-                law='Geant4 effective-distance (charged); diffusion radiation boundary (neutral)',
+                law=('Physical Coulomb drift and eventual radiation/absorbing mass' if args.physical else 'Geant4 effective-distance (charged); diffusion radiation boundary (neutral)'),
                 family_alpha=.001,endpoints=216,z_threshold=threshold,cases=anchors)
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
