@@ -47,6 +47,10 @@ _Avoid_: encoding no reaction or numerical failure as a negative time
 A validation-only Rust implementation of the Geant4 11.4.1 adaptive molecular encounter stepper and Smoluchowski reaction model for an isolated totally diffusion-controlled pair. It is independently implemented from the C++ source and is not the production chemistry scheduler.
 _Avoid_: fixed-step Brownian oracle, production SBS engine
 
+**Independent Brownian pair oracle**:
+A validation-only simulation of the relative motion and reaction of an isolated molecular pair using Brownian steps and the interaction and reaction boundary appropriate to its kinetic regime. It is distinct from the Geant4-faithful SBS oracle.
+_Avoid_: calling the source-faithful SBS oracle an independent Brownian pair oracle
+
 **Molecule identity**:
 A stable identifier for one individual mobile molecule within a chemistry history. Two molecules may have the same species but must have different identities; a molecule cannot form a reaction pair with itself.
 _Avoid_: using species equality as molecule identity

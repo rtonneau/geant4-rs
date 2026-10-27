@@ -1,0 +1,18 @@
+{
+  "session_id": "2026-10-27__pair-oracles-and-reference-gate",
+  "feature_name": "pair-oracles-and-reference-gate",
+  "scratch_dir": ".scratch/tests/2026-10-27__pair-oracles-and-reference-gate",
+  "created_at": "2026-10-27T06:27:16.521Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-27T06:27:16.521Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    }
+  ],
+  "current_phase": "grill"
+}
