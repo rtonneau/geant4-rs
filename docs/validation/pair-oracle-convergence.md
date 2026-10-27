@@ -132,3 +132,34 @@ Run `cargo test --release -p g4-chemistry --test pair_brownian charged -- --noca
 The source conventions were checked directly against Geant4 11.4.1
 `source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc:286-356`.
 No Geant4 generator or simulation was run.
+
+## Source-matched Geant4 IRT comparison (RR-004)
+
+The R04 Geant4 verdict is **REQUESTED**. The user-run
+`pair_matrix_irt_r04_n100000.csv` and its provenance have not been committed.
+The ignored consumer `crates/g4-chemistry/tests/geant4_pair_r04.rs` rejects
+missing, duplicate or unordered rows; incorrect option3 parameters, grid,
+counts, kernel settings, completion marker, and SHA-256 or run provenance.
+It compares independent Rust seed 20261027403 with Geant4 seed 20261027404,
+using 100,000 pairs per case and distance. No Geant4 output is inferred from
+the analytic fixture or from the Rust sampler.
+
+The frozen family comprises 8 literal channels × 3 distances × 6 endpoints =
+144 comparisons, with two-sided family alpha 0.001, pointwise Bonferroni
+threshold `z = 4.495384196564731`, and absolute effect limit 0.01. The
+standard error is the sum of two independent binomial variances; a half-count
+stabilization prevents zero variance for an unobserved rare endpoint. PASS
+requires both `|z| <= zcrit` and `|difference| + zcrit*SE < 0.01` at every
+endpoint. A resolved effect outside the limit or a significant difference
+within a precise interval is FAIL. If the adjusted interval does not fit
+strictly inside the effect band, the result is INCONCLUSIVE and only the
+preregistered complete-run expansion sequence (200k, 400k, 800k, 1m) can
+resolve it. At probability 0.5, 100k per implementation has an adjusted
+half-width slightly above 0.01 even with identical estimates; a successful
+100k run need not be sufficient evidence.
+
+Verdicts remain separate: **ANALYTIC** is the 216-endpoint
+`pair_analytic.rs` test; **BROWNIAN** is the independent refinement experiment
+above and remains **INCONCLUSIVE**; **GEANT4** is **REQUESTED** until complete
+reference evidence is available. Consequently **G1 is OPEN**. The existing
+V9 and RR-003 tests retain their historical criteria and verdicts.
