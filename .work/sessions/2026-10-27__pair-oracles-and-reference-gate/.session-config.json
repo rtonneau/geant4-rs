@@ -135,6 +135,30 @@
         "ticket": "03-neutral-brownian-oracle",
         "commit": "99f46c4"
       }
+    },
+    {
+      "at": "2026-10-27T08:37:25.668Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-charged-brownian-oracle.md",
+        "03-implement/04-charged-brownian-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-charged-brownian-oracle"
+      }
+    },
+    {
+      "at": "2026-10-27T08:46:36.374Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-charged-brownian-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-charged-brownian-oracle",
+        "commit": "7b0daf5"
+      }
     }
   ],
   "current_phase": "ship",
