@@ -223,3 +223,30 @@ command from `README.md`; it normally completes in seconds after Geant4 initiali
 marker. Do not commit the smoke CSV or any partial output. Write the specified provenance using the
 clean generator commit and `generator_dirty = false`, commit both new reference files, and only then
 run the ignored close-gate test.
+
+
+## 10. RR-004: R04 IRT pair matrix (user-run only)
+
+Use section 2's configure/build recipe with `-S validation/geant4/g4rs_ref`
+from the repository root and build directory
+`.scratch/tests/2026-10-27__pair-oracles-and-reference-gate/g4rs-ref-build`.
+The equivalent verification command is `cmake --build` with that directory;
+keep all build artifacts out of the source tree. If QT5_PREFIX is unset, obtain
+its existing configured prefix from a known successful local CMakeCache.txt,
+validate that it contains `lib/cmake/Qt5Core`, and supply it to the same recipe.
+Do not hardcode that machine path in source or project configuration.
+
+No agent execution of this mode is authorized, including smoke tests. The
+project lead sets section 3's runtime environment, adds this build directory to
+PATH and runs README's exact RR-004 command. An optional user smoke command is
+`g4rs_ref pair_matrix_irt <new-scratch-output.csv> 1 100`; it is diagnostic-only.
+Require exit 0, 144 ordered rows, eight completed channels and the trailing
+marker before creating provenance. The mode rejects overwrites, invalid integer
+arguments, incompatible Geant4 versions and unexpected sampled results.
+Its 64-bit seed is explicitly decomposed for Ranecu; do not use `atol` or pass
+20261027404 to Windows `long`. Preserve RR-003 and all old modes/fixtures.
+
+Compile verification (2026-10-27): MSVC 19.50, Ninja, RelWithDebInfo and
+installed Geant4 11.4.1 compiled and linked this mode. Initial sandbox
+configuration failed with C1902 (PDB manager mismatch); the identical configure
+and build outside the sandbox succeeded. No generator executable was run.

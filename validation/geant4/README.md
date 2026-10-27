@@ -446,3 +446,68 @@ The consumer validates provenance and exact CSV coverage before generating the f
 sample. At each point it applies the unchanged V9 pointwise combined-binomial three-sigma rule. A
 failure is evidence about the Geant4 executable semantics; it must be recorded, not tuned away.
 
+
+
+## R04: isolated option3 IRT matrix (RR-004, user-run only)
+
+New mode: `g4rs_ref pair_matrix_irt <new-output.csv> <seed> <pairs-per-case-distance>`.
+This calls Geant4 11.4.1 `G4DNAIRT::GetIndependentReactionTime` directly with the
+unmodified `G4EmDNAChemistry_option3` reaction table and IRT selected before initialization.
+It does not simulate transport, competing reactions, products or a chemical history.
+Source: `source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc` and
+`source/physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc`.
+IDs 1,2,8,9,11,17,42,51 use source-order reactants and native table parameters.
+TDC `a` is the effective radius; PDC `a` is the contact radius. Relative diffusion
+is D_A+D_B even for A+A. No parameters or source contact branches are refitted.
+
+From `validation/geant4/g4rs_ref`, with the built executable on PATH:
+
+```powershell
+g4rs_ref pair_matrix_irt ../../reference/pair_matrix_irt_r04_n100000.csv 20261027404 100000
+if ($LASTEXITCODE -ne 0) { throw 'RR-004 failed; retain diagnostic output only' }
+```
+
+Output creation is exclusive. Never overwrite RR-003 or an earlier R04 run.
+The 64-bit decimal seed is encoded injectively into CLHEP RanecuEngine seeds
+`[seed % 2147483562 + 1, seed / 2147483562 + 1]`, with index 0. Accepted seeds
+are 1 through `2147483562*2147483398-1`; the full requested seed and both engine
+seeds are recorded. Sampling resets this engine after initialization and proceeds
+in the fixed channel, distance, pair order; it uses independent random draws, not
+paired Rust seeds. Counts may be 1..1,000,000 for smoke tests, but only the frozen
+100k,200k,400k,800k,1m sequence is eligible for production evidence.
+
+CSV schema `r04_pair_v1` (144 ordered data rows, comment lines begin `#`):
+
+```text
+reaction_id,r0_over_a,a_nm,D_nm2_per_ps,onsager_nm,kobs_M_inv_s_inv,endpoint,tau,observation_time_ps,total_pairs,event_count
+```
+
+For each ID, `r0_over_a` is 1,1.5,3; for each distance the five `cdf` rows use
+`tau=t*D/a^2` of 0.01,0.1,1,10,100. `event_count` counts sampled times <= t.
+The sixth row is `no_reaction,inf,inf`: its count is the kernel's exact -1 ps
+sentinel, never finite-time censoring. CDF and survival are complements, not
+independent endpoints. Rates are M^-1 s^-1, distances nm, diffusion nm²/ps,
+and elapsed time ps. Channel comments retain canonical reactants, effective
+radius and contact probability. Reject any nonfinite/unrecognized kernel return.
+The trailing marker must be exactly the requested seed/count and `rows: 144`:
+`# complete: true; seed: 20261027404; pairs: 100000; rows: 144`.
+Require exit 0, eight channel completion messages, exact coverage/order,
+monotonic CDF counts, counts in [0,total_pairs], and CDF+eventual nonreaction
+<= total_pairs. A partial file or smoke output is never reference evidence.
+
+Create new `validation/reference/provenance_r04_pair_matrix_n100000.toml` with
+`geant4_version`, `geant4_version_number`, `g4emlow_version`, `physics_constructor`,
+`chemistry_constructor`, `timestep_model`, `mode`, `schema`, `seed`, `rng_engine`,
+`engine_seeds`, `pairs_per_case_distance`, `reaction_ids`, `r0_over_a`, `tau`,
+`command`, `working_directory`, `date`, `generator_commit`, `generator_dirty`,
+`compiler`, `platform`, `csv_sha256` and `completion_rows`. Record 11.4.1/1141,
+G4EMLOW 8.8, option2, option3, IRT, RanecuEngine, and the actual clean generator
+commit (`generator_dirty=false`). The exact command above reproduces the file;
+record runtime dataset versions even though this kernel reads no cross sections.
+
+Acceptance is the separately preregistered 144-endpoint Geant4 family in
+`docs/validation/pair-case-matrix.md`: alpha 0.001 Bonferroni, independent
+binomial errors, absolute effect <0.01 and the adjusted confidence interval
+strictly inside (-0.01,+0.01). Precision expansion alone permits a new complete
+run with a new filename/provenance. Missing data remain REQUESTED. This is
+source-fidelity evidence, separate from the Brownian physical-law verdict.

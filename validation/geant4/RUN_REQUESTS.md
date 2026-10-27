@@ -108,3 +108,27 @@ That run found a canonical-name callback defect (`H` versus `H^0`) and Windows s
 remain diagnostic-only. RR-003 stays open until the corrected generator is committed, the exact clean
 command above produces new reference data and provenance, and the paired close-gate test records the
 expected pass or failure without changing tolerances.
+
+
+### RR-004: R04 option3 isolated IRT matrix (2026-10-27)
+
+- Session: `2026-10-27__pair-oracles-and-reference-gate`.
+- Program: `g4rs_ref pair_matrix_irt`, source `validation/geant4/g4rs_ref/g4rs_ref.cc`.
+- Exact command (from `validation/geant4/g4rs_ref`, executable on PATH):
+  `g4rs_ref pair_matrix_irt ../../reference/pair_matrix_irt_r04_n100000.csv 20261027404 100000`.
+- Seed: 20261027404; CLHEP RanecuEngine with README's lossless two-word mapping.
+- Statistics: 100,000 independent samples for each of eight literal channels
+  and three separations; five finite CDF points plus eventual nonreaction.
+- New outputs: `validation/reference/pair_matrix_irt_r04_n100000.csv` and
+  `validation/reference/provenance_r04_pair_matrix_n100000.toml`.
+- Schema, units, provenance fields and complete-only guards: README R04 section.
+- Consumer: forthcoming R04 ignored `g4-chemistry` Geant4 pair consumer (ticket 06);
+  do not substitute historical RR-003's SBS consumer.
+- Status: **awaiting run**. Agent compile-check only; no executable run.
+
+Require 144 rows, exact coverage, valid counts, the requested seed/statistics,
+exit 0 and final complete marker before committing new evidence. The frozen
+Bonferroni/effect/equivalence and precision-expansion rules are in
+`docs/validation/pair-case-matrix.md`. Future precision levels use new paths;
+never replace RR-003 or previously committed reference files. Geant4 agreement
+alone does not establish the independent charged Brownian physical-law gate.
