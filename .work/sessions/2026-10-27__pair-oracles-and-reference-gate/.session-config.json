@@ -159,6 +159,30 @@
         "ticket": "04-charged-brownian-oracle",
         "commit": "7b0daf5"
       }
+    },
+    {
+      "at": "2026-10-27T08:46:43.692Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-geant4-pair-producer.md",
+        "03-implement/05-geant4-pair-producer/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-geant4-pair-producer"
+      }
+    },
+    {
+      "at": "2026-10-27T08:55:26.815Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-geant4-pair-producer/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-geant4-pair-producer",
+        "commit": "e2d04ea"
+      }
     }
   ],
   "current_phase": "ship",
