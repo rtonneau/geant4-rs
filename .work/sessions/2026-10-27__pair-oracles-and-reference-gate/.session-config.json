@@ -111,6 +111,30 @@
         "ticket": "02-analytic-pair-laws",
         "commit": "521e6af"
       }
+    },
+    {
+      "at": "2026-10-27T08:27:31.206Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-neutral-brownian-oracle.md",
+        "03-implement/03-neutral-brownian-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-neutral-brownian-oracle"
+      }
+    },
+    {
+      "at": "2026-10-27T08:37:17.904Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-neutral-brownian-oracle/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-neutral-brownian-oracle",
+        "commit": "99f46c4"
+      }
     }
   ],
   "current_phase": "ship",
