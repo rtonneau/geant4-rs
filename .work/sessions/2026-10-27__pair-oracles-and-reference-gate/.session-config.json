@@ -87,6 +87,30 @@
         "ticket": "01-register-pair-cases",
         "commit": "dadbe13"
       }
+    },
+    {
+      "at": "2026-10-27T08:18:21.345Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-analytic-pair-laws.md",
+        "03-implement/02-analytic-pair-laws/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-analytic-pair-laws"
+      }
+    },
+    {
+      "at": "2026-10-27T08:27:23.047Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-analytic-pair-laws/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-analytic-pair-laws",
+        "commit": "521e6af"
+      }
     }
   ],
   "current_phase": "ship",
