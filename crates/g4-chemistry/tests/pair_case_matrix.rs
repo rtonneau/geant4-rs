@@ -131,7 +131,6 @@ const FAMILY_POINTS: usize = (LITERAL_CASES.len() + SYNTHETIC_CASES.len())
     * POINTS_PER_DISTANCE;
 
 const FAMILY_ALPHA: f64 = 0.001;
-const ANALYTIC_PAIRS: usize = 100_000;
 const BROWNIAN_PAIR_COUNTS: [usize; 8] = [
     10_000, 20_000, 40_000, 80_000, 160_000, 320_000, 640_000, 1_000_000,
 ];
@@ -177,7 +176,6 @@ fn preregistered_grid_and_statistical_contract_are_fixed() {
     assert_eq!(DISTANCE_OVER_RADIUS, [1.0, 1.5, 3.0]);
     assert_eq!(OBSERVATION_TAU, [0.01, 0.1, 1.0, 10.0, 100.0]);
     assert_eq!(FAMILY_ALPHA / FAMILY_POINTS as f64, 0.001 / 216.0);
-    assert!(ANALYTIC_PAIRS >= 100_000);
     assert_eq!(BROWNIAN_PAIR_COUNTS[0], 10_000);
     assert_eq!(BROWNIAN_PAIR_COUNTS[7], 1_000_000);
     for levels in REFINEMENT_DENOMINATORS.windows(2) {

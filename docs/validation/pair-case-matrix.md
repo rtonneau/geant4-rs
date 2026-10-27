@@ -99,3 +99,42 @@ The prior V9 pointwise three-sigma, 100,000-pair, 18-curve-point and three
 no-reaction-mass contract remains in `two_body_validation.rs`. RR-003 remains
 its own six-point external H+H request. Neither is rescored under this R04
 family or overwritten by its evidence.
+
+## Reproducing the analytic family
+
+`validation/pair_oracles/analytic.py` requires Python 3.11+ and mpmath 1.3.0.
+From the repository root, run:
+
+```text
+python validation/pair_oracles/analytic.py --output crates/g4-chemistry/tests/fixtures/pair_analytic_anchors.json
+cargo test -p g4-chemistry --test pair_analytic -- --nocapture
+```
+
+The generator evaluates decimal source literals at 80 digits and repeats at
+160 digits, requiring identical rounded binary64 anchors. It never imports
+Rust or samples trajectories. Equations and Geant4 source paths are recorded
+in the generator; input provenance remains in the chemistry TOML tables.
+The JSON records the mpmath version, precision, Geant4 version and two-sided
+normal Bonferroni threshold `Phi^-1(1 - 0.001/(2*216))`. Rust reports each
+signed z, absolute difference, threshold and separate per-case ANALYTIC verdict.
+For probability zero or one it requires exact counts. The deliberately biased
+sampler multiplies all finite elapsed times by four; the same gate must reject it.
+
+Neutral TDC uses the absorbing-sphere erfc CDF; neutral PDC uses the radiation
+boundary erfc/erfcx CDF. Charged anchors evaluate the Geant4 effective-distance
+law, including its unsaturated TDC weight: the observable CDF is
+`min(1, W*erfc(abs(L-a)/(2*sqrt(D*t))))`, and eventual nonreaction is
+`1-min(1,W)`. The charged PDC anchor uses the original alpha/sinh/coth equations,
+not the Rust sampler's algebraic reduction. Neither charged comparison claims
+a physical Coulomb first-passage PASS; that remains a separate Brownian verdict.
+
+Synthetic cases use length unit `a` and time unit `a²/D`, hence dimensionless
+`a=D=1`. To realise charge with the fixed source Onsager constant, the charged
+cases use that constant as their dimensional length unit. Their dimensional
+relative diffusion is 1 nm²/ps. Each species receives half of the contact radius
+and diffusion. PDC sets `kobs=0.5*kdiff`, with `kdiff=4*pi*D*R` for A+B and half
+that for A+A; `kact=kobs*kdiff/(kdiff-kobs)`. Neutral PDC uses
+`A=kact/(kobs*a)`; charged PDC retains the source A+A factor in alpha.
+Synthetic rates in the fixture are dimensional embeddings, never option3 rates.
+The Rust streams use history ordinal `(case*3+distance)*100000+pair`, stage
+Chemistry and the preregistered analytic seed; all 3.6 million pairs are independent.
