@@ -122,7 +122,7 @@ expected pass or failure without changing tolerances.
 - New outputs: `validation/reference/pair_matrix_irt_r04_n100000.csv` and
   `validation/reference/provenance_r04_pair_matrix_n100000.toml`.
 - Schema, units, provenance fields and complete-only guards: README R04 section.
-- Consumer: forthcoming R04 ignored `g4-chemistry` Geant4 pair consumer (ticket 06);
+- Consumer: ignored `g4-chemistry` test `geant4_pair_r04`;
   do not substitute historical RR-003's SBS consumer.
 - Status: **awaiting run**. Agent compile-check only; no executable run.
 
