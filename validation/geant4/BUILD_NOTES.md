@@ -250,3 +250,12 @@ Compile verification (2026-10-27): MSVC 19.50, Ninja, RelWithDebInfo and
 installed Geant4 11.4.1 compiled and linked this mode. Initial sandbox
 configuration failed with C1902 (PDB manager mismatch); the identical configure
 and build outside the sandbox succeeded. No generator executable was run.
+
+2026-10-29: an explicitly requested run rebuilt successfully with MSVC
+19.50.35729. The 100-pair smoke run exited 1 after channels 1, 2, 8 and 9;
+channel 11 reported an unexpected IRT result. The partial scratch CSV is not
+reference evidence. Geant4's neutral PDC contact case has `b=0` in
+`G4DNAIRT::SamplePDC`, causing indeterminate arithmetic in its proposal; the
+exact unexpected return was not instrumented. Resolve and document the source
+edge case before running production, without silently changing the grid or
+counting invalid results as nonreaction. See RR-004 for status.
