@@ -144,6 +144,15 @@ It compares independent Rust seed 20261027403 with Geant4 seed 20261027404,
 using 100,000 pairs per case and distance. No Geant4 output is inferred from
 the analytic fixture or from the Rust sampler.
 
+The consumer currently checks that the channel comment contains two nonempty
+reactant names, but does not verify their identities. The generator writes
+`G4MolecularConfiguration::GetName()`, whose value is not necessarily the
+chemistry-table label. A source-verified mapping is needed before the consumer
+can strictly validate these names. The consumer also hardcodes the initial
+100,000-pair filename, count and command: it cannot yet consume the registered
+precision-expansion runs without further development. Neither limitation
+authorizes accepting an incomplete or insufficiently precise result.
+
 The frozen family comprises 8 literal channels × 3 distances × 6 endpoints =
 144 comparisons, with two-sided family alpha 0.001, pointwise Bonferroni
 threshold `z = 4.495384196564731`, and absolute effect limit 0.01. The
