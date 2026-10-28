@@ -122,9 +122,19 @@ expected pass or failure without changing tolerances.
 - New outputs: `validation/reference/pair_matrix_irt_r04_n100000.csv` and
   `validation/reference/provenance_r04_pair_matrix_n100000.toml`.
 - Schema, units, provenance fields and complete-only guards: README R04 section.
-- Consumer: forthcoming R04 ignored `g4-chemistry` Geant4 pair consumer (ticket 06);
+- Consumer: ignored `g4-chemistry` test `geant4_pair_r04`;
   do not substitute historical RR-003's SBS consumer.
-- Status: **awaiting run**. Agent compile-check only; no executable run.
+- Status: **awaiting complete run**; smoke attempt failed as described below.
+
+Smoke attempt 2026-10-29 (explicitly requested): the rebuilt generator exited 1
+after completing channels 1, 2, 8 and 9, with `unexpected IRT result` on
+channel 11. Its scratch CSV has no completion marker and is not evidence.
+Production was not started. Geant4 11.4.1's neutral PDC branch computes
+`b = (r0 - sigma)/2`, which is zero at the registered contact distance; its
+`SamplePDC` calculation then includes division by zero and indeterminate
+arithmetic. The exact returned value was not logged. This edge case needs a
+source-faithful resolution before retrying; do not classify an unexpected
+return as physical nonreaction or change the registered grid silently.
 
 Require 144 rows, exact coverage, valid counts, the requested seed/statistics,
 exit 0 and final complete marker before committing new evidence. The frozen
