@@ -53,6 +53,8 @@
 #include <string>
 #include <vector>
 
+#include "G4DNAIRT.hh"
+#include "CLHEP/Random/RanecuEngine.h"
 #include "G4DecayPhysics.hh"
 #include "G4EmCalculator.hh"
 #include "G4EmDNAPhysics_option2.hh"
@@ -1184,10 +1186,120 @@ void RunTwoBodyHH(const char* out, long seed, long pairs)
   if (fclose(f) != 0) TwoBodyFailure("failed to close output");
 }
 
+
+// R04 uses the public isolated-pair kernel, not a finite-time scheduler proxy.
+// Source: G4DNAIRT::GetIndependentReactionTime (Geant4 11.4.1).
+[[noreturn]] void PairMatrixFailure(const char* message)
+{
+  fprintf(stderr, "pair_matrix_irt: %s; output incomplete, do not commit\n", message);
+  exit(1);
+}
+
+unsigned long long ParsePairInteger(const char* text)
+{
+  if (!text || !*text) PairMatrixFailure("empty integer");
+  for (const char* p = text; *p; ++p)
+    if (*p < '0' || *p > '9') PairMatrixFailure("expected unsigned decimal integer");
+  errno = 0;
+  char* end = nullptr;
+  const auto value = strtoull(text, &end, 10);
+  if (errno == ERANGE || !end || *end || !value) PairMatrixFailure("integer out of range");
+  return value;
+}
+
+int RunPairMatrix(int argc, char** argv)
+{
+  if (argc != 5) PairMatrixFailure("expected output path, seed and pairs per case/distance");
+  const auto seed = ParsePairInteger(argv[3]);
+  const auto pairs = ParsePairInteger(argv[4]);
+  // Injective base decomposition into the two valid Ranecu seed ranges, also on Windows.
+  constexpr unsigned long long seedBase = 2147483562ULL;
+  if (seed >= seedBase * 2147483398ULL || pairs > 1000000ULL)
+    PairMatrixFailure("seed exceeds Ranecu encoding or pair count exceeds preregistered cap");
+  if (G4VERSION_NUMBER != 1141) PairMatrixFailure("requires Geant4 11.4.1");
+  FILE* f = fopen(argv[2], "wx");
+  if (!f) PairMatrixFailure("cannot exclusively create output");
+  gMode = Mode::PhysChem; // only selects the existing option3 physics constructor
+  auto* param = G4EmParameters::Instance();
+  param->SetTimeStepModel(G4ChemTimeStepModel::IRT);
+  param->SetFluo(false);
+  param->SetAuger(false);
+  param->SetAugerCascade(false);
+  param->SetPixe(false);
+  auto* rm = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
+  rm->SetUserInitialization(new Detector);
+  rm->SetUserInitialization(new Physics);
+  rm->Initialize();
+  G4LossTableManager::Instance()->SetAtomDeexcitation(nullptr);
+  G4DNAChemistryManager::Instance()->Initialize();
+  auto* table = G4DNAMolecularReactionTable::GetReactionTable();
+  G4DNAIRT sampler;
+  sampler.SetReactionTable(table);
+  auto* oldEngine = G4Random::getTheEngine();
+  CLHEP::RanecuEngine engine;
+  const long seeds[2] = {static_cast<long>(seed % seedBase + 1),
+                         static_cast<long>(seed / seedBase + 1)};
+  engine.setSeeds(seeds, 0);
+  G4Random::setTheEngine(&engine);
+  fprintf(f, "# generator: g4rs_ref; mode: pair_matrix_irt; schema: r04_pair_v1\n");
+  fprintf(f, "# geant4_version_number: %d (%s); chemistry: G4EmDNAChemistry_option3; timestep_model: IRT\n", G4VERSION_NUMBER, G4Version.c_str());
+  fprintf(f, "# seed: %llu; rng: RanecuEngine; engine_seeds: %ld,%ld; pairs: %llu\n", seed, seeds[0], seeds[1], pairs);
+  fprintf(f, "# direct G4DNAIRT pair kernel; negative -1 ps sentinel means eventual nonreaction; no scheduler cutoff\n");
+  fprintf(f, "reaction_id,r0_over_a,a_nm,D_nm2_per_ps,onsager_nm,kobs_M_inv_s_inv,endpoint,tau,observation_time_ps,total_pairs,event_count\n");
+  const int ids[] = {1, 2, 8, 9, 11, 17, 42, 51};
+  const double distances[] = {1., 1.5, 3.};
+  const double taus[] = {0.01, 0.1, 1., 10., 100.};
+  size_t rows = 0;
+  for (int id : ids) {
+    const auto* reaction = table->GetReaction(id);
+    if (!reaction || reaction->GetReactionType() != (id >= 11 ? 1 : 0))
+      PairMatrixFailure("missing channel or wrong IRT type");
+    const auto* a = reaction->GetReactant1();
+    const auto* b = reaction->GetReactant2();
+    const double radius = id >= 11 ? reaction->GetReactionRadius() : reaction->GetEffectiveReactionRadius();
+    const double diffusion = a->GetDiffusionCoefficient() + b->GetDiffusionCoefficient();
+    if (!(radius > 0 && diffusion > 0) || !std::isfinite(radius + diffusion))
+      PairMatrixFailure("invalid option3 parameters");
+    fprintf(f, "# channel: %d; reactants: %s,%s; effective_radius_nm: %.17g; contact_probability: %.17g\n", id,
+            a->GetName().c_str(), b->GetName().c_str(), reaction->GetEffectiveReactionRadius()/nm, reaction->GetProbability());
+    for (double distance : distances) {
+      unsigned long long counts[6] = {};
+      const double scale = radius * radius / diffusion;
+      for (unsigned long long pair = 0; pair < pairs; ++pair) {
+        const double time = sampler.GetIndependentReactionTime(a, b, distance * radius);
+        if (!std::isfinite(time) || (time < 0 && time != -1 * ps))
+          PairMatrixFailure("unexpected IRT result");
+        if (time < 0) ++counts[5];
+        else for (size_t i = 0; i < 5; ++i)
+          if (time <= taus[i] * scale) ++counts[i];
+      }
+      for (size_t i = 0; i < 6; ++i) {
+        fprintf(f, "%d,%.17g,%.17g,%.17g,%.17g,%.17g,%s,", id, distance,
+                radius/nm, diffusion/(nm*nm/ps), reaction->GetOnsagerRadius()/nm,
+                reaction->GetObservedReactionRateConstant()/(1e-3*m3/(mole*s)),
+                i == 5 ? "no_reaction" : "cdf");
+        if (i == 5) fprintf(f, "inf,inf,");
+        else fprintf(f, "%.17g,%.17g,", taus[i], taus[i]*scale/ps);
+        fprintf(f, "%llu,%llu\n", pairs, counts[i]);
+        ++rows;
+      }
+      if (fflush(f) || ferror(f)) PairMatrixFailure("output write failed");
+    }
+    fprintf(stderr, "pair_matrix_irt: channel %d complete\n", id);
+  }
+  if (rows != 144) PairMatrixFailure("incomplete matrix");
+  fprintf(f, "# complete: true; seed: %llu; pairs: %llu; rows: %zu\n", seed, pairs, rows);
+  if (fclose(f)) PairMatrixFailure("output close failed");
+  G4Random::setTheEngine(oldEngine);
+  delete rm;
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
 {
+  if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt") return RunPairMatrix(argc, argv);
   if (argc < 3) {
     fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...> | two_body_h_h <out.csv> <seed> <pairs>\n", argv[0]);
     return 1;

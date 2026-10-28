@@ -551,6 +551,18 @@ Seeds (`docs/gps-backlog.md`): `m7-option3-reaction-table`, `m7-diffusion-and-tw
 
 The additive Geant4 `two_body_h_h` mode and strict CSV/provenance consumer are ready. RR-003 requests a clean 100,000-pair run and remains **awaiting data**; the authorized scratch run diagnosed generator defects but is not reference evidence. Do not claim the external comparison passed. After the requested files are committed, run the ignored consumer and record its unchanged-tolerance verdict in the later `m7-sbs-close-gate` session. Remaining deferred work: many-species scheduling, reaction products/sites, finite boundaries, and that external close gate.
 
+**R04 pair-oracle gate (2026-10-27).** The 216-endpoint analytic family is
+implemented and its independent anchor test passes. Neutral and charged
+Brownian experiments retain separate physical-law verdicts; their complete
+verdict is **INCONCLUSIVE**, including the unresolved eventual tail. RR-004's
+144-endpoint source-matched option3 IRT producer and strict ignored Rust
+consumer are ready, but user-run CSV and provenance remain **REQUESTED**.
+The comparison uses independent Rust/Geant4 seeds, frozen two-sided family
+alpha 0.001, Bonferroni intervals, and a strict 0.01 effect band; an
+underpowered interval is INCONCLUSIVE. **G1 remains OPEN** and can pass only
+when analytic, independent Brownian and Geant4 verdicts all pass. This does
+not rescore V9 or RR-003; their prior verdicts and requests remain in force.
+
 ## M8 G(t) end-to-end
 Scope: orchestration, scoring G(t) with uncertainties, TOML config, CLI `dna run config.toml`, JSON output with metadata.
 Tests: V11, V13. Acceptance: V11 for e- 1 MeV (or 100 keV and 1 MeV) and p 10 MeV against chem6 reference.
