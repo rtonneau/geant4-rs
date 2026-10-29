@@ -1267,8 +1267,11 @@ int RunPairMatrix(int argc, char** argv)
       const double scale = radius * radius / diffusion;
       for (unsigned long long pair = 0; pair < pairs; ++pair) {
         const double time = sampler.GetIndependentReactionTime(a, b, distance * radius);
-        if (!std::isfinite(time) || (time < 0 && time != -1 * ps))
+        if (!std::isfinite(time) || (time < 0 && time != -1 * ps)) {
+          fprintf(stderr, "pair_matrix_irt: channel=%d distance=%.17g pair=%llu time_native=%.17g time_ps=%.17g\n",
+                  id, distance, pair, time, time/ps);
           PairMatrixFailure("unexpected IRT result");
+        }
         if (time < 0) ++counts[5];
         else for (size_t i = 0; i < 5; ++i)
           if (time <= taus[i] * scale) ++counts[i];

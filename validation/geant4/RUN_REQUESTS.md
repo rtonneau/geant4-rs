@@ -136,6 +136,19 @@ arithmetic. The exact returned value was not logged. This edge case needs a
 source-faithful resolution before retrying; do not classify an unexpected
 return as physical nonreaction or change the registered grid silently.
 
+Diagnostic rerun 2026-10-29: after adding failure-only value logging, the
+100-pair seed-1 smoke exited 1 at channel 11, contact, pair index 1. The
+returned native value was `-108695652173.91306`, or
+`-108695652173913.05 ps`, not the `-1 ps` no-reaction sentinel. For `b=0`,
+`SamplePDC` computes `p=0`, `q=inf`, and then `X=0`; its acceptance expression
+contains `0/0`. Its 10,001-rejection fallback returns `-1` in the sampler's
+intermediate units, and the caller divides it by the relative diffusion
+coefficient. This explains the observed negative value. The diagnostic output
+is incomplete and is not a reference fixture. Exact contact cannot be sampled
+faithfully by this unmodified Geant4 path after the reaction gate accepts.
+An analytically derived limiting sampler would be a modified reference, not a
+direct Geant4 result; no such substitution is authorized by this registration.
+
 Require 144 rows, exact coverage, valid counts, the requested seed/statistics,
 exit 0 and final complete marker before committing new evidence. The frozen
 Bonferroni/effect/equivalence and precision-expansion rules are in

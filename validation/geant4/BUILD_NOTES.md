@@ -259,3 +259,12 @@ reference evidence. Geant4's neutral PDC contact case has `b=0` in
 exact unexpected return was not instrumented. Resolve and document the source
 edge case before running production, without silently changing the grid or
 counting invalid results as nonreaction. See RR-004 for status.
+
+Diagnostic rerun 2026-10-29: failure-only logging captured channel 11,
+contact, pair index 1, returning `-108695652173.91306` in native units
+(`-108695652173913.05 ps`). The seed-1, 100-pair smoke exited 1; its partial
+CSV is not evidence. `SamplePDC( a, 0 )` exhausts its rejection loop because
+the proposal and acceptance contain indeterminate arithmetic; its `-1` return
+is divided by D, so it is not the caller's `-1 ps` nonreaction sentinel.
+This is a source limitation at the registered exact contact, not grounds to
+move the point or use the limiting distribution as a direct Geant4 result.

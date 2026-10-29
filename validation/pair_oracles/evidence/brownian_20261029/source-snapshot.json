@@ -1,0 +1,31 @@
+{
+  "created_utc": "2026-10-29T09:03:18.723298+00:00",
+  "files": {
+    "Cargo.lock": "469fb57fc7b52930c82e2730f98bab13911863df80826c7394c678027fbdbe1d",
+    "Cargo.toml": "e5d9f89b0d60ee1f17625042b8ae54083c96be38bc7a07706aa9f2fd36ea3ea2",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\charged.rs": "d7af49d8c0226d215f8bb3b306173f4850ae32b31c16ddf3533a2c1f6b40067a",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\escape.rs": "e2d3b6d05dab54e1ea2522539effadbaa656bc36b5db3ac6a127e4320333053b",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\experiment.rs": "2d0c5ddf51ac80c7de20500f3cf6b3c8d846fee68abcf1aa8b350ed634e2ff82",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\mod.rs": "fbcdc9b208ca6735758605e3bf68dcee4dddcd196c70379cf47949ba20c5e0c5",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\neutral.rs": "4a00f1eae5d8ce96cc01cf0c6bbe14dfc475da71b7e18e22136752303153a61d",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\stopped.rs": "70fdebb990ce3ae5dcffbcc0d4d9ac478dc6fe72eb7201eb7aa31713530f65e0",
+    "crates\\g4-chemistry\\tests\\pair_brownian.rs": "6d0f9f3e4a721936ba933c1ce44317b16ee9be585918cd2a2d3309ee008d9c35",
+    "crates\\g4-chemistry\\tests\\fixtures\\pair_analytic_anchors.json": "b78bf7772841b90eef949f848fda8df67400566f0bacd6d44919edd7d89a52b9",
+    "crates\\g4-chemistry\\tests\\fixtures\\pair_coulomb_anchors.json": "e4666e65b90e7ea035149051d3d49a4ae895a0c468f0be50cf4cf41a86fb4a7a",
+    "crates\\g4-chemistry\\tests\\fixtures\\pair_coulomb_finite_anchors.json": "3a44ca02de940394785adcae354fa1a6c9863a4530efdc872d30021b1c2af52d",
+    "validation\\pair_oracles\\run_brownian.py": "3df4b26c94c6521c6f1f80b78cfa3d759ec78b492f7a3ea9ba8bf43f8d66dd42",
+    "docs\\validation\\pair-case-matrix.md": "fcf7977836a69e5eeefe0c8c6a3669dc0996e641bb77990bee266a0e63c679a8",
+    "crates/g4-core/src/rng.rs": "99ed8ae5e22704eaa008a78aaa7d75a76c300ba7aa2da1d7d6f7595a1de77828",
+    "crates/g4-core/Cargo.toml": "3bb7d5cca7da2bfdf3eabda90dea4dfb6d0d5748e9cfca1215792b4b4644dcab",
+    "crates/g4-chemistry/Cargo.toml": "998af912b8d94b9f65ae0cac55d39858b50941b20b0a12dca47b4b9d373c884b",
+    "rust-toolchain.toml": "e465b6354ef2b20c509e58df63d8504a4079f0cea3986f8d5af32819bf1c2780"
+  },
+  "archive_sha256": "e3f4a5ecacc27563842a903bb76dbf5f87ebb33ebac374877fb5b2a216976233",
+  "build_environment": {
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "CARGO_BUILD_TARGET": null,
+    "RUSTUP_TOOLCHAIN": null
+  },
+  "purpose": "Exact bytes for all captured dirty-tree inputs, plus clean HEAD RNG/manifests and local build configuration."
+}

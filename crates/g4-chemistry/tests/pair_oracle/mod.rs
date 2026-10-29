@@ -1,5 +1,7 @@
 //! Independent test-only pair dynamics. No production chemistry samplers.
+pub mod experiment;
 pub mod neutral;
+pub mod stopped;
 
 pub const TIMES: [f64; 5] = [0.01, 0.1, 1.0, 10.0, 100.0];
 pub const STEPS: [f64; 5] = [1.0 / 16.0, 1.0 / 32.0, 1.0 / 64.0, 1.0 / 128.0, 1.0 / 256.0];

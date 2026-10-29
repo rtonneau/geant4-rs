@@ -1,0 +1,239 @@
+   Compiling g4-chemistry v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-chemistry)
+    Finished `release` profile [optimized] target(s) in 1.75s
+     Running tests\pair_analytic.rs (target\release\deps\pair_analytic-e6e60023c2d2a1f1.exe)
+
+running 3 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+option3-1 r/a=1 endpoint=0 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-1 r/a=1 endpoint=1 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-1 r/a=1 endpoint=2 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-1 r/a=1 endpoint=3 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-1 r/a=1 endpoint=4 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-1 r/a=1 endpoint=5 count=0/100000 p=0.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+test rejects_deliberately_slow_sampler ... ok
+option3-1 r/a=1.5 endpoint=0 count=27/100000 p=0.0002713013449633 z=-0.024988 threshold=4.58090733 abs_diff=0.00000130 PASS
+option3-1 r/a=1.5 endpoint=1 count=17580/100000 p=0.1757016515219818 z=0.081722 threshold=4.58090733 abs_diff=0.00009835 PASS
+option3-1 r/a=1.5 endpoint=2 count=48450/100000 p=0.4824490732211754 z=1.297920 threshold=4.58090733 abs_diff=0.00205093 PASS
+option3-1 r/a=1.5 endpoint=3 count=60919/100000 p=0.6073195283404227 z=1.211220 threshold=4.58090733 abs_diff=0.00187047 PASS
+option3-1 r/a=1.5 endpoint=4 count=64956/100000 p=0.6478642644637813 z=1.122693 threshold=4.58090733 abs_diff=0.00169574 PASS
+option3-1 r/a=1.5 endpoint=5 count=33264/100000 p=0.3333333333333333 z=-0.465102 threshold=4.58090733 abs_diff=0.00069333 PASS
+option3-1 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-1 r/a=3 endpoint=1 count=0/100000 p=0.0000025814054770 z=-0.508076 threshold=4.58090733 abs_diff=0.00000258 PASS
+option3-1 r/a=3 endpoint=2 count=5309/100000 p=0.0524330690167617 z=0.931992 threshold=4.58090733 abs_diff=0.00065693 PASS
+option3-1 r/a=3 endpoint=3 count=21986/100000 p=0.2182402820061923 z=1.240039 threshold=4.58090733 abs_diff=0.00161972 PASS
+option3-1 r/a=3 endpoint=4 count=29733/100000 p=0.2958456946605717 z=1.028387 threshold=4.58090733 abs_diff=0.00148431 PASS
+option3-1 r/a=3 endpoint=5 count=66473/100000 p=0.6666666666666666 z=-1.299155 threshold=4.58090733 abs_diff=0.00193667 PASS
+ANALYTIC option3-1: PASS
+option3-2 r/a=1 endpoint=0 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=1 endpoint=1 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=1 endpoint=2 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=1 endpoint=3 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=1 endpoint=4 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=1 endpoint=5 count=0/100000 p=0.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=1.5 endpoint=0 count=30/100000 p=0.0002713013449633 z=0.551054 threshold=4.58090733 abs_diff=0.00002870 PASS
+option3-2 r/a=1.5 endpoint=1 count=17665/100000 p=0.1757016515219818 z=0.788021 threshold=4.58090733 abs_diff=0.00094835 PASS
+option3-2 r/a=1.5 endpoint=2 count=48420/100000 p=0.4824490732211754 z=1.108066 threshold=4.58090733 abs_diff=0.00175093 PASS
+option3-2 r/a=1.5 endpoint=3 count=60767/100000 p=0.6073195283404227 z=0.226947 threshold=4.58090733 abs_diff=0.00035047 PASS
+option3-2 r/a=1.5 endpoint=4 count=64897/100000 p=0.6478642644637813 z=0.732073 threshold=4.58090733 abs_diff=0.00110574 PASS
+option3-2 r/a=1.5 endpoint=5 count=33255/100000 p=0.3333333333333333 z=-0.525476 threshold=4.58090733 abs_diff=0.00078333 PASS
+option3-2 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-2 r/a=3 endpoint=1 count=1/100000 p=0.0000025814054770 z=1.460139 threshold=4.58090733 abs_diff=0.00000742 PASS
+option3-2 r/a=3 endpoint=2 count=5207/100000 p=0.0524330690167617 z=-0.515088 threshold=4.58090733 abs_diff=0.00036307 PASS
+option3-2 r/a=3 endpoint=3 count=21702/100000 p=0.2182402820061923 z=-0.934235 threshold=4.58090733 abs_diff=0.00122028 PASS
+option3-2 r/a=3 endpoint=4 count=29419/100000 p=0.2958456946605717 z=-1.147133 threshold=4.58090733 abs_diff=0.00165569 PASS
+option3-2 r/a=3 endpoint=5 count=66826/100000 p=0.6666666666666666 z=1.068840 threshold=4.58090733 abs_diff=0.00159333 PASS
+ANALYTIC option3-2: PASS
+option3-8 r/a=1 endpoint=0 count=0/100000 p=0.0000000006150912 z=-0.007843 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1 endpoint=1 count=55342/100000 p=0.5541251110164996 z=-0.448587 threshold=4.58090733 abs_diff=0.00070511 PASS
+option3-8 r/a=1 endpoint=2 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1 endpoint=3 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1 endpoint=4 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1 endpoint=5 count=0/100000 p=0.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1.5 endpoint=0 count=0/100000 p=0.0000012096303148 z=-0.347798 threshold=4.58090733 abs_diff=0.00000121 PASS
+option3-8 r/a=1.5 endpoint=1 count=38446/100000 p=0.3830447034196247 z=0.920653 threshold=4.58090733 abs_diff=0.00141530 PASS
+option3-8 r/a=1.5 endpoint=2 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1.5 endpoint=3 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1.5 endpoint=4 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=1.5 endpoint=5 count=0/100000 p=0.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-8 r/a=3 endpoint=0 count=415/100000 p=0.0042766448786361 z=-0.613715 threshold=4.58090733 abs_diff=0.00012664 PASS
+option3-8 r/a=3 endpoint=1 count=27602/100000 p=0.2766795100008218 z=-0.466195 threshold=4.58090733 abs_diff=0.00065951 PASS
+option3-8 r/a=3 endpoint=2 count=56492/100000 p=0.5638615528956127 z=0.674949 threshold=4.58090733 abs_diff=0.00105845 PASS
+option3-8 r/a=3 endpoint=3 count=67006/100000 p=0.6700048813610939 z=0.037069 threshold=4.58090733 abs_diff=0.00005512 PASS
+option3-8 r/a=3 endpoint=4 count=70441/100000 p=0.7041127024614149 z=0.205971 threshold=4.58090733 abs_diff=0.00029730 PASS
+option3-8 r/a=3 endpoint=5 count=28069/100000 p=0.2800870698392170 z=0.424600 threshold=4.58090733 abs_diff=0.00060293 PASS
+ANALYTIC option3-8: PASS
+option3-9 r/a=1 endpoint=0 count=397/100000 p=0.0039489616494932 z=0.106079 threshold=4.58090733 abs_diff=0.00002104 PASS
+option3-9 r/a=1 endpoint=1 count=27250/100000 p=0.2728582663133484 z=-0.254348 threshold=4.58090733 abs_diff=0.00035827 PASS
+option3-9 r/a=1 endpoint=2 count=56070/100000 p=0.5610312758666010 z=-0.211096 threshold=4.58090733 abs_diff=0.00033128 PASS
+option3-9 r/a=1 endpoint=3 count=66954/100000 p=0.6678372908382186 z=1.143220 threshold=4.58090733 abs_diff=0.00170271 PASS
+option3-9 r/a=1 endpoint=4 count=70329/100000 p=0.7021681441554782 z=0.775766 threshold=4.58090733 abs_diff=0.00112186 PASS
+option3-9 r/a=1 endpoint=5 count=28151/100000 p=0.2819278246594936 z=-0.293657 threshold=4.58090733 abs_diff=0.00041782 PASS
+option3-9 r/a=1.5 endpoint=0 count=0/100000 p=0.0000000002709922 z=-0.005206 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-9 r/a=1.5 endpoint=1 count=2570/100000 p=0.0262507094240080 z=-1.089252 threshold=4.58090733 abs_diff=0.00055071 PASS
+option3-9 r/a=1.5 endpoint=2 count=28232/100000 p=0.2842781302571941 z=-1.372770 threshold=4.58090733 abs_diff=0.00195813 PASS
+option3-9 r/a=1.5 endpoint=3 count=44802/100000 p=0.4492345458555892 z=-0.772136 threshold=4.58090733 abs_diff=0.00121455 PASS
+option3-9 r/a=1.5 endpoint=4 count=50474/100000 p=0.5057896168357736 z=-0.663880 threshold=4.58090733 abs_diff=0.00104962 PASS
+option3-9 r/a=1.5 endpoint=5 count=46951/100000 p=0.4678327364810802 z=1.062997 threshold=4.58090733 abs_diff=0.00167726 PASS
+option3-9 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-9 r/a=3 endpoint=1 count=0/100000 p=0.0000000364822287 z=-0.060401 threshold=4.58090733 abs_diff=0.00000004 PASS
+option3-9 r/a=3 endpoint=2 count=2837/100000 p=0.0280499870773781 z=0.612885 threshold=4.58090733 abs_diff=0.00032001 PASS
+option3-9 r/a=3 endpoint=3 count=17872/100000 p=0.1773472166261628 z=1.136532 threshold=4.58090733 abs_diff=0.00137278 PASS
+option3-9 r/a=3 endpoint=4 count=25774/100000 p=0.2576663257947637 z=0.053271 threshold=4.58090733 abs_diff=0.00007367 PASS
+option3-9 r/a=3 endpoint=5 count=70221/100000 p=0.7028630045949950 z=-0.451859 threshold=4.58090733 abs_diff=0.00065300 PASS
+ANALYTIC option3-9: PASS
+option3-11 r/a=1 endpoint=0 count=11119/100000 p=0.1118025546671759 z=-0.614701 threshold=4.58090733 abs_diff=0.00061255 PASS
+option3-11 r/a=1 endpoint=1 count=25579/100000 p=0.2556996454944563 z=0.065495 threshold=4.58090733 abs_diff=0.00009035 PASS
+option3-11 r/a=1 endpoint=2 count=41351/100000 p=0.4144809100294926 z=-0.623241 threshold=4.58090733 abs_diff=0.00097091 PASS
+option3-11 r/a=1 endpoint=3 count=49643/100000 p=0.4991745876201862 z=-1.735832 threshold=4.58090733 abs_diff=0.00274459 PASS
+option3-11 r/a=1 endpoint=4 count=52646/100000 p=0.5290134223519469 z=-1.617652 threshold=4.58090733 abs_diff=0.00255342 PASS
+option3-11 r/a=1 endpoint=5 count=45939/100000 p=0.4570007275400584 z=1.516728 threshold=4.58090733 abs_diff=0.00238927 PASS
+option3-11 r/a=1.5 endpoint=0 count=1/100000 p=0.0000105892723768 z=-0.057264 threshold=4.58090733 abs_diff=0.00000059 PASS
+option3-11 r/a=1.5 endpoint=1 count=3217/100000 p=0.0325357492286965 z=-0.651907 threshold=4.58090733 abs_diff=0.00036575 PASS
+option3-11 r/a=1.5 endpoint=2 count=18848/100000 p=0.1886851350485467 z=-0.165797 threshold=4.58090733 abs_diff=0.00020514 PASS
+option3-11 r/a=1.5 endpoint=3 count=29945/100000 p=0.3010611992753659 z=-1.110714 threshold=4.58090733 abs_diff=0.00161120 PASS
+option3-11 r/a=1.5 endpoint=4 count=34115/100000 p=0.3424823615135257 z=-0.887870 threshold=4.58090733 abs_diff=0.00133236 PASS
+option3-11 r/a=1.5 endpoint=5 count=63996/100000 p=0.6380004850267056 z=1.289389 threshold=4.58090733 abs_diff=0.00195951 PASS
+option3-11 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-11 r/a=3 endpoint=1 count=0/100000 p=0.0000002357901133 z=-0.153555 threshold=4.58090733 abs_diff=0.00000024 PASS
+option3-11 r/a=3 endpoint=2 count=1736/100000 p=0.0171978624949845 z=0.394378 threshold=4.58090733 abs_diff=0.00016214 PASS
+option3-11 r/a=3 endpoint=3 count=10570/100000 p=0.1058531462687129 z=-0.157416 threshold=4.58090733 abs_diff=0.00015315 PASS
+option3-11 r/a=3 endpoint=4 count=15590/100000 p=0.1560493879721552 z=-0.130175 threshold=4.58090733 abs_diff=0.00014939 PASS
+option3-11 r/a=3 endpoint=5 count=81932/100000 p=0.8190002425133528 z=0.262627 threshold=4.58090733 abs_diff=0.00031976 PASS
+ANALYTIC option3-11: PASS
+option3-17 r/a=1 endpoint=0 count=24744/100000 p=0.2477466591174663 z=-0.224631 threshold=4.58090733 abs_diff=0.00030666 PASS
+option3-17 r/a=1 endpoint=1 count=47846/100000 p=0.4775900577620150 z=0.550753 threshold=4.58090733 abs_diff=0.00086994 PASS
+option3-17 r/a=1 endpoint=2 count=64973/100000 p=0.6482570826578943 z=0.975421 threshold=4.58090733 abs_diff=0.00147292 PASS
+option3-17 r/a=1 endpoint=3 count=71836/100000 p=0.7175261808946228 z=0.585685 threshold=4.58090733 abs_diff=0.00083382 PASS
+option3-17 r/a=1 endpoint=4 count=74061/100000 p=0.7402514154538032 z=0.258598 threshold=4.58090733 abs_diff=0.00035858 PASS
+option3-17 r/a=1 endpoint=5 count=24896/100000 p=0.2491960206309019 z=-0.172550 threshold=4.58090733 abs_diff=0.00023602 PASS
+option3-17 r/a=1.5 endpoint=0 count=1/100000 p=0.0000253923517549 z=-0.965960 threshold=4.58090733 abs_diff=0.00001539 PASS
+option3-17 r/a=1.5 endpoint=1 count=6573/100000 p=0.0651578374453655 z=0.733106 threshold=4.58090733 abs_diff=0.00057216 PASS
+option3-17 r/a=1.5 endpoint=2 count=30497/100000 p=0.3015803804958860 z=2.335561 threshold=4.58090733 abs_diff=0.00338962 PASS
+option3-17 r/a=1.5 endpoint=3 count=43657/100000 p=0.4340666176686805 z=1.597226 threshold=4.58090733 abs_diff=0.00250338 PASS
+option3-17 r/a=1.5 endpoint=4 count=48262/100000 p=0.4793927953528057 z=2.042799 threshold=4.58090733 abs_diff=0.00322720 PASS
+option3-17 r/a=1.5 endpoint=5 count=49627/100000 p=0.4994640137539346 z=-2.020073 threshold=4.58090733 abs_diff=0.00319401 PASS
+option3-17 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-17 r/a=3 endpoint=1 count=0/100000 p=0.0000005258277373 z=-0.229309 threshold=4.58090733 abs_diff=0.00000053 PASS
+option3-17 r/a=3 endpoint=2 count=2857/100000 p=0.0291998374657560 z=-1.182969 threshold=4.58090733 abs_diff=0.00062984 PASS
+option3-17 r/a=3 endpoint=3 count=15483/100000 p=0.1540612707589533 z=0.673375 threshold=4.58090733 abs_diff=0.00076873 PASS
+option3-17 r/a=3 endpoint=4 count=21836/100000 p=0.2186482548321065 z=-0.220536 threshold=4.58090733 abs_diff=0.00028825 PASS
+option3-17 r/a=3 endpoint=5 count=74844/100000 p=0.7497320068769673 z=-0.943212 threshold=4.58090733 abs_diff=0.00129201 PASS
+ANALYTIC option3-17: PASS
+option3-42 r/a=1 endpoint=0 count=1303/100000 p=0.0136815459938762 z=-1.773654 threshold=4.58090733 abs_diff=0.00065155 PASS
+option3-42 r/a=1 endpoint=1 count=3791/100000 p=0.0378045142183053 z=0.174900 threshold=4.58090733 abs_diff=0.00010549 PASS
+option3-42 r/a=1 endpoint=2 count=8380/100000 p=0.0839855420930179 z=-0.211538 threshold=4.58090733 abs_diff=0.00018554 PASS
+option3-42 r/a=1 endpoint=3 count=13155/100000 p=0.1313524219840615 z=0.184968 threshold=4.58090733 abs_diff=0.00019758 PASS
+option3-42 r/a=1 endpoint=4 count=15542/100000 p=0.1551355094750781 z=0.248496 threshold=4.58090733 abs_diff=0.00028449 PASS
+option3-42 r/a=1 endpoint=5 count=83263/100000 p=0.8327993323336889 z=-0.143500 threshold=4.58090733 abs_diff=0.00016933 PASS
+option3-42 r/a=1.5 endpoint=0 count=0/100000 p=0.0000027197807003 z=-0.521516 threshold=4.58090733 abs_diff=0.00000272 PASS
+option3-42 r/a=1.5 endpoint=1 count=516/100000 p=0.0056535657064357 z=-2.081684 threshold=4.58090733 abs_diff=0.00049357 PASS
+option3-42 r/a=1.5 endpoint=2 count=4220/100000 p=0.0429657967398424 z=-1.194231 threshold=4.58090733 abs_diff=0.00076580 PASS
+option3-42 r/a=1.5 endpoint=3 count=9034/100000 p=0.0905131738893080 z=-0.190866 threshold=4.58090733 abs_diff=0.00017317 PASS
+option3-42 r/a=1.5 endpoint=4 count=11517/100000 p=0.1152716996580645 z=-0.100705 threshold=4.58090733 abs_diff=0.00010170 PASS
+option3-42 r/a=1.5 endpoint=5 count=87220/100000 p=0.8720995509892541 z=0.095110 threshold=4.58090733 abs_diff=0.00010045 PASS
+option3-42 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-42 r/a=3 endpoint=1 count=0/100000 p=0.0000000646204268 z=-0.080387 threshold=4.58090733 abs_diff=0.00000006 PASS
+option3-42 r/a=3 endpoint=2 count=401/100000 p=0.0042711564346841 z=-1.266361 threshold=4.58090733 abs_diff=0.00026116 PASS
+option3-42 r/a=3 endpoint=3 count=3565/100000 p=0.0360419056828432 z=-0.664888 threshold=4.58090733 abs_diff=0.00039191 PASS
+option3-42 r/a=3 endpoint=4 count=6033/100000 p=0.0606391036272905 z=-0.409554 threshold=4.58090733 abs_diff=0.00030910 PASS
+option3-42 r/a=3 endpoint=5 count=92660/100000 p=0.9260201043529348 z=0.700620 threshold=4.58090733 abs_diff=0.00057990 PASS
+ANALYTIC option3-42: PASS
+option3-51 r/a=1 endpoint=0 count=635/100000 p=0.0061567166786638 z=0.781377 threshold=4.58090733 abs_diff=0.00019328 PASS
+option3-51 r/a=1 endpoint=1 count=1426/100000 p=0.0139879069674091 z=0.732656 threshold=4.58090733 abs_diff=0.00027209 PASS
+option3-51 r/a=1 endpoint=2 count=2348/100000 p=0.0224844843915757 z=2.123463 threshold=4.58090733 abs_diff=0.00099552 PASS
+option3-51 r/a=1 endpoint=3 count=2826/100000 p=0.0269516878056671 z=2.554766 threshold=4.58090733 abs_diff=0.00130831 PASS
+option3-51 r/a=1 endpoint=4 count=2980/100000 p=0.0285181771596476 z=2.435285 threshold=4.58090733 abs_diff=0.00128182 PASS
+option3-51 r/a=1 endpoint=5 count=96950/100000 p=0.9707480853400172 z=-2.342145 threshold=4.58090733 abs_diff=0.00124809 PASS
+option3-51 r/a=1.5 endpoint=0 count=0/100000 p=0.0000018238123691 z=-0.427062 threshold=4.58090733 abs_diff=0.00000182 PASS
+option3-51 r/a=1.5 endpoint=1 count=190/100000 p=0.0016697080000038 z=1.783699 threshold=4.58090733 abs_diff=0.00023029 PASS
+option3-51 r/a=1.5 endpoint=2 count=823/100000 p=0.0080683729354401 z=0.571321 threshold=4.58090733 abs_diff=0.00016163 PASS
+option3-51 r/a=1.5 endpoint=3 count=1248/100000 p=0.0123846998256885 z=0.272494 threshold=4.58090733 abs_diff=0.00009530 PASS
+option3-51 r/a=1.5 endpoint=4 count=1420/100000 p=0.0139556186240344 z=0.658787 threshold=4.58090733 abs_diff=0.00024438 PASS
+option3-51 r/a=1.5 endpoint=5 count=98489/100000 p=0.9853053881864504 z=-1.091666 threshold=4.58090733 abs_diff=0.00041539 PASS
+option3-51 r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+option3-51 r/a=3 endpoint=1 count=0/100000 p=0.0000000233313445 z=-0.048303 threshold=4.58090733 abs_diff=0.00000002 PASS
+option3-51 r/a=3 endpoint=2 count=65/100000 p=0.0006298799180455 z=0.253593 threshold=4.58090733 abs_diff=0.00002012 PASS
+option3-51 r/a=3 endpoint=3 count=338/100000 p=0.0033992705031653 z=-0.104698 threshold=4.58090733 abs_diff=0.00001927 PASS
+option3-51 r/a=3 endpoint=4 count=479/100000 p=0.0048967951441267 z=-0.483795 threshold=4.58090733 abs_diff=0.00010680 PASS
+option3-51 r/a=3 endpoint=5 count=99455/100000 p=0.9943635871610710 z=0.787412 threshold=4.58090733 abs_diff=0.00018641 PASS
+ANALYTIC option3-51: PASS
+syn-neutral-tdc-ab r/a=1 endpoint=0 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=1 endpoint=1 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=1 endpoint=2 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=1 endpoint=3 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=1 endpoint=4 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=1 endpoint=5 count=0/100000 p=0.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=1.5 endpoint=0 count=27/100000 p=0.0002713013449633 z=-0.024988 threshold=4.58090733 abs_diff=0.00000130 PASS
+syn-neutral-tdc-ab r/a=1.5 endpoint=1 count=17666/100000 p=0.1757016515219818 z=0.796330 threshold=4.58090733 abs_diff=0.00095835 PASS
+syn-neutral-tdc-ab r/a=1.5 endpoint=2 count=48418/100000 p=0.4824490732211754 z=1.095409 threshold=4.58090733 abs_diff=0.00173093 PASS
+syn-neutral-tdc-ab r/a=1.5 endpoint=3 count=60854/100000 p=0.6073195283404227 z=0.790314 threshold=4.58090733 abs_diff=0.00122047 PASS
+syn-neutral-tdc-ab r/a=1.5 endpoint=4 count=64858/100000 p=0.6478642644637813 z=0.473866 threshold=4.58090733 abs_diff=0.00071574 PASS
+syn-neutral-tdc-ab r/a=1.5 endpoint=5 count=33301/100000 p=0.3333333333333333 z=-0.216899 threshold=4.58090733 abs_diff=0.00032333 PASS
+syn-neutral-tdc-ab r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-tdc-ab r/a=3 endpoint=1 count=0/100000 p=0.0000025814054770 z=-0.508076 threshold=4.58090733 abs_diff=0.00000258 PASS
+syn-neutral-tdc-ab r/a=3 endpoint=2 count=5227/100000 p=0.0524330690167617 z=-0.231347 threshold=4.58090733 abs_diff=0.00016307 PASS
+syn-neutral-tdc-ab r/a=3 endpoint=3 count=21833/100000 p=0.2182402820061923 z=0.068687 threshold=4.58090733 abs_diff=0.00008972 PASS
+syn-neutral-tdc-ab r/a=3 endpoint=4 count=29686/100000 p=0.2958456946605717 z=0.702752 threshold=4.58090733 abs_diff=0.00101431 PASS
+syn-neutral-tdc-ab r/a=3 endpoint=5 count=66553/100000 p=0.6666666666666666 z=-0.762499 threshold=4.58090733 abs_diff=0.00113667 PASS
+ANALYTIC syn-neutral-tdc-ab: PASS
+syn-charged-tdc-aa r/a=1 endpoint=0 count=539/100000 p=0.0053573864536885 z=0.141282 threshold=4.58090733 abs_diff=0.00003261 PASS
+syn-charged-tdc-aa r/a=1 endpoint=1 count=60026/100000 p=0.6012753285426713 z=-0.655743 threshold=4.58090733 abs_diff=0.00101533 PASS
+syn-charged-tdc-aa r/a=1 endpoint=2 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-charged-tdc-aa r/a=1 endpoint=3 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-charged-tdc-aa r/a=1 endpoint=4 count=100000/100000 p=1.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-charged-tdc-aa r/a=1 endpoint=5 count=0/100000 p=0.0000000000000000 z=0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-charged-tdc-aa r/a=1.5 endpoint=0 count=66094/100000 p=0.6601610754300916 z=0.520037 threshold=4.58090733 abs_diff=0.00077892 PASS
+syn-charged-tdc-aa r/a=1.5 endpoint=1 count=85604/100000 p=0.8547208799134816 z=1.183779 threshold=4.58090733 abs_diff=0.00131912 PASS
+syn-charged-tdc-aa r/a=1.5 endpoint=2 count=91863/100000 p=0.9182536033009120 z=0.434440 threshold=4.58090733 abs_diff=0.00037640 PASS
+syn-charged-tdc-aa r/a=1.5 endpoint=3 count=93865/100000 p=0.9384093816032379 z=0.316501 threshold=4.58090733 abs_diff=0.00024062 PASS
+syn-charged-tdc-aa r/a=1.5 endpoint=4 count=94508/100000 p=0.9447852575671118 z=0.408083 threshold=4.58090733 abs_diff=0.00029474 PASS
+syn-charged-tdc-aa r/a=1.5 endpoint=5 count=5222/100000 p=0.0522659589453241 z=-0.065301 threshold=4.58090733 abs_diff=0.00004596 PASS
+syn-charged-tdc-aa r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-charged-tdc-aa r/a=3 endpoint=1 count=25/100000 p=0.0002513122283568 z=-0.026179 threshold=4.58090733 abs_diff=0.00000131 PASS
+syn-charged-tdc-aa r/a=3 endpoint=2 count=11080/100000 p=0.1107809172623794 z=0.019227 threshold=4.58090733 abs_diff=0.00001908 PASS
+syn-charged-tdc-aa r/a=3 endpoint=3 count=28903/100000 p=0.2898432246989440 z=-0.566829 threshold=4.58090733 abs_diff=0.00081322 PASS
+syn-charged-tdc-aa r/a=3 endpoint=4 count=36102/100000 p=0.3615797126575648 z=-0.368392 threshold=4.58090733 abs_diff=0.00055971 PASS
+syn-charged-tdc-aa r/a=3 endpoint=5 count=60565/100000 p=0.6043875749139105 z=0.816419 threshold=4.58090733 abs_diff=0.00126243 PASS
+ANALYTIC syn-charged-tdc-aa: PASS
+syn-neutral-pdc-aa r/a=1 endpoint=0 count=9615/100000 p=0.0954902400492096 z=0.709904 threshold=4.58090733 abs_diff=0.00065976 PASS
+syn-neutral-pdc-aa r/a=1 endpoint=1 count=22427/100000 p=0.2231968731075608 z=0.814989 threshold=4.58090733 abs_diff=0.00107313 PASS
+syn-neutral-pdc-aa r/a=1 endpoint=2 count=37180/100000 p=0.3723021618447471 z=-0.328489 threshold=4.58090733 abs_diff=0.00050216 PASS
+syn-neutral-pdc-aa r/a=1 endpoint=3 count=45583/100000 p=0.4559347319077806 z=-0.066497 threshold=4.58090733 abs_diff=0.00010473 PASS
+syn-neutral-pdc-aa r/a=1 endpoint=4 count=48619/100000 p=0.4859128256294743 z=0.175370 threshold=4.58090733 abs_diff=0.00027717 PASS
+syn-neutral-pdc-aa r/a=1 endpoint=5 count=49963/100000 p=0.5000000000000000 z=-0.234009 threshold=4.58090733 abs_diff=0.00037000 PASS
+syn-neutral-pdc-aa r/a=1.5 endpoint=0 count=1/100000 p=0.0000089651813403 z=0.109292 threshold=4.58090733 abs_diff=0.00000103 PASS
+syn-neutral-pdc-aa r/a=1.5 endpoint=1 count=2932/100000 p=0.0281429469582572 z=2.250661 threshold=4.58090733 abs_diff=0.00117705 PASS
+syn-neutral-pdc-aa r/a=1.5 endpoint=2 count=17174/100000 p=0.1688624067768918 z=2.428994 threshold=4.58090733 abs_diff=0.00287759 PASS
+syn-neutral-pdc-aa r/a=1.5 endpoint=3 count=27593/100000 p=0.2748180247104934 z=0.787679 threshold=4.58090733 abs_diff=0.00111198 PASS
+syn-neutral-pdc-aa r/a=1.5 endpoint=4 count=31460/100000 p=0.3145582387464856 z=0.028441 threshold=4.58090733 abs_diff=0.00004176 PASS
+syn-neutral-pdc-aa r/a=1.5 endpoint=5 count=66751/100000 p=0.6666666666666666 z=0.565725 threshold=4.58090733 abs_diff=0.00084333 PASS
+syn-neutral-pdc-aa r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-neutral-pdc-aa r/a=3 endpoint=1 count=0/100000 p=0.0000002012822655 z=-0.141874 threshold=4.58090733 abs_diff=0.00000020 PASS
+syn-neutral-pdc-aa r/a=3 endpoint=2 count=1545/100000 p=0.0152413939307718 z=0.538455 threshold=4.58090733 abs_diff=0.00020861 PASS
+syn-neutral-pdc-aa r/a=3 endpoint=3 count=9784/100000 p=0.0964484833026853 z=1.490611 threshold=4.58090733 abs_diff=0.00139152 PASS
+syn-neutral-pdc-aa r/a=3 endpoint=4 count=14367/100000 p=0.1432969181041007 z=0.336721 threshold=4.58090733 abs_diff=0.00037308 PASS
+syn-neutral-pdc-aa r/a=3 endpoint=5 count=83306/100000 p=0.8333333333333334 z=-0.231931 threshold=4.58090733 abs_diff=0.00027333 PASS
+ANALYTIC syn-neutral-pdc-aa: PASS
+syn-charged-pdc-ab r/a=1 endpoint=0 count=6446/100000 p=0.0640363314481259 z=0.547247 threshold=4.58090733 abs_diff=0.00042367 PASS
+syn-charged-pdc-ab r/a=1 endpoint=1 count=16293/100000 p=0.1645434149297325 z=-1.376081 threshold=4.58090733 abs_diff=0.00161341 PASS
+syn-charged-pdc-ab r/a=1 endpoint=2 count=31730/100000 p=0.3175647127227123 z=-0.179816 threshold=4.58090733 abs_diff=0.00026471 PASS
+syn-charged-pdc-ab r/a=1 endpoint=3 count=43262/100000 p=0.4314659512812445 z=0.736839 threshold=4.58090733 abs_diff=0.00115405 PASS
+syn-charged-pdc-ab r/a=1 endpoint=4 count=47894/100000 p=0.4777557886450397 z=0.749703 threshold=4.58090733 abs_diff=0.00118421 PASS
+syn-charged-pdc-ab r/a=1 endpoint=5 count=49897/100000 p=0.5000000000000000 z=-0.651429 threshold=4.58090733 abs_diff=0.00103000 PASS
+syn-charged-pdc-ab r/a=1.5 endpoint=0 count=4/100000 p=0.0000140808356668 z=2.184288 threshold=4.58090733 abs_diff=0.00002592 PASS
+syn-charged-pdc-ab r/a=1.5 endpoint=1 count=2593/100000 p=0.0257984829066976 z=0.262338 threshold=4.58090733 abs_diff=0.00013152 PASS
+syn-charged-pdc-ab r/a=1.5 endpoint=2 count=16624/100000 p=0.1670338309182187 z=-0.672995 threshold=4.58090733 abs_diff=0.00079383 PASS
+syn-charged-pdc-ab r/a=1.5 endpoint=3 count=29938/100000 p=0.3009022739021694 z=-1.049569 threshold=4.58090733 abs_diff=0.00152227 PASS
+syn-charged-pdc-ab r/a=1.5 endpoint=4 count=35507/100000 p=0.3575271565606358 z=-1.621253 threshold=4.58090733 abs_diff=0.00245716 PASS
+syn-charged-pdc-ab r/a=1.5 endpoint=5 count=61847/100000 p=0.6151186081740952 z=2.178123 threshold=4.58090733 abs_diff=0.00335139 PASS
+syn-charged-pdc-ab r/a=3 endpoint=0 count=0/100000 p=0.0000000000000000 z=-0.000000 threshold=4.58090733 abs_diff=0.00000000 PASS
+syn-charged-pdc-ab r/a=3 endpoint=1 count=0/100000 p=0.0000003242590996 z=-0.180072 threshold=4.58090733 abs_diff=0.00000032 PASS
+syn-charged-pdc-ab r/a=3 endpoint=2 count=1782/100000 p=0.0176544659466455 z=0.397492 threshold=4.58090733 abs_diff=0.00016553 PASS
+syn-charged-pdc-ab r/a=3 endpoint=3 count=12316/100000 p=0.1227119075802583 z=0.431870 threshold=4.58090733 abs_diff=0.00044809 PASS
+syn-charged-pdc-ab r/a=3 endpoint=4 count=19102/100000 p=0.1898773374544783 z=0.921311 threshold=4.58090733 abs_diff=0.00114266 PASS
+syn-charged-pdc-ab r/a=3 endpoint=5 count=77426/100000 p=0.7757795681004797 z=-1.152162 threshold=4.58090733 abs_diff=0.00151957 PASS
+ANALYTIC syn-charged-pdc-ab: PASS
+test analytic_family ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.95s
+

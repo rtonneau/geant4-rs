@@ -511,3 +511,13 @@ binomial errors, absolute effect <0.01 and the adjusted confidence interval
 strictly inside (-0.01,+0.01). Precision expansion alone permits a new complete
 run with a new filename/provenance. Missing data remain REQUESTED. This is
 source-fidelity evidence, separate from the Brownian physical-law verdict.
+
+The consumer selects a precision level with `R04_GEANT4_PAIRS` (default
+`100000`), restricted to 100000, 200000, 400000, 800000 and 1000000. It
+expects `pair_matrix_irt_r04_n<N>.csv` and
+`provenance_r04_pair_matrix_n<N>.toml`, and validates the level-specific
+command, counts, markers, source-ordered Geant4 configuration names and hash.
+For example, after an independently authorized and fully validated 200000-pair
+run, set `R04_GEANT4_PAIRS=200000` and invoke the ignored consumer with
+`cargo test --release -p g4-chemistry --test geant4_pair_r04 r04_option3_irt_matches_geant4 -- --ignored --exact --nocapture`.
+The existence of a supported filename does not authorize or establish a run.

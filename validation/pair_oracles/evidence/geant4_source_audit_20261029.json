@@ -1,0 +1,16 @@
+{
+  "reference_version": "11.4.1",
+  "reference_tag": "v11.4.1",
+  "reference_tag_commit": "f01f313f122a19ae77c6f27192c9464ba0279b5e",
+  "source_root_expression": "${DEV_DIR}/GEANT4/geant4-v11.4.1-source/geant4-v11.4.1",
+  "source_file": "source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc",
+  "source_sha256": "cdd2bec595262ac672f4d5d5f4b15b28d04f06d11579aca254692ca6e23b4686",
+  "matches_v11_4_1_tag_after_line_ending_normalization": true,
+  "source_and_install_version_headers": 1141,
+  "initial_generic_checkout": {
+    "head": "f3d5293d384757b8a228a099898b2b87cfa4023c",
+    "version": "11.5 beta 01",
+    "used_as_final_reference": false
+  },
+  "note": "Rechecked the actual 11.4.1 source after discovering generic checkout was newer. No reference source modifications or runs. Checked TDC strict contact/mapping and PDC coefficients against release source."
+}

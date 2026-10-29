@@ -1,0 +1,43 @@
+{
+  "cargo_fmt_all_check": {
+    "exit_code": 0,
+    "log": ".scratch\\tests\\2026-10-29-r04-independent\\fmt.log"
+  },
+  "cargo_clippy_workspace_all_targets_deny_warnings": {
+    "exit_code": 0,
+    "log": ".scratch\\tests\\2026-10-29-r04-independent\\clippy-final.log"
+  },
+  "cargo_test_workspace": {
+    "exit_code": 0,
+    "passed": 491,
+    "failed": 0,
+    "ignored": 20,
+    "result_blocks": 57,
+    "log": ".scratch\\tests\\2026-10-29-r04-independent\\workspace-tests.log"
+  },
+  "python_coulomb_pde_unittest": {
+    "passed": 7,
+    "failed": 0
+  },
+  "release_pair_analytic": {
+    "passed": 3,
+    "failed": 0,
+    "endpoints": 216,
+    "log": ".scratch\\tests\\2026-10-29-r04-independent\\analytic.log"
+  },
+  "release_pair_brownian_unit_checks": {
+    "passed": 10,
+    "failed": 0,
+    "excluded_scientific_experiments": [
+      "neutral_brownian",
+      "charged_brownian"
+    ]
+  },
+  "log_sha256": {
+    "fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "clippy-final.log": "b6107986bdd551cdb52978fcb38a4431b4fb4a7d92722c4ee4081315dad44b5b",
+    "workspace-tests.log": "53345ea0b32e904af8c7073fea66b66c96bf072684e434615acaf3fc7ace4e5a",
+    "analytic.log": "1229ee7b507f6dd8d10541c8f03c16592036e198baf1da357fcbc64a4e9535ba"
+  },
+  "retained_log_directory": "validation/pair_oracles/evidence/checks_20261029"
+}

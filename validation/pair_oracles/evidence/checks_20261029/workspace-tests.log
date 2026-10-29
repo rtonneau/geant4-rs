@@ -1,0 +1,861 @@
+   Compiling g4-core v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-core)
+   Compiling g4-chemistry v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-chemistry)
+   Compiling g4-data v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-data)
+   Compiling g4-physics v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-physics)
+   Compiling g4-sim v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-sim)
+    Finished `test` profile [optimized + debuginfo] target(s) in 23.21s
+     Running unittests src\lib.rs (target\debug\deps\g4_chemistry-21f86edf00c21dec.exe)
+
+running 30 tests
+test displacer::tests::branch_probability_boundary_is_strict ... ok
+test displacer::tests::radial_distribution_uses_four_uniforms_and_sigma_over_root_three ... ok
+test displacer::tests::dissociative_attachment_leaves_the_hydroxide_in_place ... ok
+test displacer::tests::ionisation_draw_count_and_common_mother_shift ... ok
+test params::tests::embedded_parameters_load ... ok
+test data_hash_tests::option3_fingerprint_includes_reactions_after_the_existing_three_files ... ok
+test params::tests::invalid_parameters_are_rejected ... ok
+test channels::tests::embedded_table_loads_with_all_states ... ok
+test reactions::tests::bulk_participants_do_not_parse_as_mobile_species ... ok
+test channels::tests::selection_follows_the_cpp_scan_and_clamps_to_the_last_channel ... ok
+test channels::tests::legacy_product_aliases_are_rejected ... ok
+test reactions::tests::balanced_duplicate_mobile_pair_is_rejected_as_a_duplicate ... ok
+test channels::tests::invalid_data_are_rejected ... ok
+test channels::tests::unknown_indices_are_errors ... ok
+test engine::identity_tests::species_input_order_does_not_change_identity ... ok
+test species_types::tests::canonical_parser_is_strict_and_legacy_parser_accepts_ascii_tags ... ok
+test species_types::tests::chemistry_names_are_unique_and_round_trip ... ok
+test engine::identity_tests::identity_tracks_all_constructed_inputs_and_source_origin ... ok
+test engine::identity_tests::invalid_custom_values_are_rejected_and_default_rng_is_unchanged ... ok
+test species_types::tests::csv_row_matches_the_header ... ok
+test reactions::tests::embedded_table_loads_all_source_ordered_reactions ... ok
+test species::tests::embedded_table_loads_and_converts_units ... ok
+test species::tests::missing_or_duplicate_species_are_rejected ... ok
+test species_types::tests::exact_chemistry_names_round_trip_in_geant4_order ... ok
+test species_types::tests::geant4_molecule_names_map_to_species ... ok
+test species::tests::legacy_species_aliases_are_rejected ... ok
+test reactions::tests::mobile_pair_lookup_is_unordered ... ok
+test reactions::tests::conservation_uses_implicit_water_and_only_the_exact_anomaly_is_allowed ... ok
+test reactions::tests::embedded_rates_are_strict_even_when_custom_rates_are_valid ... ok
+test reactions::tests::malformed_ids_rates_units_tags_and_duplicate_pairs_are_rejected ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\channel_statistics.rs (target\debug\deps\channel_statistics-a158ce1eca3bc1a1.exe)
+
+running 6 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test unknown_indices_are_errors_not_panics ... ok
+test every_cpp_channel_produces_its_products_at_one_picosecond ... ok
+test single_channel_states_are_deterministic_and_the_event_maps_to_the_right_state ... ok
+test relaxation_channels_book_the_excitation_energy_of_their_level ... ok
+test the_selected_channel_follows_the_table ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+     Running tests\charged_pdc.rs (target\debug\deps\charged_pdc-097fa5e800bfba6e.exe)
+
+running 9 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test rejection_exhaustion_is_a_typed_failure_and_the_last_attempt_can_succeed ... ok
+test both_charge_signs_and_aa_are_exchange_and_rng_stream_reproducible ... ok
+test singular_and_unrepresentable_selected_arithmetic_is_typed_never_nonreaction ... ok
+test neutral_limits_and_identical_reactant_factor_match_literal_source_anchors ... ok
+test all_eleven_ids_match_independent_source_formula_and_acceptance_anchors ... ok
+test no_reaction_gate_uses_transformed_separation_and_preserves_the_far_field ... ok
+test contact_exact_radius_and_adjacent_radii_keep_the_draw_contract_for_both_signs ... ok
+test fifty_five_registered_cdf_and_infinite_time_mass_checks ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+
+     Running tests\cpp_crosscheck.rs (target\debug\deps\cpp_crosscheck-1464984c0defb744.exe)
+
+running 10 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test species_table_equals_the_extraction ... ok
+test displacer_constants_equal_the_extraction ... ok
+test penetration_law_equals_the_extraction_and_the_hand_value ... ok
+test physics_to_orbit_mapping_is_four_minus_index ... ok
+test every_channel_balances_as_in_the_hand_table ... ok
+test recombination_parameters_and_onsager_radius_equal_the_hand_values ... ok
+test channel_table_equals_the_extraction ... ok
+test reaction_conservation_equals_the_independent_hand_evaluation ... ok
+test reaction_table_equals_the_cpp_extraction ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\diffusion.rs (target\debug\deps\diffusion-c99d230121e163dd.exe)
+
+running 7 tests
+test invalid_inputs_fail_before_drawing ... ok
+test overflowed_scale_and_output_are_typed_errors ... ok
+test same_seed_preserves_translation ... ok
+test three_axes_use_two_gaussian_pairs_and_four_uniform_draws ... ok
+test zero_time_or_diffusivity_preserves_bits_and_rng_state ... ok
+test pair_uses_molecule_identity_and_allows_same_species ... ok
+test fixed_seed_samples_have_expected_variance_and_isotropy ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\displacement_statistics.rs (target\debug\deps\displacement_statistics-5ce684f59fccf8cc.exe)
+
+running 2 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test mean_square_displacements_match_the_hand_values ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.63s
+
+     Running tests\geant4_pair_r04.rs (target\debug\deps\geant4_pair_r04-be64b0dcfd182728.exe)
+
+running 8 tests
+test r04_option3_irt_matches_geant4 ... ignored, RR-004 REQUESTED: complete user-run CSV and provenance have not been committed
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test tests::bias_and_underpowered_equivalence_are_rejected ... ok
+test tests::rejects_invalid_counts_and_provenance ... ok
+test tests::rejects_missing_duplicate_unordered_or_wrong_settings ... ok
+test tests::rejects_wrong_or_reordered_source_reactants ... ok
+test tests::accepts_complete_matrix_and_provenance ... ok
+test tests::supports_only_preregistered_precision_levels ... ok
+
+test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.65s
+
+     Running tests\geant4_two_body.rs (target\debug\deps\geant4_two_body-ffd20de68ba1024a.exe)
+
+running 6 tests
+test m7_irt_survival_matches_geant4_sbs ... ignored, RR-003: awaiting committed two_body_h_h.csv and provenance_m7_two_body_h_h.toml
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test rejects_incomplete_counts_or_completion_marker ... ok
+test accepts_exact_six_row_csv_and_matching_provenance ... ok
+test rejects_missing_or_duplicate_tau_rows ... ok
+test rejects_mismatched_provenance_contract ... ok
+
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\history.rs (target\debug\deps\history-74ca3a65570e119a.exe)
+
+running 14 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test solvation_creates_an_e_aq_at_the_event_position_without_random_numbers ... ok
+test an_auto_ionisation_electron_is_not_a_candidate_in_the_pass_that_creates_it ... ok
+test the_event_list_is_not_modified ... ok
+test recombination_decision_follows_the_onsager_probability ... ok
+test competing_holes_follow_the_geant4_doit_order ... ok
+test a_hole_whose_electron_was_taken_is_tested_again_in_the_next_pass ... ok
+test species_are_born_at_one_picosecond_and_creation_order_is_solvation_first ... ok
+test draw_counts_per_event_follow_the_documented_order ... ok
+test the_nearest_alive_electron_is_consumed_first ... ok
+test search_radius_is_ten_onsager_radii_and_a_coincident_electron_always_recombines ... ok
+test water_states_follow_the_geant4_configuration_order ... ok
+test the_recombination_switch_changes_only_the_decay_state_that_is_scanned ... ok
+test species_lists_are_bitwise_identical_for_any_thread_count ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests\irt_pdc.rs (target\debug\deps\irt_pdc-ddac6a9062f96e56.exe)
+
+running 14 tests
+test option3_oh_h_uses_the_stored_contact_probability ... ok
+test large_separation_can_return_physical_nonreaction_before_forming_the_envelope ... ok
+test zero_distance_retains_the_source_point_zero_zero_one_nm_substitution ... ok
+test overlap_consumes_only_the_source_contact_probability_draw ... ok
+test rejected_proposal_retries_without_repeating_the_ultimate_gate ... ok
+test nonreaction_gate_includes_observed_over_diffusion_rate ... ok
+test unrepresentable_selected_time_is_a_domain_error ... ok
+test lower_envelope_proposal_and_acceptance_are_distinct_draws ... ok
+test upper_envelope_acceptance_scales_by_x_over_m ... ok
+test inverse_a_squared_envelope_applies_for_small_gaps ... ok
+test extreme_proposals_preserve_tails_without_erfcx_overflow_or_cancellation ... ok
+test the_ten_thousandth_proposal_may_still_succeed ... ok
+test equality_enters_the_continuum_and_has_nonreaction_mass ... ok
+test ten_thousand_rejections_are_an_error_never_physical_nonreaction ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\irt_tdc.rs (target\debug\deps\irt_tdc-16f7a7906a797575.exe)
+
+running 18 tests
+test first_order_or_bulk_reactions_cannot_be_supplied_to_the_pair_sampler ... ok
+test a_large_finite_separation_does_not_overflow_the_distance_norm ... ok
+test above_ultimate_probability_is_no_reaction_with_one_draw ... ok
+test charged_pdc_contact_is_supported_and_consumes_one_probability_draw ... ok
+test aa_inverse_first_passage_uses_relative_diffusion_and_one_draw ... ok
+test invalid_species_or_coordinates_fail_before_drawing ... ok
+test neutral_equality_uses_the_continuum_draw_and_has_zero_elapsed_time ... ok
+test exact_coincidence_preserves_the_sources_one_picometre_substitution ... ok
+test a_molecule_cannot_react_with_itself_even_if_its_record_differs ... ok
+test charged_ab_uses_the_source_effective_distance_in_probability_and_time ... ok
+test repulsive_transform_does_not_add_a_second_contact_branch ... ok
+test charged_equality_is_not_the_strict_contact_branch ... ok
+test endpoint_adjacent_draws_produce_finite_times_on_both_sides_of_the_tail ... ok
+test unrepresentable_finite_reaction_time_is_an_error_not_no_reaction ... ok
+test unrepresentable_separation_is_an_error_not_physical_nonreaction ... ok
+test strict_contact_returns_immediate_without_a_draw_before_the_charge_transform ... ok
+test outcomes_are_elapsed_and_invariant_under_ab_or_aa_exchange ... ok
+test fixed_seed_nonoverlap_cdf_includes_the_probability_mass_at_infinity ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+     Running tests\kinetics_ode.rs (target\debug\deps\kinetics_ode-141f021ba8919d0d.exe)
+
+running 1 test
+test option3_reaction_2_ssa_agrees_with_lsoda_at_360_microseconds ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests\network_compilation.rs (target\debug\deps\network_compilation-fb4384c509bd4242.exe)
+
+running 6 tests
+test all_source_entries_compile_without_loss_or_reordering ... ok
+test custom_positive_rates_survive_compilation_without_mutating_source ... ok
+test zero_custom_unary_channels_remain_present_and_explicitly_disabled ... ok
+test negative_and_nonfinite_rates_and_unknown_products_are_rejected ... ok
+test compilation_checks_numeric_species_inputs_and_arithmetic_before_sampling ... ok
+test source_signatures_and_execution_orders_cannot_be_reinterpreted ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\pair_analytic.rs (target\debug\deps\pair_analytic-9cfc03ec59c48381.exe)
+
+running 3 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test rejects_deliberately_slow_sampler ... ok
+test analytic_family ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.19s
+
+     Running tests\pair_brownian.rs (target\debug\deps\pair_brownian-d35f62ecc8cb3637.exe)
+
+running 12 tests
+test escape_bounds_keep_unresolved_trajectories_interval_censored ... ok
+test pair_oracle::stopped::tests::combine_rejects_overflow_and_invalid_counts ... ok
+test pair_oracle::stopped::tests::interval_contains_censoring_and_band_adds_sampling_error ... ok
+test pair_oracle::experiment::law_gate_distinguishes_precision_from_discrepancy ... ok
+test pair_oracle::stopped::tests::contact_and_empty_ranges_are_exact ... ok
+test pair_oracle::stopped::tests::longer_tail_preserves_finite_observations_and_resolves_only_survivors ... ok
+test pair_oracle::stopped::tests::escape_remains_censored_while_finite_observations_continue ... ok
+test neutral_precision_gate_rejects_underpowered_agreement ... ok
+test pair_oracle::stopped::tests::batches_conserve_mass_and_preserve_finite_streams ... ok
+test charged_physical_drift_and_boundary_anchors ... ok
+test neutral_brownian ... ok
+test charged_brownian ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 39.57s
+
+     Running tests\pair_case_matrix.rs (target\debug\deps\pair_case_matrix-56be4fd18b153f65.exe)
+
+running 2 tests
+test preregistered_grid_and_statistical_contract_are_fixed ... ok
+test literal_cases_match_compiled_option3_channels ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\reaction_coverage.rs (target\debug\deps\reaction_coverage-c1065c4ee7888827.exe)
+
+running 2 tests
+test every_channel_balances_with_bulk_exchange_and_implicit_water_except_exact_53 ... ok
+test matrix_covers_every_descriptor_and_preserves_ordered_products ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\reaction_parameters.rs (target\debug\deps\reaction_parameters-b5cb4344a7f17515.exe)
+
+running 10 tests
+test charged_pdc_uses_electrostatic_effective_contact_radius ... ok
+test registered_oh_h_keeps_observed_activation_and_diffusion_rates_distinct ... ok
+test pdc_at_or_above_diffusion_limit_is_rejected ... ok
+test registered_h_h_uses_single_species_radius_but_relative_diffusion ... ok
+test pdc_aa_halves_diffusion_rate_and_is_invariant_under_ab_exchange ... ok
+test registered_h3op_ohm_retains_signed_onsager_and_transforms_distance_only ... ok
+test invalid_numeric_inputs_and_zero_relative_diffusion_are_typed ... ok
+test neutral_ab_and_charged_aa_follow_constructor_and_charge_sign ... ok
+test arithmetic_overflow_underflow_and_effective_distance_domain_are_errors ... ok
+test unsupported_order_bulk_and_inconsistent_species_are_typed ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\reaction_placement.rs (target\debug\deps\reaction_placement-0a346917847f6619.exe)
+
+running 10 tests
+test coincident_equal_time_parents_get_source_z_offset_without_rng ... ok
+test coincident_and_axial_parents_retain_clhep_zero_azimuth ... ok
+test one_immobile_parent_uses_its_site_without_brownian_sampling ... ok
+test invalid_inputs_and_ambiguous_or_unrepresentable_branches_are_typed_errors ... ok
+test gaussian_width_retains_native_mm_scale_and_is_not_square_rooted ... ok
+test positive_delay_matches_literal_native_unit_formula_for_unequal_diffusion ... ok
+test zero_product_unary_channels_return_no_positions_or_rng_draws_for_products ... ok
+test equal_time_places_zero_one_two_three_products_in_source_order ... ok
+test all_72_channels_preserve_products_in_both_elapsed_time_branches ... ok
+test placement_rejects_wrong_species_order_kind_and_disabled_channels ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests\sbs.rs (target\debug\deps\sbs-91f44d155bde1814.exe)
+
+running 11 tests
+test capped_bridge_accepts_and_rejects_using_source_post_step_distance ... ok
+test capped_endpoint_contact_skips_bridge_draw ... ok
+test initial_overlap_and_equality_are_immediate_without_draws ... ok
+test exact_endpoint_equality_is_contact_without_a_bridge_draw ... ok
+test stationary_partner_consumes_no_diffusion_draws ... ok
+test uncapped_step_diffuses_independently_and_only_checks_endpoint_contact ... ok
+test observation_boundary_equality_invokes_bridge_but_endpoint_contact_skips_it ... ok
+test encounter_constant_uses_eight_and_reduces_to_32_d_for_hydrogen ... ok
+test nonrepresentable_adaptive_steps_are_errors_without_draws ... ok
+test zero_observation_time_is_a_noop_for_a_separated_pair ... ok
+test invalid_inputs_are_rejected_before_any_rng_draw ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\sbs_validation.rs (target\debug\deps\sbs_validation-bcef88a70b0bab9e.exe)
+
+running 2 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test h_h_irt_and_source_faithful_sbs_record_the_early_discrepancy ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.54s
+
+     Running tests\special_functions.rs (target\debug\deps\special_functions-c4d64981aad49a76.exe)
+
+running 6 tests
+test boundaries_are_explicit_and_invalid_inputs_are_typed_errors ... ok
+test erfc_central_values ... ok
+test inverse_matches_independent_high_precision_values ... ok
+test erfc_matches_independent_high_precision_values ... ok
+test symmetry_and_round_trips ... ok
+test functions_are_monotone_across_central_values_tails_and_interval_boundaries ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests\species_interface.rs (target\debug\deps\species_interface-c83500edb1ce593f.exe)
+
+running 3 tests
+test chemistry_root_preserves_all_species_names_and_order ... ok
+test chemistry_root_preserves_strict_and_legacy_parsing ... ok
+test chemistry_root_preserves_species_csv ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\thread_independence.rs (target\debug\deps\thread_independence-33abd4c5c14d5aa5.exe)
+
+running 2 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test serialized_outcomes_and_diffused_positions_are_identical_with_1_2_8_threads ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\two_body_validation.rs (target\debug\deps\two_body_validation-32373bef2f5981f2.exe)
+
+running 7 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test same_identity_is_rejected_even_when_the_species_or_position_differs ... ok
+test charged_law_uses_geant4_effective_distance_after_the_raw_contact_test ... ok
+test extreme_draws_and_separations_preserve_finite_tails_or_typed_errors ... ok
+test aa_exchange_preserves_outcome_and_elapsed_time_bits ... ok
+test contact_uses_strict_overlap_and_keeps_pdc_equality_in_the_continuum ... ok
+test v9_eighteen_cdf_survival_points_and_three_no_reaction_masses ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running tests\unary_clocks.rs (target\debug\deps\unary_clocks-f4459c5132e871c0.exe)
+
+running 4 tests
+test disabled_clock_preserves_descriptor_and_does_not_draw ... ok
+test all_20_source_channels_have_independent_seconds_based_clock_anchors ... ok
+test invalid_rates_and_unrepresentable_delays_are_typed_errors ... ok
+test competing_channels_match_total_hazard_and_branching_per_family ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running unittests src\lib.rs (target\debug\deps\g4_core-60327b5f6af9473e.exe)
+
+running 49 tests
+test manifest::tests::manifest_hash_is_sha256_of_its_text ... ok
+test manifest::tests::parses_dataset_version_and_files ... ok
+test manifest::tests::rejects_malformed_checksum_and_duplicates ... ok
+test manifest::tests::manifest_paths_are_portable_relative_paths ... ok
+test penetration::tests::r_mean_is_zero_up_to_a_tenth_of_an_ev_and_positive_above ... ok
+test provenance::tests::synthetic_metadata_has_no_manifest_claim ... ok
+test provenance::tests::records_data_reference_seed_and_toolchain ... ok
+test provenance::tests::serialises_to_json_with_stable_field_names ... ok
+test provenance::tests::custom_chemistry_has_its_own_semantic_identity ... ok
+test provenance::tests::unavailable_build_evidence_serializes_as_null ... ok
+test provenance::tests::lockfile_and_policy_changes_change_identity ... ok
+test physchem::tests::csv_row_matches_the_header_columns_and_round_trips ... ok
+test rng::tests::different_master_seeds_differ ... ok
+test provenance::tests::verified_input_records_loaded_file_hashes_without_data_root ... ok
+test rng::tests::golden_values_pin_generator_choice ... ok
+test rng::tests::history_id_beyond_62_bits_is_rejected ... ok
+test rng::tests::open01_excludes_both_endpoints ... ok
+test rng::tests::same_seed_history_stage_repeats_exactly ... ok
+test rng::tests::stream_is_independent_of_creation_order ... ok
+test rng::tests::splitmix64_matches_reference_vectors ... ok
+test sha256::tests::abc ... ok
+test sha256::tests::empty_message ... ok
+test rng::tests::mean_of_uniform_samples_is_one_half ... ok
+test sha256::tests::padding_boundaries_55_56_64_bytes ... ok
+test sha256::tests::two_block_message ... ok
+test units::tests::area_prefixes ... ok
+test units::tests::diffusivity_from_si ... ok
+test units::tests::length_prefixes ... ok
+test units::tests::energy_range_rejects_inverted_bounds ... ok
+test manifest::tests::verify_reports_missing_file ... ok
+test manifest::tests::verify_accepts_matching_file ... ok
+test units::tests::rate_constant_from_molar ... ok
+test units::tests::same_dimension_arithmetic ... ok
+test manifest::tests::verify_detects_changed_content_of_same_size ... ok
+test units::tests::energy_prefixes ... ok
+test manifest::tests::captured_bytes_are_checked_without_reopening_the_file ... ok
+test units::tests::length_round_trips ... ok
+test units::tests::energy_range_enforces_bounds_without_extrapolation ... ok
+test units::tests::time_prefixes ... ok
+test units::tests::energy_round_trips ... ok
+test vec3::tests::arithmetic_is_componentwise ... ok
+test vec3::tests::dot_and_cross_follow_right_hand_rule ... ok
+test vec3::tests::norm_and_normalised ... ok
+test vec3::tests::zero_vector_cannot_be_normalised ... ok
+test units::tests::time_round_trips ... ok
+test sha256::tests::one_million_a_fed_in_odd_chunks ... ok
+test manifest::tests::verify_detects_line_ending_conversion_by_size ... ok
+test rng::tests::uniform_samples_pass_kolmogorov_smirnov ... ok
+test rng::tests::streams_are_disjoint_across_histories_and_stages ... ok
+
+test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\committed_data.rs (target\debug\deps\committed_data-a56f253c97388d24.exe)
+
+running 3 tests
+test committed_manifest_describes_g4emlow_8_8 ... ok
+test a_tampered_copy_is_detected ... ok
+test committed_data_files_match_manifest_checksums ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests\thread_independence.rs (target\debug\deps\thread_independence-805ebd03485eb38c.exe)
+
+running 2 tests
+test per_history_results_are_bitwise_identical_for_any_thread_count ... ok
+test fixed_order_reduction_is_reproducible_across_thread_counts ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src\lib.rs (target\debug\deps\g4_data-d8648c462c299089.exe)
+
+running 43 tests
+test blocks::tests::angle_at_last_energy_and_p_one_use_continuity ... ok
+test blocks::tests::angle_exact_node_and_hand_values ... ok
+test blocks::tests::angle_rejects_out_of_range_arguments ... ok
+test blocks::tests::inverse_map_keeps_last_w_of_each_probability_plateau ... ok
+test blocks::tests::from_blocks_rejects_missing_and_extra_value_columns ... ok
+test blocks::tests::dcs_table_parses_and_exposes_blocks ... ok
+test blocks::tests::angular_table_validation ... ok
+test blocks::tests::closed_shell_scales_from_zero_and_gaps_fall_through ... ok
+test blocks::tests::groups_blocks_and_rejects_bad_layout ... ok
+test blocks::tests::ionisation_cdf_validation_and_arguments ... ok
+test blocks::tests::transferred_energy_between_two_blocks_is_log_lin_in_energy ... ok
+test blocks::tests::narrow_block_endpoint_is_a_typed_error ... ok
+test interp::tests::lin_lin_hand_values ... ok
+test parse::tests::empty_input_is_an_error ... ok
+test interp::tests::quad_lin_lin_is_bilinear ... ok
+test interp::tests::log_lin_falls_back_to_linear_when_a_value_is_zero ... ok
+test parse::tests::errors_report_file_and_line ... ok
+test parse::tests::comments_and_blank_lines_are_skipped ... ok
+test datadir::tests::invalid_roots_are_errors_without_fallback ... ok
+test interp::tests::log_lin_is_geometric_mean_at_midpoint ... ok
+test parse::tests::geant4_number_formats ... ok
+test xs::tests::exact_nodes_and_scale ... ok
+test parse::tests::parses_lf_crlf_and_lone_cr_identically ... ok
+test xs::tests::interior_zero_node_reproduces_geant4_floor ... ok
+test interp::tests::log_log_is_geometric_mean_at_log_midpoint ... ok
+test xs::tests::lin_lin_matches_sanche_formula ... ok
+test xs::tests::log_log_hand_checked_midpoint ... ok
+test parse::tests::tabs_spaces_mixed_and_no_trailing_newline ... ok
+test xs::tests::bad_component_index ... ok
+test xs::tests::rejects_nonfinite_raw_values_scaling_overflow_and_sum_overflow ... ok
+test xs::tests::narrow_endpoint_and_overflowing_interpolation_return_typed_errors ... ok
+test xs::tests::rejects_structurally_invalid_tables ... ok
+test datadir::tests::missing_file_is_a_typed_error ... ok
+test xs::tests::zero_energy_node_is_floored_like_geant4 ... ok
+test xs::tests::out_of_range_is_a_typed_error_never_clamped ... ok
+test blocks::tests::narrow_block_upper_endpoints_never_panic ... ok
+test blocks::tests::malformed_block_shapes_are_typed_errors ... ok
+test datadir::tests::precedence_explicit_then_env_then_repo ... ok
+test xs::tests::narrow_upper_endpoints_never_panic ... ok
+test xs::tests::queries_return_finite_nonnegative_values_or_typed_errors ... ok
+test xs::tests::overflow_is_rejected_for_finite_inputs ... ok
+test blocks::tests::angle_is_a_monotone_function_of_cumulative_probability ... ok
+test blocks::tests::parsing_ignores_line_ending_and_separator ... ok
+
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests\real_tables.rs (target\debug\deps\real_tables-5031fa9a75e1f3f4.exe)
+
+running 23 tests
+test catalog_lists_exactly_the_manifest_files ... ok
+test champion_elastic_nodes_scale_and_hand_checked_interpolation ... ok
+test out_of_range_energies_are_typed_errors_on_real_tables ... ok
+test sanche_is_linear_in_energy ... ok
+test htran_first_node_is_not_zero_degrees ... ok
+test crlf_and_lf_versions_of_real_files_give_identical_tables ... ok
+test champion_angle_hand_checked ... ok
+test snapshot_applies_catalog_shape_checks_to_verified_bytes ... ok
+test born_transferred_energy_hand_checked ... ok
+test born_k_shell_closed_below_threshold_scales_from_zero ... ok
+test tables_are_shareable_read_only_across_threads ... ok
+test missing_and_tampered_files_are_detected ... ok
+test real_angular_cdfs_give_monotone_angles ... ok
+test threshold_zeros_follow_the_geant4_floor ... ok
+test units_of_the_other_scales_are_applied ... ok
+test row_counts_match_the_files ... ok
+test tables_cover_their_consumers_windows_except_melton ... ok
+test catalog_rejects_missing_and_extra_cross_section_components ... ok
+test every_cumulative_table_is_monotone ... ok
+test all_20_files_load_after_checksum_verification ... ok
+test snapshot_refuses_a_wrong_manifest_and_unlisted_table ... ok
+test snapshot_verifies_missing_and_corrupt_files_unused_by_electron_option2 ... ok
+test snapshot_identity_survives_relocation_but_changed_bytes_require_new_identity ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+     Running unittests src\lib.rs (target\debug\deps\g4_physics-ec8dd2a41dabea0a.exe)
+
+running 29 tests
+test direction::tests::angle_to_axis_is_the_requested_polar_angle ... ok
+test direction::tests::orthogonal_follows_the_clhep_branches ... ok
+test direction::tests::rotate_uz_preserves_norm_and_maps_z_to_axis ... ok
+test models::born_angle::tests::above_200_ev_follows_the_kinematic_formula_without_draws ... ok
+test models::born_angle::tests::between_50_and_200_ev_mixes_isotropic_and_forward_cone ... ok
+test direction::tests::rotate_uz_handles_the_polar_axes ... ok
+test models::born_angle::tests::the_boundaries_belong_to_the_documented_branches ... ok
+test models::born_angle::tests::below_50_ev_is_isotropic_with_one_draw ... ok
+test models::born_angle::tests::direction_makes_the_sampled_angle_with_the_primary ... ok
+test sampling::tests::gaussian_pair_consumes_two_draws_and_maps_them_as_documented ... ok
+test table::tests::gap_between_models_selects_nothing ... ok
+test models::select::tests::selection_walks_from_the_last_component ... ok
+test models::select::tests::zero_components_are_never_selected_and_all_zero_falls_back_to_zero ... ok
+test table::tests::first_model_owns_its_lower_bound_and_nothing_below ... ok
+test table::tests::last_model_owns_its_upper_bound_and_nothing_above ... ok
+test models::select::tests::selection_frequencies_equal_partial_over_total ... ok
+test direction::tests::orthogonal_is_orthogonal_and_not_always_unit ... ok
+test table::tests::invalid_macroscopic_components_and_overflowed_total_are_errors ... ok
+test table::tests::lower_model_owns_the_shared_boundary ... ok
+test table::tests::overlapping_or_empty_chains_are_rejected ... ok
+test table::tests::single_model_is_a_closed_window ... ok
+test table::tests::three_touching_models_each_own_their_upper_bound ... ok
+test transport::tests::compensated_sum_beats_naive_summation ... ok
+test transport::tests::ledger_residual_and_deposit ... ok
+test transport::tests::process_selection_partitions_the_total ... ok
+test transport::tests::zero_cross_sections_are_skipped ... ok
+test water::tests::structure_energies_match_geant4_and_are_ascending ... ok
+test water::tests::water_number_density_is_consistent_with_the_born_table_scale ... ok
+test water::tests::water_number_density_matches_hand_computation ... ok
+
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cross_sections.rs (target\debug\deps\cross_sections-f00127159bd777e8.exe)
+
+running 6 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test common::self_tests::ks_pvalue_matches_known_values ... ok
+test water_density_enters_as_molecules_per_nm3 ... ok
+test ionisation_partial_cross_sections_equal_the_hand_computation ... ok
+test cross_sections_at_table_nodes_are_the_file_values_times_the_scale ... ok
+test macroscopic_cross_sections_equal_the_hand_computation ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\final_state.rs (target\debug\deps\final_state-33ee7c92cdf9627a.exe)
+
+running 10 tests
+test common::self_tests::ks_pvalue_matches_known_values ... ok
+test both_rotations_agree_along_the_coordinate_axes ... ok
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test k_shell_ionisation_deposits_the_whole_binding_energy_and_is_flagged ... ok
+test ionisation_below_the_binding_energy_returns_untouched ... ok
+test excitation_with_non_positive_remainder_changes_nothing_but_is_flagged ... ok
+test negative_transfer_is_clamped_to_a_zero_energy_electron_that_is_not_created ... ok
+test shell_two_below_19_ev_is_redrawn_until_another_shell_is_drawn ... ok
+test geant4_rotation_shrinks_the_angle_by_the_orthogonal_axis_norm_exact_does_not ... ok
+test primary_direction_follows_momentum_conservation_and_delta_angle_follows_born ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests\low_energy.rs (target\debug\deps\low_energy-2a40842f060b6b49.exe)
+
+running 21 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test common::self_tests::ks_pvalue_matches_known_values ... ok
+test melton_construction_rejects_a_non_zero_tail_because_the_clamp_would_extrapolate ... ok
+test sanche_zero_floor_is_one_e_minus_30_in_geant4_units ... ok
+test melton_absorbs_the_electron_depositing_its_whole_kinetic_energy_and_draws_nothing ... ok
+test melton_cross_section_at_every_interior_node_is_the_file_value_times_the_scale ... ok
+test melton_window_boundaries_and_the_12_3_to_13_ev_decision ... ok
+test sanche_cross_sections_equal_the_hand_computation_off_node_and_at_the_100_ev_edge ... ok
+test melton_cross_sections_equal_the_hand_computation ... ok
+test sanche_cross_section_at_every_node_is_twice_the_row_sum_times_the_scale ... ok
+test sanche_level_energies_and_final_state_bookkeeping ... ok
+test solvation_draw_counts_are_four_uniforms_or_two_in_the_zero_rmean_branch ... ok
+test solvation_window_is_closed_at_7_4_ev_and_deposits_the_kinetic_energy ... ok
+test sanche_draws_exactly_one_uniform_and_selects_from_the_last_level_down ... ok
+test meesungnoen_r_mean_matches_the_hand_polynomial ... ok
+test transport_solvation_event_keeps_the_sampled_displacement_and_local_deposit ... ok
+test the_default_table_registers_all_six_components_with_sources ... ok
+test solvation_below_0_1_ev_displaces_by_1e_minus_3_nm_in_an_isotropic_direction ... ok
+test solvation_displacement_is_a_gaussian_with_sigma_proportional_to_the_mean_radius ... ok
+test sanche_level_distribution_matches_the_raw_table ... ok
+test melton_absorption_fraction_at_7_5_ev_matches_the_cross_section_ratio ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.28s
+
+     Running tests\sampling.rs (target\debug\deps\sampling-2881e615cd20136f.exe)
+
+running 8 tests
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test common::self_tests::ks_pvalue_matches_known_values ... ok
+test downward_selection_has_the_same_distribution_as_a_cdf_pick ... ok
+test elastic_polar_angle_follows_the_tabulated_cdf ... ok
+test excitation_level_fractions_equal_partial_over_total_cross_section ... ok
+test secondary_energy_of_full_events_follows_the_shell_mixture ... ok
+test ionisation_shell_fractions_equal_partial_over_total_cross_section ... ok
+test ejected_energy_transfer_follows_the_cumulated_table_for_every_shell ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+     Running tests\transport.rs (target\debug\deps\transport-725bae5c12345aca.exe)
+
+running 14 tests
+test energy_ledger_is_conserved_for_the_whole_cascade_full_statistics ... ignored, about 5 minutes on 4 cores: 10^4 histories at 100 eV - 10 keV, 2000 at 100 keV, 200 at 1 MeV
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test common::self_tests::ks_pvalue_matches_known_values ... ok
+test invalid_ledger_limits_are_rejected_without_sampling ... ok
+test invalid_primary_positions_are_rejected_without_sampling ... ok
+test electrons_at_or_below_7_4_ev_are_solvated_at_once ... ok
+test interaction_limit_stops_after_n_interactions ... ok
+test electrons_between_7_4_and_9_ev_are_removed_by_the_low_energy_processes ... ok
+test a_9_ev_electron_excites_at_most_once ... ok
+test tracking_cut_stops_below_the_cut_and_is_strict ... ok
+test quirk_counters_are_consistent_with_the_events ... ok
+test mean_first_free_path_equals_one_over_the_hand_computed_sigma ... ok
+test energy_ledger_is_conserved_for_the_whole_cascade_at_five_energies has been running for over 60 seconds
+test energy_ledger_is_conserved_when_secondaries_are_recorded_but_not_transported has been running for over 60 seconds
+test energy_ledger_is_conserved_when_secondaries_are_recorded_but_not_transported ... ok
+test energy_ledger_is_conserved_for_the_whole_cascade_at_five_energies ... ok
+
+test result: ok. 13 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 70.54s
+
+     Running tests\windows.rs (target\debug\deps\windows-d2bd5d4a9e69ce70.exe)
+
+running 11 tests
+test common::self_tests::ks_pvalue_matches_known_values ... ok
+test common::self_tests::chi2_pvalue_matches_known_values ... ok
+test direct_models_reject_missing_and_extra_channels ... ok
+test models_require_exact_channel_counts ... ok
+test primaries_outside_2_ev_to_1_mev_are_rejected_with_unsupported_energy ... ok
+test a_zero_direction_is_rejected ... ok
+test each_model_is_zero_outside_and_positive_on_its_closed_window ... ok
+test the_table_assembles_the_option2_windows ... ok
+test verified_option2_rejects_an_unlisted_model_input_even_when_it_exists_on_disk ... ok
+test verified_option2_preserves_cross_sections_final_states_and_rng_consumption ... ok
+test verified_option2_uses_frozen_bytes_and_keeps_identity_after_sources_change ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+     Running unittests src\lib.rs (target\debug\deps\g4_sim-83379b8545802637.exe)
+
+running 8 tests
+test config::tests::defaults_validate_and_bad_values_do_not ... ok
+test history::tests::edges_are_log_spaced_from_0_1_ev_to_1_mev ... ok
+test history::tests::radial_edges_span_0_1_nm_to_10_mm ... ok
+test physchem_scoring::tests::two_g_estimators_and_rms_match_hand_calculation ... ok
+test scoring::tests::ratio_with_zero_denominator_is_none ... ok
+test scoring::tests::single_sample_has_zero_standard_error ... ok
+test scoring::tests::welford_matches_textbook_mean_and_standard_error ... ok
+test scoring::tests::ratio_of_totals_matches_hand_computation_and_delta_method ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\baseline.rs (target\debug\deps\baseline-73e967c9a595f897.exe)
+
+running 1 test
+test single_thread_throughput ... ignored, timing only
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\chemistry_feature.rs (target\debug\deps\chemistry_feature-536aa74f192be0e7.exe)
+
+running 1 test
+test coupled_summary_preserves_species_order_and_one_ps_output ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests\determinism.rs (target\debug\deps\determinism-338c89a5608e0972.exe)
+
+running 6 tests
+test physchem_csv_is_thread_count_independent_and_consistent_with_the_counts ... ok
+test a_history_depends_only_on_seed_and_id ... ok
+test summary_is_internally_consistent ... ok
+test json_output_carries_provenance_models_and_config ... ok
+test scores_are_identical_for_any_thread_count_and_batch_size ... ok
+test per_history_results_are_bitwise_identical_for_1_2_and_8_threads ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.30s
+
+     Running tests\geant4_reference.rs (target\debug\deps\geant4_reference-e879219d07ea2958.exe)
+
+running 15 tests
+test seed2_geant4_runs_are_consistent_with_seed1_and_with_rust ... ignored, needs validation/reference/*_seed2.csv from Geant4 (validation/geant4/README.md)
+test v2_v3_cross_sections_per_volume_match_geant4 ... ignored, needs validation/reference/xs_per_volume.csv from Geant4 (validation/geant4/README.md)
+test v5_first_interaction_mean_free_path_matches_geant4 ... ignored, needs validation/reference/mfp_first_interaction.csv from Geant4 (validation/geant4/README.md)
+test v5_primary_track_with_100_ev_cut_matches_geant4 ... ignored, needs validation/reference/track_cut100eV.csv from Geant4 (validation/geant4/README.md)
+test m2_deterministic_unequal_means_fail_the_v5_check ... ok
+test csv_parser_skips_comments_and_blank_lines ... ok
+test sample_from_sums_matches_direct_computation ... ok
+test v5_needs_both_the_z_test_and_the_relative_tolerance ... ok
+test m2_reference_validator_accepts_a_complete_in_memory_mfp_fixture ... ok
+test m2_reference_validator_rejects_malformed_evidence ... ok
+test m2_cross_section_grid_rejects_conflicting_repeated_endpoint_values ... ok
+test m2_cross_section_grid_accepts_one_ulp_rounding_of_a_registered_energy ... ok
+test m2_cross_section_validator_requires_exact_grid_and_process_coverage ... ok
+test cross_section_comparison_detects_a_perturbed_reference ... ok
+test comparison_machinery_passes_rust_against_rust_with_other_seeds ... ok
+
+test result: ok. 11 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.67s
+
+     Running tests\physchem_a.rs (target\debug\deps\physchem_a-1c2c2b6b3fa9ec4d.exe)
+
+running 3 tests
+test species_lists_of_real_cascades_are_bitwise_identical_for_any_thread_count ... ok
+test species_conservation_and_untouched_ledger_on_real_cascades ... ok
+test informational_initial_species_per_100_ev_are_printed_not_asserted ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running tests\physchem_audit.rs (target\debug\deps\physchem_audit-d77aca41611c6e32.exe)
+
+running 3 tests
+test audit_channel_budgets ... ignored, M6 residual audit: per-channel budgets of the Rust channel table
+test audit_multiseed_rust ... ignored, M6 residual audit: 5 extra Rust master seeds at 1, 10, 100 and 900 keV (long)
+test audit_relations_geant4_csv ... ignored, M6 residual audit: relations on validation/reference/physchem_prechem.csv
+
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\physchem_b.rs (target\debug\deps\physchem_b-6810fdd474915c6f.exe)
+
+running 5 tests
+test physchem_counts_and_radius_use_survivors_at_global_one_ps ... ok
+test physchem_cascade_follows_all_electrons_without_a_secondary_floor ... ok
+test recombination_ablation_and_event_order_sensitivity_are_reported ... ok
+test initial_yields_and_spatial_scores_are_physically_sane ... ok
+test physchem_scores_are_bitwise_thread_count_independent ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
+
+     Running tests\physchem_reference.rs (target\debug\deps\physchem_reference-d40c49e4d01566ec.exe)
+
+running 9 tests
+test m6_900kev_spatial_diagnostic ... ignored, RR-002: awaiting spatial_geant4_900kev_40.csv and provenance_m6_spatial_900kev_40.toml
+test m6_initial_species_comparison_report ... ignored, requires validation/reference/physchem.csv and provenance_m6.toml from Geant4 11.4.1
+test m6_initial_species_counts_and_rms_match_geant4 ... ignored, requires validation/reference/physchem.csv and provenance_m6.toml from Geant4 11.4.1
+test m6_prechem_counts_and_rms_match_geant4 ... ignored, RR-001: awaiting physchem_prechem.csv and provenance_m6_prechem.toml, user-run Geant4 only
+test m6_recombination_ordering_ablation ... ignored, full-cascade ordering study at the four M6 reference energies
+test m6_reference_contains_products_requiring_zero_time_chemistry ... ignored, requires validation/reference/physchem.csv from Geant4 11.4.1
+test m6_spatial_diagnostic_900kev ... ignored, 900 keV spatial diagnostic: five preregistered seeds x 40 complete histories
+test m6_count_z_requires_finite_quantities_and_exact_zero_error_equality ... ok
+test m6_prechem_reader_rejects_invalid_evidence ... ok
+
+test result: ok. 2 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\physical_sanity.rs (target\debug\deps\physical_sanity-f24290aa33e6b2d3.exe)
+
+running 2 tests
+test first_generation_secondary_spectrum_falls_with_energy ... ok
+test full_slowing_down_identities_range_w_value_and_solvation_yield_are_sane ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.11s
+
+     Running tests\physics_only.rs (target\debug\deps\physics_only-0e89517eec8e5de2.exe)
+
+running 1 test
+test eight_ordered_physical_histories_preserve_ledgers_and_raw_handoff ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests\slowing_down_reference.rs (target\debug\deps\slowing_down_reference-64b9bc21c654e65c.exe)
+
+running 10 tests
+test m3_v2_low_energy_cross_sections_match_geant4 ... ignored, needs validation/reference/xs_lowenergy.csv from Geant4 (validation/geant4/README.md)
+test m3_v5_full_slowing_down_matches_geant4 ... ignored, needs validation/reference/slow_{sums,spectra,radial}.csv from Geant4 (validation/geant4/README.md)
+test homogeneity_test_accepts_equal_and_rejects_different_histograms ... ok
+test v5_uses_the_relative_cut_only_when_it_has_power ... ok
+test m3_xs_grid_accepts_one_ulp_rounding_of_registered_energy ... ok
+test m3_xs_grid_rejects_conflicting_repeated_endpoint_values ... ok
+test m3_reference_validator_accepts_committed_evidence ... ok
+test m3_reference_validator_rejects_malformed_evidence ... ok
+test comparison_machinery_detects_a_perturbed_reference ... ok
+test comparison_machinery_passes_rust_against_rust_with_other_seeds ... ok
+
+test result: ok. 8 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 17.34s
+
+     Running tests\spatial_diagnostic.rs (target\debug\deps\spatial_diagnostic-bb8d4905c0579302.exe)
+
+running 19 tests
+test spatial_diagnostic_checks_moment_identities_empty_sentinel_and_overflow ... ok
+test spatial_diagnostic_percentiles_use_interpolated_sorted_rank ... ok
+test spatial_diagnostic_deduplicates_entity_across_categories ... ok
+test spatial_diagnostic_radial_edges_underflow_overflow_and_quantile_bounds ... ok
+test spatial_diagnostic_rejects_bad_header_fields_populations_and_metadata ... ok
+test spatial_diagnostic_rejects_missing_category_history_seed_and_duplicate_rows ... ok
+test spatial_diagnostic_preserves_retests_and_killed_birth_identity ... ok
+test spatial_diagnostic_undefined_boundaries_fail_instead_of_shrinking_the_family ... ok
+test spatial_diagnostic_stream_reader_skips_comment_lines ... ok
+test spatial_diagnostic_schema_round_trips_records_and_streamed_dataset ... ok
+test spatial_diagnostic_single_implementation_precision_is_descriptive_and_reproducible ... ok
+test spatial_diagnostic_primary_is_particle_pooled_not_mean_history_or_species_rms ... ok
+test spatial_diagnostic_sample_plan_and_precision_rule_are_preregistered ... ok
+test spatial_diagnostic_constant_samples_give_exact_intervals_and_first_detected_wording ... ok
+test spatial_diagnostic_long_history_accumulation_accepts_floating_point_roundoff ... ok
+test spatial_diagnostic_preserves_transport_chemistry_rng_and_lineage ... ok
+test spatial_diagnostic_bootstrap_repeats_but_does_not_pair_equal_seed_history_labels ... ok
+test spatial_diagnostic_hierarchy_and_max_log_interval_match_multiplicity_oracle ... ok
+test spatial_diagnostic_normal_summaries_and_csv_are_thread_independent ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+
+     Running tests\verified_output.rs (target\debug\deps\verified_output-fd0fab8120daf6c4.exe)
+
+running 3 tests
+test verified_and_legacy_inputs_preserve_histories_and_scores ... ok
+test coupled_output_uses_actual_engine_identity_and_optional_source_claim ... ok
+test relocated_and_frozen_outputs_keep_identity_but_changed_bytes_need_a_new_manifest ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.44s
+
+   Doc-tests g4_chemistry
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests g4_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests g4_data
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests g4_physics
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests g4_sim
+
+running 1 test
+test crates\g4-sim\src\run.rs - run::run (line 221) - compile fail ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+

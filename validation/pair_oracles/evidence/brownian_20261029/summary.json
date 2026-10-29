@@ -1,0 +1,1310 @@
+{
+  "complete_available_schedule_execution": true,
+  "numerical_oracle_completion": "INCONCLUSIVE",
+  "physical_agreement_with_source_law": "FAIL",
+  "exact_contact_counterexamples": [
+    {
+      "case": "option3-8",
+      "distance": 1.0,
+      "tau": 0.01,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 6.150911914886306e-10,
+      "absolute_difference": 0.9999999993849088
+    },
+    {
+      "case": "option3-8",
+      "distance": 1.0,
+      "tau": 0.1,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.5541251110164996,
+      "absolute_difference": 0.44587488898350036
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "tau": 0.01,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.0039489616494931745,
+      "absolute_difference": 0.9960510383505068
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "tau": 0.1,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.2728582663133484,
+      "absolute_difference": 0.7271417336866516
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "tau": 1.0,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.561031275866601,
+      "absolute_difference": 0.43896872413339905
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "tau": 10.0,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.6678372908382186,
+      "absolute_difference": 0.33216270916178137
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "tau": 100.0,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.7021681441554782,
+      "absolute_difference": 0.29783185584452176
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "endpoint": "eventual nonreaction",
+      "physical_nonreaction": 0.0,
+      "source_law_nonreaction": 0.28192782465949356,
+      "absolute_difference": 0.28192782465949356
+    },
+    {
+      "case": "syn-charged-tdc-aa",
+      "distance": 1.0,
+      "tau": 0.01,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.005357386453688507,
+      "absolute_difference": 0.9946426135463114
+    },
+    {
+      "case": "syn-charged-tdc-aa",
+      "distance": 1.0,
+      "tau": 0.1,
+      "physical_cdf": 1.0,
+      "source_law_cdf": 0.6012753285426713,
+      "absolute_difference": 0.3987246714573287
+    }
+  ],
+  "g1": "NOT_PASS",
+  "rows": [
+    {
+      "case": "option3-8",
+      "distance": 1.0,
+      "n": 10000,
+      "final_level": 2,
+      "sizes": [
+        10000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 6.23945339839338e-14,
+      "nonreaction_identification": [
+        0.0,
+        0.0
+      ],
+      "nonreaction_mc_interval": [
+        0.0,
+        0.0
+      ],
+      "physical_nonreaction_anchor": 0.0,
+      "unresolved": 0,
+      "return_bound": 0.004746016184523648,
+      "scientific_verdict": "PASS(exact-physical-contact-only)"
+    },
+    {
+      "case": "option3-8",
+      "distance": 1.5,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "INCONCLUSIVE",
+        "FAIL",
+        "INCONCLUSIVE",
+        "INCONCLUSIVE"
+      ],
+      "maximum_absolute_difference": 0.00468044412735627,
+      "nonreaction_identification": [
+        0.7440829799874443,
+        0.76094375
+      ],
+      "nonreaction_mc_interval": [
+        0.7369006991858126,
+        0.768160280572525
+      ],
+      "physical_nonreaction_anchor": 0.7611956209000443,
+      "unresolved": 2130,
+      "return_bound": 0.004746016184523648,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-8",
+      "distance": 3.0,
+      "n": 80000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0005458433924456566,
+      "nonreaction_identification": [
+        0.9359492870548717,
+        0.95615
+      ],
+      "nonreaction_mc_interval": [
+        0.9257920081364323,
+        0.9663557154089449
+      ],
+      "physical_nonreaction_anchor": 0.9521146876653773,
+      "unresolved": 1259,
+      "return_bound": 0.004746016184523648,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.0,
+      "n": 10000,
+      "final_level": 2,
+      "sizes": [
+        10000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 6.217248937900877e-14,
+      "nonreaction_identification": [
+        0.0,
+        0.0
+      ],
+      "nonreaction_mc_interval": [
+        0.0,
+        0.0
+      ],
+      "physical_nonreaction_anchor": 0.0,
+      "unresolved": 0,
+      "return_bound": 0.08515302057373678,
+      "scientific_verdict": "PASS(exact-physical-contact-only)"
+    },
+    {
+      "case": "option3-9",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "INCONCLUSIVE",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0011807659348050947,
+      "nonreaction_identification": [
+        0.2513799376686622,
+        0.28244375
+      ],
+      "nonreaction_mc_interval": [
+        0.24671160371128348,
+        0.2875466077044725
+      ],
+      "physical_nonreaction_anchor": 0.25889446521644066,
+      "unresolved": 2453,
+      "return_bound": 0.08515302057373678,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-9",
+      "distance": 3.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.00047127982089212317,
+      "nonreaction_identification": [
+        0.5712161594697053,
+        0.6414562500000001
+      ],
+      "nonreaction_mc_interval": [
+        0.5665478255123265,
+        0.6465591077044724
+      ],
+      "physical_nonreaction_anchor": 0.5862017696701531,
+      "unresolved": 5463,
+      "return_bound": 0.08515302057373678,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-42",
+      "distance": 1.0,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0007071457098587891,
+      "nonreaction_identification": [
+        0.7301961615127657,
+        0.84675625
+      ],
+      "nonreaction_mc_interval": [
+        0.723657682387547,
+        0.853972780572525
+      ],
+      "physical_nonreaction_anchor": 0.8327993323336889,
+      "unresolved": 6534,
+      "return_bound": 0.09395809253381222,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-42",
+      "distance": 1.5,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.00044426607029524057,
+      "nonreaction_identification": [
+        0.7646540678060891,
+        0.88623125
+      ],
+      "nonreaction_mc_interval": [
+        0.7581155886808705,
+        0.8934477805725249
+      ],
+      "physical_nonreaction_anchor": 0.872099550989254,
+      "unresolved": 6765,
+      "return_bound": 0.09395809253381222,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-42",
+      "distance": 3.0,
+      "n": 80000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0010128859344548796,
+      "nonreaction_identification": [
+        0.8142145601444896,
+        0.9421625
+      ],
+      "nonreaction_mc_interval": [
+        0.804967754288312,
+        0.9523682154089449
+      ],
+      "physical_nonreaction_anchor": 0.9260201043529348,
+      "unresolved": 3481,
+      "return_bound": 0.09395809253381222,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-51",
+      "distance": 1.0,
+      "n": 80000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.001139496539372977,
+      "nonreaction_identification": [
+        0.9129115023577393,
+        0.9704625
+      ],
+      "nonreaction_mc_interval": [
+        0.9030071345558758,
+        0.9806682154089449
+      ],
+      "physical_nonreaction_anchor": 0.9707480853400171,
+      "unresolved": 2382,
+      "return_bound": 0.02952733786965472,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-51",
+      "distance": 1.5,
+      "n": 40000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0011556166364153353,
+      "nonreaction_identification": [
+        0.9269712250503526,
+        0.98515
+      ],
+      "nonreaction_mc_interval": [
+        0.9129643337782258,
+        0.99958306114505
+      ],
+      "physical_nonreaction_anchor": 0.9853053881864505,
+      "unresolved": 1199,
+      "return_bound": 0.02952733786965472,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-51",
+      "distance": 3.0,
+      "n": 40000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.00026993679868023406,
+      "nonreaction_identification": [
+        0.9353900753943333,
+        0.995475
+      ],
+      "nonreaction_mc_interval": [
+        0.9213831841222065,
+        1.0
+      ],
+      "physical_nonreaction_anchor": 0.994363587161071,
+      "unresolved": 1265,
+      "return_bound": 0.02952733786965472,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-charged-tdc-aa",
+      "distance": 1.0,
+      "n": 10000,
+      "final_level": 2,
+      "sizes": [
+        10000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 3.772537837676282e-13,
+      "nonreaction_identification": [
+        0.0,
+        0.0
+      ],
+      "nonreaction_mc_interval": [
+        0.0,
+        0.0
+      ],
+      "physical_nonreaction_anchor": 0.0,
+      "unresolved": 0,
+      "return_bound": 0.037534272812334894,
+      "scientific_verdict": "PASS(exact-physical-contact-only)"
+    },
+    {
+      "case": "syn-charged-tdc-aa",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "INCONCLUSIVE",
+        "INCONCLUSIVE",
+        "INCONCLUSIVE"
+      ],
+      "maximum_absolute_difference": 0.002464914766072468,
+      "nonreaction_identification": [
+        0.4351157167345561,
+        0.46381874999999995
+      ],
+      "nonreaction_mc_interval": [
+        0.4302043910832858,
+        0.46892160770447244
+      ],
+      "physical_nonreaction_anchor": 0.4484408637990407,
+      "unresolved": 3755,
+      "return_bound": 0.037534272812334894,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-charged-tdc-aa",
+      "distance": 3.0,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "INCONCLUSIVE"
+      ],
+      "maximum_absolute_difference": 0.0006799016959799509,
+      "nonreaction_identification": [
+        0.7520406421704668,
+        0.8011625
+      ],
+      "nonreaction_mc_interval": [
+        0.7450949788252095,
+        0.808379030572525
+      ],
+      "physical_nonreaction_anchor": 0.7697627836518095,
+      "unresolved": 3167,
+      "return_bound": 0.037534272812334894,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-charged-pdc-ab",
+      "distance": 1.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0005628610601997042,
+      "nonreaction_identification": [
+        0.4567639058849624,
+        0.526453125
+      ],
+      "nonreaction_mc_interval": [
+        0.4521501424124282,
+        0.5315559827044725
+      ],
+      "physical_nonreaction_anchor": 0.5,
+      "unresolved": 6806,
+      "return_bound": 0.09584712336963631,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-charged-pdc-ab",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0008660517931142198,
+      "nonreaction_identification": [
+        0.5611144497590642,
+        0.646246875
+      ],
+      "nonreaction_mc_interval": [
+        0.55650068628653,
+        0.6513497327044725
+      ],
+      "physical_nonreaction_anchor": 0.6151186081740954,
+      "unresolved": 8208,
+      "return_bound": 0.09584712336963631,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-charged-pdc-ab",
+      "distance": 3.0,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "INCONCLUSIVE"
+      ],
+      "maximum_absolute_difference": 0.0017578308887828686,
+      "nonreaction_identification": [
+        0.7107037177198184,
+        0.8178062500000001
+      ],
+      "nonreaction_mc_interval": [
+        0.704178870843379,
+        0.825022780572525
+      ],
+      "physical_nonreaction_anchor": 0.7757795681004797,
+      "unresolved": 5082,
+      "return_bound": 0.09584712336963631,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-1",
+      "distance": 1.0,
+      "n": 10000,
+      "final_level": 2,
+      "sizes": [
+        10000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0,
+      "nonreaction_identification": [
+        0.0,
+        0.0
+      ],
+      "nonreaction_mc_interval": [
+        0.0,
+        0.0
+      ],
+      "physical_nonreaction_anchor": 0.0,
+      "unresolved": 0,
+      "return_bound": 0.0625,
+      "scientific_verdict": "PASS(exact-physical-contact-only)"
+    },
+    {
+      "case": "option3-1",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0012514734780181558,
+      "nonreaction_identification": [
+        0.3238388671875,
+        0.35526562500000003
+      ],
+      "nonreaction_mc_interval": [
+        0.319054938089557,
+        0.3603684827044725
+      ],
+      "physical_nonreaction_anchor": 0.3333333333333333,
+      "unresolved": 3148,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-1",
+      "distance": 3.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.00046380598323829403,
+      "nonreaction_identification": [
+        0.649880859375,
+        0.7119875
+      ],
+      "nonreaction_mc_interval": [
+        0.6450969302770571,
+        0.7170903577044725
+      ],
+      "physical_nonreaction_anchor": 0.6666666666666666,
+      "unresolved": 6010,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-2",
+      "distance": 1.0,
+      "n": 10000,
+      "final_level": 2,
+      "sizes": [
+        10000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0,
+      "nonreaction_identification": [
+        0.0,
+        0.0
+      ],
+      "nonreaction_mc_interval": [
+        0.0,
+        0.0
+      ],
+      "physical_nonreaction_anchor": 0.0,
+      "unresolved": 0,
+      "return_bound": 0.0625,
+      "scientific_verdict": "PASS(exact-physical-contact-only)"
+    },
+    {
+      "case": "option3-2",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0008117216595773247,
+      "nonreaction_identification": [
+        0.32436328125,
+        0.35554687500000004
+      ],
+      "nonreaction_mc_interval": [
+        0.319579352152057,
+        0.36064973270447254
+      ],
+      "physical_nonreaction_anchor": 0.3333333333333333,
+      "unresolved": 3059,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-2",
+      "distance": 3.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0005075559832382892,
+      "nonreaction_identification": [
+        0.6498369140625,
+        0.711975
+      ],
+      "nonreaction_mc_interval": [
+        0.6450529849645571,
+        0.7170778577044725
+      ],
+      "physical_nonreaction_anchor": 0.6666666666666666,
+      "unresolved": 6021,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-11",
+      "distance": 1.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0008838046671759275,
+      "nonreaction_identification": [
+        0.429416015625,
+        0.47430625000000004
+      ],
+      "nonreaction_mc_interval": [
+        0.4246320865270571,
+        0.47940910770447254
+      ],
+      "physical_nonreaction_anchor": 0.4570007275400584,
+      "unresolved": 5204,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-11",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0009361257713034615,
+      "nonreaction_identification": [
+        0.5985556640625,
+        0.6611374999999999
+      ],
+      "nonreaction_mc_interval": [
+        0.593771734964557,
+        0.6662403577044724
+      ],
+      "physical_nonreaction_anchor": 0.6380004850267056,
+      "unresolved": 7257,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-11",
+      "distance": 3.0,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.00014588750501547815,
+      "nonreaction_identification": [
+        0.77015625,
+        0.84875625
+      ],
+      "nonreaction_mc_interval": [
+        0.7633907525882578,
+        0.855972780572525
+      ],
+      "physical_nonreaction_anchor": 0.8190002425133528,
+      "unresolved": 4361,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-17",
+      "distance": 1.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0008210423421056712,
+      "nonreaction_identification": [
+        0.2375625,
+        0.26134999999999997
+      ],
+      "nonreaction_mc_interval": [
+        0.23277857090205709,
+        0.26645285770447247
+      ],
+      "physical_nonreaction_anchor": 0.2491960206309019,
+      "unresolved": 2544,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-17",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0010796625546344862,
+      "nonreaction_identification": [
+        0.4762822265625,
+        0.524109375
+      ],
+      "nonreaction_mc_interval": [
+        0.47149829746455707,
+        0.5292122327044725
+      ],
+      "physical_nonreaction_anchor": 0.4994640137539346,
+      "unresolved": 5144,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "option3-17",
+      "distance": 3.0,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "INCONCLUSIVE"
+      ],
+      "maximum_absolute_difference": 0.0008954951678935563,
+      "nonreaction_identification": [
+        0.71588671875,
+        0.78686875
+      ],
+      "nonreaction_mc_interval": [
+        0.7091212213382578,
+        0.794085280572525
+      ],
+      "physical_nonreaction_anchor": 0.7497320068769673,
+      "unresolved": 3721,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-neutral-tdc-ab",
+      "distance": 1.0,
+      "n": 10000,
+      "final_level": 2,
+      "sizes": [
+        10000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0,
+      "nonreaction_identification": [
+        0.0,
+        0.0
+      ],
+      "nonreaction_mc_interval": [
+        0.0,
+        0.0
+      ],
+      "physical_nonreaction_anchor": 0.0,
+      "unresolved": 0,
+      "return_bound": 0.0625,
+      "scientific_verdict": "PASS(exact-physical-contact-only)"
+    },
+    {
+      "case": "syn-neutral-tdc-ab",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0015077234780181692,
+      "nonreaction_identification": [
+        0.3239736328125,
+        0.35535312500000005
+      ],
+      "nonreaction_mc_interval": [
+        0.319189703714557,
+        0.36045598270447254
+      ],
+      "physical_nonreaction_anchor": 0.3333333333333333,
+      "unresolved": 3130,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-neutral-tdc-ab",
+      "distance": 3.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0006190929938076628,
+      "nonreaction_identification": [
+        0.64967578125,
+        0.71169375
+      ],
+      "nonreaction_mc_interval": [
+        0.644891852152057,
+        0.7167966077044725
+      ],
+      "physical_nonreaction_anchor": 0.6666666666666666,
+      "unresolved": 5986,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-neutral-pdc-aa",
+      "distance": 1.0,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0010566349507903638,
+      "nonreaction_identification": [
+        0.4669951171875,
+        0.51604375
+      ],
+      "nonreaction_mc_interval": [
+        0.4622111880895571,
+        0.5211466077044725
+      ],
+      "physical_nonreaction_anchor": 0.5,
+      "unresolved": 5733,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-neutral-pdc-aa",
+      "distance": 1.5,
+      "n": 320000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000,
+        320000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0006219682231081436,
+      "nonreaction_identification": [
+        0.6234228515625,
+        0.68840625
+      ],
+      "nonreaction_mc_interval": [
+        0.618638922464557,
+        0.6935091077044725
+      ],
+      "physical_nonreaction_anchor": 0.6666666666666666,
+      "unresolved": 7495,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    },
+    {
+      "case": "syn-neutral-pdc-aa",
+      "distance": 3.0,
+      "n": 160000,
+      "final_level": 4,
+      "sizes": [
+        10000,
+        20000,
+        40000,
+        80000,
+        160000
+      ],
+      "finite_refined": 5,
+      "finite_diagnostics": [
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS",
+        "PASS"
+      ],
+      "maximum_absolute_difference": 0.0008093318958992679,
+      "nonreaction_identification": [
+        0.779806640625,
+        0.860175
+      ],
+      "nonreaction_mc_interval": [
+        0.7730411432132578,
+        0.867391530572525
+      ],
+      "physical_nonreaction_anchor": 0.8333333333333334,
+      "unresolved": 4541,
+      "return_bound": 0.0625,
+      "scientific_verdict": "INCONCLUSIVE"
+    }
+  ],
+  "finite_rows": 2790,
+  "eventual_rows": 558,
+  "notes": [
+    "The eventual endpoint has population censoring intervals, not observed Bernoulli nonreaction outcomes.",
+    "Fixed-z finite diagnostics do not have a simultaneous sequential family guarantee.",
+    "PDE errors are empirical; no continuum Brownian discretization enclosure has been proven.",
+    "Completing this computational schedule does not complete the preregistered eventual comparison.",
+    "Exact-contact falsification compares physical trajectories with the source-law anchors, not a new direct production-sampler test."
+  ],
+  "estimates_sha256": "8dd7cfb78654a1c2ae5e9f6039217344e86ab0792b9aeda1477dbb68de38d3c9"
+}

@@ -1,0 +1,12 @@
+{
+  "all_archived_sources_match_worktree": true,
+  "archive_hash_matches": true,
+  "rng_and_manifests_match_captured_head": true,
+  "all_36_case_distance_series": true,
+  "finite_refinement_endpoints": 180,
+  "finite_diagnostics": {
+    "PASS": 169,
+    "INCONCLUSIVE": 10,
+    "FAIL": 1
+  }
+}

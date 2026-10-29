@@ -1,5 +1,26 @@
 # R04 independent Brownian oracle convergence
 
+## Current continuation (2026-10-29)
+
+The current method and evidence are in
+[the continuation report](r04-independent-2026-10-29.md) and
+[the charged finite-time PDE report](pair-coulomb-pde.md). The PDE now supplies
+90 finite-time physical anchors, and trajectory stopping is connected to a
+censored eventual endpoint with simultaneous population Monte Carlo bands.
+The general eventual endpoint is still **INCONCLUSIVE**. Exact charged TDC
+contact also falsifies physical agreement of the effective-distance law;
+that resolved counterexample does not complete numerical convergence of the
+remaining endpoints. Analytic agreement and direct Geant4 evidence remain
+separate verdicts. G1 cannot pass and R05 is not advanced.
+
+The sections below retain the **historical** initial implementation and runs.
+Statements there about absent PDE anchors, disconnected escape helpers and
+the old charged upper-bound-only output describe that earlier state, not the
+current `pair_oracle/experiment.rs` harness. No historical data are rescored
+or overwritten by the continuation.
+
+## Historical initial implementation and evidence
+
 The neutral oracle currently reports **INCONCLUSIVE**. This is executable
 numerical evidence, not closure of the Brownian part of G1. A successful Rust
 test means the experiment and verdict checks ran; it does not mean scientific
@@ -133,6 +154,69 @@ The source conventions were checked directly against Geant4 11.4.1
 `source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc:286-356`.
 No Geant4 generator or simulation was run.
 
+Continuation 2026-10-29: a run capped at 20,000 pairs and five levels was
+interrupted before completing the family after saturating the machine. The
+partial log is retained locally as `continuation-brownian-20k-5levels.log`
+beside the earlier evidence; it has no completion marker and does not establish
+a family verdict. Some finite endpoints remain underpowered at 20,000 pairs,
+and surviving trajectories remain unresolved at the eventual endpoint. The
+full frozen precision and refinement schedule has not been completed.
+
+### Exploratory continuation: finite-time PDE and escape bound
+
+An exploratory calculation solved the backward equation `u_t=u_rr +
+(2/r+c/r^2)u_r` for reaction probability on `1 <= r <= R`, with initial
+`u=0`, absorbing contact `u(1,t)=1` or radiation boundary
+`u_r(1,t)=kappa*(u(1,t)-1)`, and `u(R,t)=0`. The finite-domain calculation
+uses centered spatial differences and backward Euler with geometrically
+increasing time steps, independent of the Brownian paths. This is exploratory,
+not a registered anchor or a completed Brownian comparison. A supporting
+discussion of the backward equation and Robin boundary is in [Grebenkov,
+Diffusion-Controlled Reactions: An Overview](https://pmc.polytechnique.fr/pagesperso/dg/publi/2023_07.pdf).
+
+For zero charge the fine numerical result differs by at most 0.000167 from
+the synthetic neutral TDC analytic fixture and 0.000336 from the PDC fixture.
+Across the six charged cases and all fifteen finite-time points per case,
+the difference between a coarse run (`dr=0.04`, `R=100`, maximum `dt=0.05`,
+relative time step 0.01) and a fine run (`dr=0.02`, `R=120`, maximum
+`dt=0.025`, relative time step 0.005) is at most 0.000517. For option3-9 and
+synthetic charged PDC, increasing `R` from 100 to 120 at fixed fine grid
+changes no displayed floating-point value; further halving `dr`, maximum
+`dt`, and relative time step at `R=100` changes results by at most 0.000093
+and 0.000133 respectively. These checks do not constitute a rigorous error
+bound or validate all cases and boundary treatments. The exploratory script
+and output are in the local ignored scratch evidence directory as
+`explore_coulomb_pde.py` and `explore_coulomb_pde.log`; no new fixture or
+scientific verdict depends on them.
+
+The finite-domain method is now also implemented in
+`validation/pair_oracles/coulomb_pde.py`, with neutral TDC and PDC anchors and
+two-sign refinement checks in `test_coulomb_pde.py`. Run
+`python -m unittest discover -s validation/pair_oracles -p test_coulomb_pde.py`
+with NumPy and SciPy installed. This validates basic limits, but has not
+produced validated charged anchors for the complete family or been connected
+to the Brownian verdict.
+
+A separate eventual-mass strategy is to continue each path until it reacts or
+reaches an outer sphere of radius R, and bound any later reaction after escape
+by the probability of ever hitting contact from R. For the continuum radial
+Coulomb process this upper bound is `expm1(c/R)/expm1(c)`, with limit `1/R`
+for zero charge; partial absorption cannot increase it. For example, `c=-1`
+and `R=400` gives an upper bound about 0.00396. Such paths remain interval
+censored, not observed nonreactions. The bound alone does not validate the
+Euler process's outer-crossing detection or provide its discretization error;
+both must be addressed, and the bound must be included in the endpoint's
+uncertainty under the existing convergence and precision rules. The required
+long excursions also make the frozen small-step schedule expensive. No tail
+classification, full refinement schedule, or Brownian PASS is claimed.
+
+The helper `tests/pair_oracle/escape.rs` implements the continuum return
+probability and the corresponding interval for the conditional expected
+reaction fraction, retaining both escaped and unresolved counts. This is not
+a pathwise confidence interval: sampling uncertainty and crossing errors must
+be accounted for separately. It is not yet connected to trajectory stopping,
+and does not resolve the Brownian eventual endpoint by itself.
+
 ## Source-matched Geant4 IRT comparison (RR-004)
 
 The R04 Geant4 verdict is **REQUESTED**. The user-run
@@ -144,14 +228,38 @@ It compares independent Rust seed 20261027403 with Geant4 seed 20261027404,
 using 100,000 pairs per case and distance. No Geant4 output is inferred from
 the analytic fixture or from the Rust sampler.
 
-The consumer currently checks that the channel comment contains two nonempty
-reactant names, but does not verify their identities. The generator writes
-`G4MolecularConfiguration::GetName()`, whose value is not necessarily the
-chemistry-table label. A source-verified mapping is needed before the consumer
-can strictly validate these names. The consumer also hardcodes the initial
-100,000-pair filename, count and command: it cannot yet consume the registered
-precision-expansion runs without further development. Neither limitation
-authorizes accepting an incomplete or insufficiently precise result.
+### Exact-contact investigation (2026-10-29)
+
+At neutral PDC contact, the registered analytic CDF has `b=0` and hence
+`F(t)=W_inf * [1-erfcx(A*sqrt(D*t))]` for positive time, with eventual
+reaction probability `W_inf`. It is continuous as `b` approaches zero from
+positive separations, and `F(0+)=0`; this is a finite-time radiation-boundary
+limit, not a zero-time contact reaction. The physical radiation boundary is
+discussed in Grebenkov, [Diffusion-Controlled Reactions: An Overview](https://pmc.polytechnique.fr/pagesperso/dg/publi/2023_07.pdf).
+The same algebraic limit applies to the source's charged-PDC expression when
+its computed `b` is zero, but it remains the source's electrostatic
+approximation, not independently validated Coulomb dynamics.
+
+A separate generator could sample the acceptance gate and invert this
+conditional limiting CDF, label the substituted rows and retain exact contact.
+It would need independent numerical tests, a new mode and provenance, and a
+prospective validation showing continuity and agreement with direct Geant4
+away from the singularity. It cannot be presented as an unmodified Geant4
+return or retroactively treated as the registered direct-source fixture. No
+such corrected fixture or replacement criterion is claimed here.
+
+The physical eventual anchor already exposes discrepancies independently of
+the unrefined Brownian trajectories. For option3 ID 8 at r/a=1.5, the physical
+eventual reaction probability is 0.2388043791 while the source-law anchor is
+1; for ID 9 at r/a=1, they are 1 and 0.7180721753. These compare distinct
+model laws and are not a completed Brownian convergence result. The numerical
+Brownian paths and charged finite-time law still require independent
+resolution; G1 remains open.
+
+The consumer verifies source-ordered `G4MolecularConfiguration::GetName()`
+reactant identities, and supports the registered 100k through 1m run files
+with their corresponding provenance. This does not authorize accepting an
+incomplete or insufficiently precise result.
 
 The frozen family comprises 8 literal channels × 3 distances × 6 endpoints =
 144 comparisons, with two-sided family alpha 0.001, pointwise Bonferroni
