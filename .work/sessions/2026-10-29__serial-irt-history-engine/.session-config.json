@@ -202,6 +202,30 @@
         "ticket": "05-spatial-index",
         "commit": "bc8d1ef"
       }
+    },
+    {
+      "at": "2026-11-05T23:31:23.763Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-network-and-reproducibility.md",
+        "03-implement/06-network-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-network-and-reproducibility"
+      }
+    },
+    {
+      "at": "2026-11-05T23:42:53.171Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/06-network-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-network-and-reproducibility",
+        "commit": "516cfe1"
+      }
     }
   ],
   "current_phase": "ship",
