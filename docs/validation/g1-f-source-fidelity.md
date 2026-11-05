@@ -2,7 +2,8 @@
 
 Approved prospectively by the project lead on 2026-11-05 after the R04/G1
 grill. This is a documentation decision, not an executed validation result.
-**G1-F is OPEN; reference evidence is REQUESTED.**
+**Current G1-F verdict: PASS at 200k (2026-11-05), with 24 PDC contact endpoints excluded.**
+The approval and earlier OPEN/REQUESTED statements below are historical.
 
 ## Decision and historical evidence
 
@@ -105,3 +106,12 @@ INCONCLUSIVE: 87 endpoints pass, 33 lack precision, none fail. Analytic and
 contact regressions pass. G1-F remains OPEN; the next registered precision
 level is 200k. See `../08-roadmap.md` for all endpoint counts and commits.
 The earlier statements about no execution above describe the approval history.
+
+## Final precision result (2026-11-05)
+
+The user authorized 200k after the 100k precision shortfall. The producer and
+strict consumer both exited 0; all 120 included endpoints passed unchanged
+criteria. The 216-endpoint analytic family, biased-sampler rejection and Rust
+contact regression passed separately. The producer verified SamplePDC(1,0)=-1.
+G1-F is PASS and permits real-model integration into R05, without establishing
+physical validity, R05/G2 or G(t) accuracy. No further expansion is needed.

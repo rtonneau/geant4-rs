@@ -1,5 +1,7 @@
 # I. Open questions and risks
 
+> **Current result (2026-11-05): G1-F PASS.** RR-005 at 200k passed all 120 included Geant4 11.4.3 endpoints; 24 PDC contact endpoints remain excluded. Analytic, biased-sampler and contact regressions passed. Real chemical model integration into R05 is now permitted; R05/G2, physical validity and G(t) gates remain unpassed. Earlier OPEN statements below are historical.
+
 > **Approved update (2026-11-05):** [G1-F source-fidelity decision](validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
 
 ## M7 isolated two-body IRT and local oracles
@@ -243,3 +245,10 @@ G1-F remains open and real-model integration remains blocked. A separately
 recorded 200k precision level is the next step. Exact PDC contact exclusions
 and independent physical-law limitations remain unchanged. See docs/08 for
 all endpoint results. The previous 11.4.1 scratch run is not gate evidence.
+
+## RR-005 precision follow-up resolved (2026-11-05)
+
+The authorized 200k expansion passed all included endpoints with unchanged
+criteria. The 100k precision shortfall is resolved for G1-F. Analytic and
+contact regressions passed separately; G1-F is PASS. Physical-law limitations,
+24 excluded contact endpoints and history-level validation remain open.

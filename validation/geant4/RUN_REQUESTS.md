@@ -186,3 +186,14 @@ Agents may compile-check this mode but must not run it, including smoke tests.
 
 Version amendment: explicitly authorized 2026-11-05 to use 11.4.3. The earlier
 11.4.1 production output is scratch-only; no reference fixture was accepted.
+
+### RR-005 authorized 200k expansion (2026-11-05)
+
+Status: closed, GEANT4 PASS. The user authorized this precision-only expansion
+after 100k was inconclusive. From `validation/geant4/g4rs_ref`:
+`g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n200000.csv 20261027404 200000`.
+New CSV `pair_matrix_irt_g1f_n200000.csv` (data commit `51c22b6`) and
+`provenance_g1f_pair_matrix_n200000.toml` (`0b96afe`) preserve 100k evidence.
+Producer exit 0, eight channel completion lines, 120 rows. Consumer with
+`G1F_GEANT4_PAIRS=200000` exited 0: all 120 included endpoints PASS;
+24 PDC exact-contact endpoints excluded. No thresholds or seeds changed.

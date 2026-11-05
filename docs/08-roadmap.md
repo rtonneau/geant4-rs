@@ -1,5 +1,7 @@
 # H. Implementation roadmap
 
+> **Current result (2026-11-05): G1-F PASS.** RR-005 at 200k passed all 120 included Geant4 11.4.3 endpoints; 24 PDC contact endpoints remain excluded. Analytic, biased-sampler and contact regressions passed. Real chemical model integration into R05 is now permitted; R05/G2, physical validity and G(t) gates remain unpassed. Earlier OPEN statements below are historical.
+
 > **Approved update (2026-11-05):** [G1-F source-fidelity decision](validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
 
 Each milestone ends compilable with `fmt`, `clippy -D warnings`, `cargo test --workspace` green. One validated milestone at a time.
@@ -722,3 +724,143 @@ tau 0.01, 0.1, 1, 10, 100.
 | 51 | 3 | Cdf(3) | 351 | 341 | Pass |
 | 51 | 3 | Cdf(4) | 501 | 494 | Pass |
 | 51 | 3 | NoReaction | 99411 | 99422 | Pass |
+
+## RR-005 precision expansion: 200k (2026-11-05)
+
+Explicitly authorized expansion after the 100k precision-only shortfall.
+Geant4 11.4.3, unchanged seed 20261027404 and unchanged criteria.
+Producer exit 0, eight completion lines, 120 ordered rows and final marker.
+Data `51c22b6`, provenance `0b96afe`, clean generator revision `51cd56b`.
+The existing successful smoke run remains applicable to the unchanged binary.
+
+`G1F_GEANT4_PAIRS=200000` with the registered ignored consumer exited 0:
+120 PASS, zero FAIL, zero INCONCLUSIVE. The 24 PDC exact-contact endpoints
+remain excluded; the independent producer contact diagnostic passed.
+The analytic family and Rust contact regression are required separately.
+No further expansion is needed. Historical 100k evidence remains unchanged.
+
+All counts below have denominator 200,000; Cdf indices 0..4 correspond to
+tau 0.01, 0.1, 1, 10, 100.
+
+| Channel | r/a | Endpoint | Rust count | Geant4 count | Verdict |
+|---|---|---|---|---|---|
+| 1 | 1 | Cdf(0) | 200000 | 200000 | Pass |
+| 1 | 1 | Cdf(1) | 200000 | 200000 | Pass |
+| 1 | 1 | Cdf(2) | 200000 | 200000 | Pass |
+| 1 | 1 | Cdf(3) | 200000 | 200000 | Pass |
+| 1 | 1 | Cdf(4) | 200000 | 200000 | Pass |
+| 1 | 1 | NoReaction | 0 | 0 | Pass |
+| 1 | 1.5 | Cdf(0) | 43 | 57 | Pass |
+| 1 | 1.5 | Cdf(1) | 35531 | 35323 | Pass |
+| 1 | 1.5 | Cdf(2) | 96808 | 96505 | Pass |
+| 1 | 1.5 | Cdf(3) | 121814 | 121482 | Pass |
+| 1 | 1.5 | Cdf(4) | 130011 | 129432 | Pass |
+| 1 | 1.5 | NoReaction | 66237 | 66845 | Pass |
+| 1 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 1 | 3 | Cdf(1) | 0 | 1 | Pass |
+| 1 | 3 | Cdf(2) | 10512 | 10571 | Pass |
+| 1 | 3 | Cdf(3) | 43789 | 43531 | Pass |
+| 1 | 3 | Cdf(4) | 58966 | 59104 | Pass |
+| 1 | 3 | NoReaction | 133385 | 133310 | Pass |
+| 2 | 1 | Cdf(0) | 200000 | 200000 | Pass |
+| 2 | 1 | Cdf(1) | 200000 | 200000 | Pass |
+| 2 | 1 | Cdf(2) | 200000 | 200000 | Pass |
+| 2 | 1 | Cdf(3) | 200000 | 200000 | Pass |
+| 2 | 1 | Cdf(4) | 200000 | 200000 | Pass |
+| 2 | 1 | NoReaction | 0 | 0 | Pass |
+| 2 | 1.5 | Cdf(0) | 58 | 75 | Pass |
+| 2 | 1.5 | Cdf(1) | 35180 | 35205 | Pass |
+| 2 | 1.5 | Cdf(2) | 96712 | 96265 | Pass |
+| 2 | 1.5 | Cdf(3) | 121639 | 121230 | Pass |
+| 2 | 1.5 | Cdf(4) | 129842 | 129301 | Pass |
+| 2 | 1.5 | NoReaction | 66444 | 66890 | Pass |
+| 2 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 2 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 2 | 3 | Cdf(2) | 10478 | 10399 | Pass |
+| 2 | 3 | Cdf(3) | 43525 | 43656 | Pass |
+| 2 | 3 | Cdf(4) | 59013 | 59194 | Pass |
+| 2 | 3 | NoReaction | 133319 | 133301 | Pass |
+| 8 | 1 | Cdf(0) | 0 | 0 | Pass |
+| 8 | 1 | Cdf(1) | 110713 | 110640 | Pass |
+| 8 | 1 | Cdf(2) | 200000 | 200000 | Pass |
+| 8 | 1 | Cdf(3) | 200000 | 200000 | Pass |
+| 8 | 1 | Cdf(4) | 200000 | 200000 | Pass |
+| 8 | 1 | NoReaction | 0 | 0 | Pass |
+| 8 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 8 | 1.5 | Cdf(1) | 76953 | 76639 | Pass |
+| 8 | 1.5 | Cdf(2) | 200000 | 200000 | Pass |
+| 8 | 1.5 | Cdf(3) | 200000 | 200000 | Pass |
+| 8 | 1.5 | Cdf(4) | 200000 | 200000 | Pass |
+| 8 | 1.5 | NoReaction | 0 | 0 | Pass |
+| 8 | 3 | Cdf(0) | 841 | 825 | Pass |
+| 8 | 3 | Cdf(1) | 55475 | 55404 | Pass |
+| 8 | 3 | Cdf(2) | 112883 | 113279 | Pass |
+| 8 | 3 | Cdf(3) | 134213 | 134446 | Pass |
+| 8 | 3 | Cdf(4) | 141115 | 141176 | Pass |
+| 8 | 3 | NoReaction | 55734 | 55650 | Pass |
+| 9 | 1 | Cdf(0) | 851 | 762 | Pass |
+| 9 | 1 | Cdf(1) | 54491 | 54329 | Pass |
+| 9 | 1 | Cdf(2) | 112297 | 111789 | Pass |
+| 9 | 1 | Cdf(3) | 133613 | 133293 | Pass |
+| 9 | 1 | Cdf(4) | 140415 | 140295 | Pass |
+| 9 | 1 | NoReaction | 56501 | 56424 | Pass |
+| 9 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 9 | 1.5 | Cdf(1) | 5251 | 5281 | Pass |
+| 9 | 1.5 | Cdf(2) | 57074 | 56799 | Pass |
+| 9 | 1.5 | Cdf(3) | 90076 | 89859 | Pass |
+| 9 | 1.5 | Cdf(4) | 101433 | 101117 | Pass |
+| 9 | 1.5 | NoReaction | 93303 | 93561 | Pass |
+| 9 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 9 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 9 | 3 | Cdf(2) | 5495 | 5628 | Pass |
+| 9 | 3 | Cdf(3) | 35405 | 35273 | Pass |
+| 9 | 3 | Cdf(4) | 51684 | 51379 | Pass |
+| 9 | 3 | NoReaction | 140406 | 140735 | Pass |
+| 11 | 1.5 | Cdf(0) | 1 | 5 | Pass |
+| 11 | 1.5 | Cdf(1) | 6610 | 6484 | Pass |
+| 11 | 1.5 | Cdf(2) | 38090 | 38116 | Pass |
+| 11 | 1.5 | Cdf(3) | 60481 | 60531 | Pass |
+| 11 | 1.5 | Cdf(4) | 68755 | 68827 | Pass |
+| 11 | 1.5 | NoReaction | 127397 | 127399 | Pass |
+| 11 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 11 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 11 | 3 | Cdf(2) | 3494 | 3428 | Pass |
+| 11 | 3 | Cdf(3) | 21346 | 20941 | Pass |
+| 11 | 3 | Cdf(4) | 31436 | 31038 | Pass |
+| 11 | 3 | NoReaction | 163511 | 164065 | Pass |
+| 17 | 1.5 | Cdf(0) | 5 | 3 | Pass |
+| 17 | 1.5 | Cdf(1) | 13025 | 13071 | Pass |
+| 17 | 1.5 | Cdf(2) | 60350 | 60472 | Pass |
+| 17 | 1.5 | Cdf(3) | 86855 | 86914 | Pass |
+| 17 | 1.5 | Cdf(4) | 96065 | 95980 | Pass |
+| 17 | 1.5 | NoReaction | 99655 | 99841 | Pass |
+| 17 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 17 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 17 | 3 | Cdf(2) | 5854 | 5815 | Pass |
+| 17 | 3 | Cdf(3) | 30850 | 30518 | Pass |
+| 17 | 3 | Cdf(4) | 43747 | 43498 | Pass |
+| 17 | 3 | NoReaction | 149910 | 150230 | Pass |
+| 42 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 42 | 1.5 | Cdf(1) | 1189 | 1093 | Pass |
+| 42 | 1.5 | Cdf(2) | 8596 | 8573 | Pass |
+| 42 | 1.5 | Cdf(3) | 18126 | 18125 | Pass |
+| 42 | 1.5 | Cdf(4) | 23171 | 22953 | Pass |
+| 42 | 1.5 | NoReaction | 174304 | 174540 | Pass |
+| 42 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 42 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 42 | 3 | Cdf(2) | 851 | 876 | Pass |
+| 42 | 3 | Cdf(3) | 7303 | 7212 | Pass |
+| 42 | 3 | Cdf(4) | 12301 | 12108 | Pass |
+| 42 | 3 | NoReaction | 185063 | 185239 | Pass |
+| 51 | 1.5 | Cdf(0) | 0 | 2 | Pass |
+| 51 | 1.5 | Cdf(1) | 353 | 317 | Pass |
+| 51 | 1.5 | Cdf(2) | 1649 | 1625 | Pass |
+| 51 | 1.5 | Cdf(3) | 2483 | 2473 | Pass |
+| 51 | 1.5 | Cdf(4) | 2802 | 2796 | Pass |
+| 51 | 1.5 | NoReaction | 197066 | 197034 | Pass |
+| 51 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 51 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 51 | 3 | Cdf(2) | 131 | 108 | Pass |
+| 51 | 3 | Cdf(3) | 713 | 649 | Pass |
+| 51 | 3 | Cdf(4) | 1004 | 960 | Pass |
+| 51 | 3 | NoReaction | 198847 | 198888 | Pass |
