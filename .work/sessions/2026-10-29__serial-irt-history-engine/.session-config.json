@@ -154,6 +154,30 @@
         "ticket": "03-products-and-unary",
         "commit": "779bd3d"
       }
+    },
+    {
+      "at": "2026-11-05T22:51:59.090Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-observation-and-limits.md",
+        "03-implement/04-observation-and-limits/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-observation-and-limits"
+      }
+    },
+    {
+      "at": "2026-11-05T23:10:53.249Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-observation-and-limits/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-observation-and-limits",
+        "commit": "5bb56ed"
+      }
     }
   ],
   "current_phase": "ship",
