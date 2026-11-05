@@ -41,6 +41,13 @@
 //! Only consumption of the unary mobile parent invalidates it. Bulk partners
 //! never receive mobile identities. Per-event accounting includes consumed
 //! reservoirs, implicit water and only the exact reaction-53 source exception.
+//!
+//! [`run_history`] returns count observations only after reaching the configured
+//! horizon. Pre-IRT counts and the right-continuous post-contact 1 ps counts are
+//! separate outputs. Observations never diffuse survivors or draw randomness;
+//! only the intervening reactions do. Duplicate observation times are allowed.
+//! Traces are disabled by default and have an independent finite budget when
+//! enabled. A failed run returns diagnostics, never partial successful counts.
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -49,7 +56,7 @@ use crate::diffusion::diffuse;
 use crate::irt::{ReactionTime, sample_independent_reaction_time};
 use crate::molecule::{Molecule, MoleculeId, MoleculePair};
 use crate::placement::{ReactionPlacement, place_pair_reaction, place_unary_reaction};
-use crate::reaction_network::CompiledReaction;
+use crate::reaction_network::{CompiledReaction, ReactionNetwork};
 use crate::reactions::{BulkParticipant, ReactionParticipant};
 use crate::species::{SpeciesTable, atoms};
 use crate::unary::sample_unary_reaction_time;
@@ -106,7 +113,7 @@ pub struct PairHistoryOptions {
     pub max_molecules: usize,
     /// Maximum simultaneous queued events, including stale entries awaiting removal.
     pub max_pending_events: usize,
-    /// Maximum executed reactions (and retained reaction records).
+    /// Maximum executed reactions, independent of optional trace retention.
     pub max_reactions: usize,
 }
 
@@ -119,6 +126,176 @@ impl Default for PairHistoryOptions {
             max_reactions: 100_000,
         }
     }
+}
+
+/// Alive mobile populations in [`Species::ALL`] order, indexed by [`Species::index`].
+/// Bulk reservoirs and implicit solvent water are not mobile populations.
+pub type SpeciesCounts = [usize; Species::ALL.len()];
+
+/// A right-continuous count sample after every event at or before `time`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CountObservation {
+    /// Absolute time in ps; survivors need not be materialized at this time.
+    pub time: Time,
+    /// Alive mobile populations; no position diagnostic or G-value normalization.
+    pub counts: SpeciesCounts,
+}
+
+/// Finite execution and output budgets for [`run_history`].
+#[derive(Debug, Clone, Copy)]
+pub struct HistoryOptions {
+    /// Inclusive horizon, retained arena size, pending-event and reaction limits.
+    pub limits: PairHistoryOptions,
+    /// Maximum requested count samples, including duplicate times.
+    pub max_observations: usize,
+    /// `None` disables lineage retention. `Some(n)` retains at most n reactions;
+    /// exceeding this budget fails the entire run instead of truncating the trace.
+    pub max_trace_records: Option<usize>,
+}
+
+impl Default for HistoryOptions {
+    fn default() -> Self {
+        Self {
+            limits: PairHistoryOptions::default(),
+            max_observations: 1_024,
+            max_trace_records: None,
+        }
+    }
+}
+
+/// Aggregate execution diagnostics, also available on incomplete runs.
+/// These describe work performed, not a successful scientific count result.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HistoryDiagnostics {
+    /// Last reached scheduler time; may precede the requested horizon on failure.
+    pub time: Time,
+    /// Reactions whose parent consumption and product creation completed.
+    /// A failure while scheduling those products can leave this nonzero.
+    pub executed_reactions: usize,
+    /// Stored identities, including consumed parents.
+    pub arena_records: usize,
+    /// Queued entries, including stale events awaiting removal.
+    pub pending_events: usize,
+    /// Maximum simultaneous queued entries successfully retained.
+    pub peak_pending_events: usize,
+    /// Retained detailed records; zero when tracing is disabled.
+    pub trace_records: usize,
+}
+
+impl HistoryDiagnostics {
+    fn unstarted() -> Self {
+        Self {
+            time: Time::from_ps(START_PS),
+            executed_reactions: 0,
+            arena_records: 0,
+            pending_events: 0,
+            peak_pending_events: 0,
+            trace_records: 0,
+        }
+    }
+
+    fn incomplete(self, cause: ChemistryError) -> ChemistryError {
+        ChemistryError::IncompleteHistory {
+            diagnostics: self,
+            cause: Box::new(cause),
+        }
+    }
+}
+
+/// Counts and diagnostics from a history completed through its inclusive horizon.
+/// Successful execution is not evidence of R05/G2 acceptance or physical accuracy.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HistoryResult {
+    /// Immutable input population at 1 ps, before any IRT contact reaction.
+    pub pre_irt_counts: SpeciesCounts,
+    /// Population after all 1 ps contact reactions and their product cascades.
+    pub post_contact_counts: SpeciesCounts,
+    /// Requested samples in caller order, including duplicates.
+    pub observations: Vec<CountObservation>,
+    /// Population at the configured horizon, even if it was not requested as a sample.
+    pub final_counts: SpeciesCounts,
+    /// Work performed through the completed horizon.
+    pub diagnostics: HistoryDiagnostics,
+    /// Optional complete lineage, bounded by `max_trace_records`.
+    pub trace: Option<Vec<HistoryReaction>>,
+}
+
+/// Evolve an immutable compiled network and 1 ps input using the caller's RNG.
+///
+/// Observation times must be nondecreasing and inside `[1 ps, end_time]`.
+/// The entire schedule is validated before any RNG draw or history allocation.
+/// Empty schedules still evolve to the horizon. Observing a boundary processes
+/// all reactions at that time, including newly created immediate reactions.
+///
+/// Input-time errors are returned directly. Execution and resource failures
+/// return [`ChemistryError::IncompleteHistory`] with diagnostics and the original
+/// typed cause, without partial counts. RNG state is not rolled back on failure.
+/// Storage limits count records, not allocator bytes; the arena retains dead IDs.
+/// This uses the existing all-pairs scheduler, not yet a validated spatial index.
+pub fn run_history(
+    input: &HistoryInput,
+    network: &ReactionNetwork,
+    observation_times: &[Time],
+    options: HistoryOptions,
+    rng: &mut impl Rng,
+) -> Result<HistoryResult, ChemistryError> {
+    validate_time(
+        "end time",
+        options.limits.end_time.ps(),
+        START_PS,
+        MAX_END_PS,
+    )?;
+    let mut previous = START_PS;
+    for &time in observation_times {
+        validate_time(
+            "observation time",
+            time.ps(),
+            previous,
+            options.limits.end_time.ps(),
+        )?;
+        previous = time.ps();
+    }
+    capacity(
+        "observations",
+        observation_times.len(),
+        options.max_observations,
+    )
+    .map_err(|cause| HistoryDiagnostics::unstarted().incomplete(cause))?;
+    let descriptors: Vec<_> = network.iter().collect();
+    let mut history = PairHistory::prepare(
+        input,
+        &descriptors,
+        options.limits,
+        options.max_trace_records,
+    )
+    .map_err(|cause| HistoryDiagnostics::unstarted().incomplete(cause))?;
+    history
+        .initialize(rng)
+        .map_err(|cause| history.diagnostics().incomplete(cause))?;
+    let pre_irt_counts = count_species(input.snapshot().iter().map(|m| m.species));
+    let post_contact_counts = history
+        .observe_counts(Time::from_ps(START_PS), rng)
+        .map_err(|cause| history.diagnostics().incomplete(cause))?
+        .counts;
+    let mut observations = Vec::with_capacity(observation_times.len());
+    for &time in observation_times {
+        let observation = history
+            .observe_counts(time, rng)
+            .map_err(|cause| history.diagnostics().incomplete(cause))?;
+        observations.push(observation);
+    }
+    let final_counts = history
+        .observe_counts(options.limits.end_time, rng)
+        .map_err(|cause| history.diagnostics().incomplete(cause))?
+        .counts;
+    Ok(HistoryResult {
+        pre_irt_counts,
+        post_contact_counts,
+        observations,
+        final_counts,
+        diagnostics: history.diagnostics(),
+        trace: options.max_trace_records.map(|_| history.reactions),
+    })
 }
 
 /// Arena record; identity is never reused and fields cannot be mutated by callers.
@@ -259,6 +436,7 @@ impl Ord for PairEvent {
 struct EventQueue {
     heap: BinaryHeap<PairEvent>,
     next_ordinal: u64,
+    peak_len: usize,
 }
 
 impl EventQueue {
@@ -275,12 +453,15 @@ impl EventQueue {
                 })?;
         event.ordinal = self.next_ordinal;
         self.heap.push(event);
+        self.peak_len = self.peak_len.max(self.heap.len());
         self.next_ordinal = next_ordinal;
         Ok(())
     }
 }
 
-/// Caller-RNG-driven pair and unary history, not a production chemistry result.
+/// Incremental pair/unary history for diagnostics and selected-channel experiments.
+/// Its constructor retains bounded lineage for compatibility; [`run_history`]
+/// provides the complete-network count interface with tracing disabled by default.
 #[derive(Debug)]
 pub struct PairHistory<'a> {
     input: HistoryInput,
@@ -288,6 +469,8 @@ pub struct PairHistory<'a> {
     descriptors: Vec<&'a CompiledReaction>,
     queue: EventQueue,
     reactions: Vec<PairReaction>,
+    executed_reactions: usize,
+    trace_limit: Option<usize>,
     options: PairHistoryOptions,
     now: f64,
     failed: bool,
@@ -308,6 +491,17 @@ impl<'a> PairHistory<'a> {
         descriptors: &[&'a CompiledReaction],
         options: PairHistoryOptions,
         rng: &mut impl Rng,
+    ) -> Result<Self, ChemistryError> {
+        let mut history = Self::prepare(input, descriptors, options, Some(options.max_reactions))?;
+        history.initialize(rng)?;
+        Ok(history)
+    }
+
+    fn prepare(
+        input: &HistoryInput,
+        descriptors: &[&'a CompiledReaction],
+        options: PairHistoryOptions,
+        trace_limit: Option<usize>,
     ) -> Result<Self, ChemistryError> {
         validate_time("end time", options.end_time.ps(), START_PS, MAX_END_PS)?;
         capacity("molecules", input.snapshot.len(), options.max_molecules)?;
@@ -342,28 +536,33 @@ impl<'a> PairHistory<'a> {
                 i64::from(species.get(mobile).charge),
             ]
         });
-        let mut history = Self {
+        Ok(Self {
             input: input.clone(),
             molecules,
             descriptors,
             queue: EventQueue::default(),
             reactions: Vec::new(),
+            executed_reactions: 0,
+            trace_limit,
             options,
             now: START_PS,
             failed: false,
             compositions,
-        };
+        })
+    }
+
+    fn initialize(&mut self, rng: &mut impl Rng) -> Result<(), ChemistryError> {
         // Stream candidates into the bounded queue rather than retaining an
         // unbounded quadratic candidate list. Each identity pair occurs once.
-        for first in 0..history.molecules.len() {
-            for second in (first + 1)..history.molecules.len() {
-                history.schedule_matching_pair(first, second, rng)?;
+        for first in 0..self.molecules.len() {
+            for second in (first + 1)..self.molecules.len() {
+                self.schedule_matching_pair(first, second, rng)?;
             }
         }
-        for parent in 0..history.molecules.len() {
-            history.schedule_unary(parent, rng)?;
+        for parent in 0..self.molecules.len() {
+            self.schedule_unary(parent, rng)?;
         }
-        Ok(history)
+        Ok(())
     }
 
     fn schedule_matching_pair(
@@ -541,6 +740,39 @@ impl<'a> PairHistory<'a> {
         Time::from_ps(self.now)
     }
 
+    /// Resource usage without counting species, drawing RNG or moving survivors.
+    pub fn diagnostics(&self) -> HistoryDiagnostics {
+        HistoryDiagnostics {
+            time: self.current_time(),
+            executed_reactions: self.executed_reactions,
+            arena_records: self.molecules.len(),
+            pending_events: self.pending_events(),
+            peak_pending_events: self.queue.peak_len,
+            trace_records: self.reactions.len(),
+        }
+    }
+
+    /// Advance through all events at `time`, then count live species without draws
+    /// or survivor movement. Reactions during advancement may consume randomness.
+    /// Invalid/backwards requests do not mutate state; failed histories cannot
+    /// produce a successful observation. At 1 ps this includes contact closure.
+    pub fn observe_counts(
+        &mut self,
+        time: Time,
+        rng: &mut impl Rng,
+    ) -> Result<CountObservation, ChemistryError> {
+        self.advance_to(time, rng)?;
+        Ok(CountObservation {
+            time,
+            counts: count_species(
+                self.molecules
+                    .iter()
+                    .filter(|m| m.alive)
+                    .map(|m| m.instance().species),
+            ),
+        })
+    }
+
     /// Process all initial immediate events before inspecting post-contact state.
     /// This is idempotent at 1 ps, and invalid after advancing beyond that time.
     pub fn close_contacts(&mut self, rng: &mut impl Rng) -> Result<(), ChemistryError> {
@@ -584,9 +816,16 @@ impl<'a> PairHistory<'a> {
             }
             capacity(
                 "reactions",
-                self.reactions.len().saturating_add(1),
+                self.executed_reactions.saturating_add(1),
                 self.options.max_reactions,
             )?;
+            if let Some(limit) = self.trace_limit {
+                capacity(
+                    "trace records",
+                    self.reactions.len().saturating_add(1),
+                    limit,
+                )?;
+            }
             let reaction = *self
                 .descriptors
                 .iter()
@@ -667,7 +906,10 @@ impl<'a> PairHistory<'a> {
                 });
             }
             self.now = event.time;
-            self.reactions.push(record);
+            self.executed_reactions += 1;
+            if self.trace_limit.is_some() {
+                self.reactions.push(record);
+            }
             // Later siblings are not candidates until their source-order turn.
             // This exactly-once creation scan avoids old-old resampling, including
             // pairs whose initial independent clock returned NoReaction.
@@ -764,6 +1006,14 @@ impl<'a> PairHistory<'a> {
             source_exception,
         })
     }
+}
+
+fn count_species(species: impl Iterator<Item = Species>) -> SpeciesCounts {
+    let mut counts = [0; Species::ALL.len()];
+    for mobile in species {
+        counts[mobile.index()] += 1;
+    }
+    counts
 }
 
 fn validate_time(

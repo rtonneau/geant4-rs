@@ -5,6 +5,14 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A bounded run did not finish. Diagnostics are partial execution metadata,
+    /// never successful chemical counts; the original typed failure is retained.
+    #[error("incomplete history after {diagnostics:?}: {cause}")]
+    IncompleteHistory {
+        diagnostics: crate::history::HistoryDiagnostics,
+        #[source]
+        cause: Box<ChemistryError>,
+    },
     /// A history input, boundary or event timestamp violates its declared time domain.
     #[error("invalid history {field}: {value} ps (expected {minimum}..={maximum} ps)")]
     InvalidHistoryTime {
