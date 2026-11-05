@@ -399,6 +399,7 @@ fn resource_failures_return_only_typed_incomplete_errors_and_diagnostics() {
                 limits,
                 max_trace_records: trace_limit,
                 max_observations: observations,
+                search: Default::default(),
             },
             &mut rng,
         )
@@ -466,7 +467,19 @@ fn numerical_failure_has_diagnostics_and_failed_engine_cannot_observe_counts() {
     molecule.position.z = 1e300;
     let input = HistoryInput::new(&[molecule; 2]).unwrap();
     let mut rng = ScriptedRng::new(&[]);
-    let error = run_history(&input, &network, &[], options(1.0), &mut rng).unwrap_err();
+    // Isolate the placement failure: the indexed profile rejects this enormous
+    // extent earlier, because the source's G4int grid cannot represent it.
+    let error = run_history(
+        &input,
+        &network,
+        &[],
+        HistoryOptions {
+            search: g4_chemistry::history::CandidateSearch::AllPairs,
+            ..options(1.0)
+        },
+        &mut rng,
+    )
+    .unwrap_err();
     let ChemistryError::IncompleteHistory { cause, diagnostics } = error else {
         panic!("{error:?}");
     };

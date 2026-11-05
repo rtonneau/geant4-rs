@@ -9,7 +9,8 @@ pub enum ChemistryError {
     /// never successful chemical counts; the original typed failure is retained.
     #[error("incomplete history after {diagnostics:?}: {cause}")]
     IncompleteHistory {
-        diagnostics: crate::history::HistoryDiagnostics,
+        // Keep the shared error small as history instrumentation grows.
+        diagnostics: Box<crate::history::HistoryDiagnostics>,
         #[source]
         cause: Box<ChemistryError>,
     },

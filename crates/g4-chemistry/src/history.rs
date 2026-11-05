@@ -16,9 +16,9 @@
 //! migrate these scheduler semantics from their 11.4.1 baseline.
 //!
 //! Products receive monotonic identities in source order and immediately sample
-//! clocks against older live molecules and their unary channels. Spatial search
-//! and complete-network scientific scores are not implemented here. No claim of
-//! R05/G2 acceptance is made.
+//! clocks against older live molecules and their unary channels. The full runner
+//! uses source-style finite-horizon bins by default; [`CandidateSearch::AllPairs`]
+//! is the untruncated small-system oracle. No claim of R05/G2 acceptance is made.
 //!
 //! Molecules keep creation-order identities, generation and last materialized
 //! time. Survivors are never diffused merely to advance the clock. The input
@@ -61,8 +61,13 @@ use crate::reactions::{BulkParticipant, ReactionParticipant};
 use crate::species::{SpeciesTable, atoms};
 use crate::unary::sample_unary_reaction_time;
 use crate::{ChemistryError, Species, SpeciesInstance};
-use g4_core::units::Time;
+use g4_core::units::{Length, Time};
 use rand::Rng;
+
+#[path = "history_spatial.rs"]
+mod spatial;
+use spatial::SpatialIndex;
+pub use spatial::{CandidateSearch, source_cutoff};
 
 const START_PS: f64 = 1.0;
 const MAX_END_PS: f64 = 1_000_000.0;
@@ -146,6 +151,8 @@ pub struct CountObservation {
 pub struct HistoryOptions {
     /// Inclusive horizon, retained arena size, pending-event and reaction limits.
     pub limits: PairHistoryOptions,
+    /// Indexed cutoff profile or the quadratic small-system oracle.
+    pub search: CandidateSearch,
     /// Maximum requested count samples, including duplicate times.
     pub max_observations: usize,
     /// `None` disables lineage retention. `Some(n)` retains at most n reactions;
@@ -157,6 +164,7 @@ impl Default for HistoryOptions {
     fn default() -> Self {
         Self {
             limits: PairHistoryOptions::default(),
+            search: CandidateSearch::default(),
             max_observations: 1_024,
             max_trace_records: None,
         }
@@ -167,6 +175,12 @@ impl Default for HistoryOptions {
 /// These describe work performed, not a successful scientific count result.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HistoryDiagnostics {
+    /// Requested absolute horizon, also on execution failure.
+    pub end_time: Time,
+    /// Requested candidate-search policy and multiplier.
+    pub search: CandidateSearch,
+    /// Source cutoff after the multiplier; `None` for the oracle or invalid configuration.
+    pub cutoff: Option<Length>,
     /// Last reached scheduler time; may precede the requested horizon on failure.
     pub time: Time,
     /// Reactions whose parent consumption and product creation completed.
@@ -180,23 +194,54 @@ pub struct HistoryDiagnostics {
     pub peak_pending_events: usize,
     /// Retained detailed records; zero when tracing is disabled.
     pub trace_records: usize,
+    /// Live unordered candidate pairs visited, before matching reaction channels.
+    /// Excluded spatial pairs are not counted and do not have zero probability.
+    pub candidate_pairs: usize,
+    /// Matching pair channels attempted, including escapes and failed sampling.
+    pub sampled_pair_channels: usize,
+    /// Total successfully queued events (pair and earliest unary), including stale ones.
+    pub scheduled_events: u64,
+    /// Largest temporary candidate row length; never a quadratic pair list.
+    pub peak_candidate_buffer: usize,
+    /// Indexed identities including dead records; zero for the all-pairs oracle.
+    pub spatial_entries: usize,
+    /// Peak retained heap payload bytes for the engine's snapshot, arena, queue,
+    /// descriptor references, candidate buffer, index and optional trace.
+    /// Uses Vec capacities and map key/value payloads; excludes map-node spare
+    /// slots/links, allocator overhead, stack, transient placement and caller-owned
+    /// network/input/output observations. This is a lower bound, not process RSS.
+    pub peak_storage_bytes: usize,
 }
 
 impl HistoryDiagnostics {
-    fn unstarted() -> Self {
+    fn unstarted(options: HistoryOptions) -> Self {
         Self {
+            end_time: options.limits.end_time,
+            search: options.search,
+            cutoff: match options.search {
+                CandidateSearch::Indexed { cutoff_multiplier } => {
+                    source_cutoff(options.limits.end_time, cutoff_multiplier).ok()
+                }
+                CandidateSearch::AllPairs => None,
+            },
             time: Time::from_ps(START_PS),
             executed_reactions: 0,
             arena_records: 0,
             pending_events: 0,
             peak_pending_events: 0,
             trace_records: 0,
+            candidate_pairs: 0,
+            sampled_pair_channels: 0,
+            scheduled_events: 0,
+            peak_candidate_buffer: 0,
+            spatial_entries: 0,
+            peak_storage_bytes: 0,
         }
     }
 
     fn incomplete(self, cause: ChemistryError) -> ChemistryError {
         ChemistryError::IncompleteHistory {
-            diagnostics: self,
+            diagnostics: Box::new(self),
             cause: Box::new(cause),
         }
     }
@@ -231,7 +276,8 @@ pub struct HistoryResult {
 /// return [`ChemistryError::IncompleteHistory`] with diagnostics and the original
 /// typed cause, without partial counts. RNG state is not rolled back on failure.
 /// Storage limits count records, not allocator bytes; the arena retains dead IDs.
-/// This uses the existing all-pairs scheduler, not yet a validated spatial index.
+/// The indexed default is a candidate profile awaiting cutoff-convergence evidence.
+/// Select [`CandidateSearch::AllPairs`] explicitly for untruncated small systems.
 pub fn run_history(
     input: &HistoryInput,
     network: &ReactionNetwork,
@@ -260,15 +306,16 @@ pub fn run_history(
         observation_times.len(),
         options.max_observations,
     )
-    .map_err(|cause| HistoryDiagnostics::unstarted().incomplete(cause))?;
+    .map_err(|cause| HistoryDiagnostics::unstarted(options).incomplete(cause))?;
     let descriptors: Vec<_> = network.iter().collect();
     let mut history = PairHistory::prepare(
         input,
         &descriptors,
         options.limits,
         options.max_trace_records,
+        options.search,
     )
-    .map_err(|cause| HistoryDiagnostics::unstarted().incomplete(cause))?;
+    .map_err(|cause| HistoryDiagnostics::unstarted(options).incomplete(cause))?;
     history
         .initialize(rng)
         .map_err(|cause| history.diagnostics().incomplete(cause))?;
@@ -475,6 +522,14 @@ pub struct PairHistory<'a> {
     now: f64,
     failed: bool,
     compositions: [[i64; 3]; Species::ALL.len()],
+    search: CandidateSearch,
+    spatial: Option<SpatialIndex>,
+    candidates: Vec<usize>,
+    candidate_pairs: usize,
+    sampled_pair_channels: usize,
+    peak_candidate_buffer: usize,
+    trace_payload_bytes: usize,
+    peak_storage_bytes: usize,
 }
 
 impl<'a> PairHistory<'a> {
@@ -485,14 +540,35 @@ impl<'a> PairHistory<'a> {
     /// Each unordered pair is sampled once per matching descriptor, with distinct
     /// molecule identities even for A+A. Candidates sort by ascending identity
     /// pair, then reaction ID; placement retains source reactant order separately.
-    /// All-pairs scanning is deliberate for this slice, not production spatial search.
+    /// This compatibility constructor is the all-pairs oracle. Use [`Self::with_search`]
+    /// to select a source-style indexed experiment, or [`run_history`] for the
+    /// indexed full-network default.
     pub fn new(
         input: &HistoryInput,
         descriptors: &[&'a CompiledReaction],
         options: PairHistoryOptions,
         rng: &mut impl Rng,
     ) -> Result<Self, ChemistryError> {
-        let mut history = Self::prepare(input, descriptors, options, Some(options.max_reactions))?;
+        Self::with_search(input, descriptors, options, CandidateSearch::AllPairs, rng)
+    }
+
+    /// Initialize a selected-channel history with explicit candidate-search policy.
+    /// The cutoff applies before temporary older-partner diffusion, using stored
+    /// birth sites and the fixed initial grid, including for newly born products.
+    pub fn with_search(
+        input: &HistoryInput,
+        descriptors: &[&'a CompiledReaction],
+        options: PairHistoryOptions,
+        search: CandidateSearch,
+        rng: &mut impl Rng,
+    ) -> Result<Self, ChemistryError> {
+        let mut history = Self::prepare(
+            input,
+            descriptors,
+            options,
+            Some(options.max_reactions),
+            search,
+        )?;
         history.initialize(rng)?;
         Ok(history)
     }
@@ -502,9 +578,17 @@ impl<'a> PairHistory<'a> {
         descriptors: &[&'a CompiledReaction],
         options: PairHistoryOptions,
         trace_limit: Option<usize>,
+        search: CandidateSearch,
     ) -> Result<Self, ChemistryError> {
         validate_time("end time", options.end_time.ps(), START_PS, MAX_END_PS)?;
         capacity("molecules", input.snapshot.len(), options.max_molecules)?;
+        let spatial = match search {
+            CandidateSearch::Indexed { cutoff_multiplier } => Some(SpatialIndex::new(
+                input.snapshot(),
+                source_cutoff(options.end_time, cutoff_multiplier)?,
+            )?),
+            CandidateSearch::AllPairs => None,
+        };
         for (index, reaction) in descriptors.iter().enumerate() {
             if descriptors[..index]
                 .iter()
@@ -548,14 +632,24 @@ impl<'a> PairHistory<'a> {
             now: START_PS,
             failed: false,
             compositions,
+            search,
+            spatial,
+            candidates: Vec::new(),
+            candidate_pairs: 0,
+            sampled_pair_channels: 0,
+            peak_candidate_buffer: 0,
+            trace_payload_bytes: 0,
+            peak_storage_bytes: 0,
         })
     }
 
     fn initialize(&mut self, rng: &mut impl Rng) -> Result<(), ChemistryError> {
-        // Stream candidates into the bounded queue rather than retaining an
-        // unbounded quadratic candidate list. Each identity pair occurs once.
+        self.measure_storage();
+        // One bounded canonical row at a time, with no quadratic candidate list.
         for first in 0..self.molecules.len() {
-            for second in (first + 1)..self.molecules.len() {
+            self.collect_candidates(first, true);
+            for i in 0..self.candidates.len() {
+                let second = self.candidates[i];
                 self.schedule_matching_pair(first, second, rng)?;
             }
         }
@@ -565,12 +659,43 @@ impl<'a> PairHistory<'a> {
         Ok(())
     }
 
+    fn collect_candidates(&mut self, id: usize, initial: bool) {
+        if let Some(index) = &self.spatial {
+            index.candidates(id, initial, &self.molecules, &mut self.candidates);
+        } else {
+            self.candidates.clear();
+            let range = if initial {
+                id + 1..self.molecules.len()
+            } else {
+                0..id
+            };
+            self.candidates
+                .extend(range.filter(|&other| self.molecules[other].alive));
+        }
+        self.peak_candidate_buffer = self.peak_candidate_buffer.max(self.candidates.len());
+        self.measure_storage();
+    }
+
+    fn measure_storage(&mut self) {
+        use std::mem::size_of;
+        let bytes = self.input.snapshot.capacity() * size_of::<SpeciesInstance>()
+            + self.molecules.capacity() * size_of::<HistoryMolecule>()
+            + self.descriptors.capacity() * size_of::<&CompiledReaction>()
+            + self.queue.heap.capacity() * size_of::<PairEvent>()
+            + self.candidates.capacity() * size_of::<usize>()
+            + self.reactions.capacity() * size_of::<HistoryReaction>()
+            + self.trace_payload_bytes
+            + self.spatial.as_ref().map_or(0, SpatialIndex::payload_bytes);
+        self.peak_storage_bytes = self.peak_storage_bytes.max(bytes);
+    }
+
     fn schedule_matching_pair(
         &mut self,
         first: usize,
         second: usize,
         rng: &mut impl Rng,
     ) -> Result<(), ChemistryError> {
+        self.candidate_pairs += 1;
         let species = [
             self.molecules[first].instance().species,
             self.molecules[second].instance().species,
@@ -586,6 +711,7 @@ impl<'a> PairHistory<'a> {
             } else {
                 continue;
             };
+            self.sampled_pair_channels += 1;
             self.schedule_pair(index, participants, rng)?;
         }
         Ok(())
@@ -645,6 +771,7 @@ impl<'a> PairHistory<'a> {
                 self.now,
                 self.options.max_pending_events,
             )?;
+            self.measure_storage();
         }
         Ok(())
     }
@@ -703,6 +830,7 @@ impl<'a> PairHistory<'a> {
                 self.now,
                 self.options.max_pending_events,
             )?;
+            self.measure_storage();
         }
         Ok(())
     }
@@ -743,12 +871,21 @@ impl<'a> PairHistory<'a> {
     /// Resource usage without counting species, drawing RNG or moving survivors.
     pub fn diagnostics(&self) -> HistoryDiagnostics {
         HistoryDiagnostics {
+            end_time: self.options.end_time,
+            search: self.search,
+            cutoff: self.spatial.as_ref().map(SpatialIndex::cutoff),
             time: self.current_time(),
             executed_reactions: self.executed_reactions,
             arena_records: self.molecules.len(),
             pending_events: self.pending_events(),
             peak_pending_events: self.queue.peak_len,
             trace_records: self.reactions.len(),
+            candidate_pairs: self.candidate_pairs,
+            sampled_pair_channels: self.sampled_pair_channels,
+            scheduled_events: self.queue.next_ordinal,
+            peak_candidate_buffer: self.peak_candidate_buffer,
+            spatial_entries: self.spatial.as_ref().map_or(0, SpatialIndex::entries),
+            peak_storage_bytes: self.peak_storage_bytes,
         }
     }
 
@@ -908,16 +1045,26 @@ impl<'a> PairHistory<'a> {
             self.now = event.time;
             self.executed_reactions += 1;
             if self.trace_limit.is_some() {
+                self.trace_payload_bytes += record.participants.capacity()
+                    * std::mem::size_of::<MoleculeId>()
+                    + record.generations.capacity() * std::mem::size_of::<u64>()
+                    + record.products.capacity() * std::mem::size_of::<MoleculeId>()
+                    + record.placement.products.capacity()
+                        * std::mem::size_of::<crate::placement::PlacedProduct>();
                 self.reactions.push(record);
             }
+            self.measure_storage();
             // Later siblings are not candidates until their source-order turn.
             // This exactly-once creation scan avoids old-old resampling, including
             // pairs whose initial independent clock returned NoReaction.
             for new in first_product..self.molecules.len() {
-                for older in 0..new {
-                    if self.molecules[older].alive {
-                        self.schedule_matching_pair(older, new, rng)?;
-                    }
+                if let Some(index) = &mut self.spatial {
+                    index.insert(new, self.molecules[new].instance().position);
+                }
+                self.collect_candidates(new, false);
+                for i in 0..self.candidates.len() {
+                    let older = self.candidates[i];
+                    self.schedule_matching_pair(older, new, rng)?;
                 }
                 self.schedule_unary(new, rng)?;
             }
