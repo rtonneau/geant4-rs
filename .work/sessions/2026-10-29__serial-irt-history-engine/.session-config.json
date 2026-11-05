@@ -178,6 +178,30 @@
         "ticket": "04-observation-and-limits",
         "commit": "5bb56ed"
       }
+    },
+    {
+      "at": "2026-11-05T23:11:03.604Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-spatial-index.md",
+        "03-implement/05-spatial-index/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-spatial-index"
+      }
+    },
+    {
+      "at": "2026-11-05T23:31:11.945Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-spatial-index/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-spatial-index",
+        "commit": "bc8d1ef"
+      }
     }
   ],
   "current_phase": "ship",
