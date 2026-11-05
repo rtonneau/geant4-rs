@@ -162,7 +162,7 @@ alone does not establish the independent charged Brownian physical-law gate.
 **Status: REQUESTED; no generator run or reference evidence supplied.**
 Prospectively approved replacement gate; RR-004 remains unchanged and unpassed.
 
-- Program: `g4rs_ref pair_matrix_irt_g1f`, Geant4 11.4.1 / G4EMLOW 8.8.
+- Program: `g4rs_ref pair_matrix_irt_g1f`, Geant4 11.4.3 / G4EMLOW 8.8.
 - Working directory: `validation/geant4/g4rs_ref`; executable on PATH.
 - Command: `g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n100000.csv 20261027404 100000`.
 - New files: that CSV and `validation/reference/provenance_g1f_pair_matrix_n100000.toml`.
@@ -179,3 +179,6 @@ Prospectively approved replacement gate; RR-004 remains unchanged and unpassed.
   represented as a Geant4 return. No physical-law PASS is claimed.
 
 Agents may compile-check this mode but must not run it, including smoke tests.
+
+Version amendment: explicitly authorized 2026-11-05 to use 11.4.3. The earlier
+11.4.1 production output is scratch-only; no reference fixture was accepted.

@@ -273,14 +273,19 @@ move the point or use the limiting distribution as a direct Geant4 result.
 ## 11. G1-F / RR-005 (user-run only)
 
 Use section 2 with source `validation/geant4/g4rs_ref` and a fresh build
-`.scratch/tests/2026-11-05__g1f/build`. Require Geant4 11.4.1 even when the
-machine default G4_ROOT names a newer installation. Select a verified 11.4.1
+`.scratch/tests/2026-11-05__g1f/build-1143`. Require Geant4 11.4.3 using the
+verified G4_ROOT installation. Select a verified 11.4.3
 install through the configure argument; never relax the runtime version guard.
 Resolve Qt from QT5_PREFIX or validate the prefix in a previous successful
 CMake cache as described in section 10. The mode is `pair_matrix_irt_g1f`;
 README and RR-005 contain its command, 120-row schema and provenance contract.
 Do not execute the producer as an agent, even to test the contact diagnostic.
 
-Compile verification (2026-11-05): MSVC 19.50.35729, Ninja, RelWithDebInfo,
-Geant4 11.4.1 configured, compiled and linked successfully. The existing Qt
-prefix was recovered from a verified successful cache. No executable was run.
+Historical compile verification (2026-11-05) used Geant4 11.4.1 and Qt5.
+The user subsequently authorized RR-005 execution and migration to 11.4.3.
+For 11.4.3 this installation exports Qt6 dependencies resolved by the vcpkg
+toolchain; do not assume the older Qt5 runtime is required. Configure with
+`-DGeant4_DIR=<G4_ROOT>/lib/cmake/Geant4` and the section 2 toolchain.
+MSVC's stricter Qt6 compile options exposed an ambiguous G4String/empty-literal
+conditional in the spatial diagnostic; explicit std::string conversions preserve
+its behavior and allow the shared executable to build.

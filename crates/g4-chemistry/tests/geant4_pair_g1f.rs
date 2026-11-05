@@ -98,7 +98,7 @@ fn parse_csv(text: &str, n: u64) -> Result<Vec<Row>, String> {
     if lines.first().copied()
         != Some("# generator: g4rs_ref; mode: pair_matrix_irt_g1f; schema: g1f_pair_v1")
         || !lines.get(1).is_some_and(|s| {
-            s.starts_with("# geant4_version_number: 1141 (")
+            s.starts_with("# geant4_version_number: 1143 (")
                 && s.ends_with("; chemistry: G4EmDNAChemistry_option3; timestep_model: IRT")
         })
         || lines.get(2).copied()
@@ -253,7 +253,7 @@ fn validate_provenance(text: &str, csv: &[u8], n: u64) -> Result<(), String> {
     let string = |key: &str| value.get(key).and_then(toml::Value::as_str);
     let integer = |key: &str| value.get(key).and_then(toml::Value::as_integer);
     for (key, expected) in [
-        ("geant4_version", "11.4.1"),
+        ("geant4_version", "11.4.3"),
         ("g4emlow_version", "8.8"),
         ("physics_constructor", "G4EmDNAPhysics_option2"),
         ("chemistry_constructor", "G4EmDNAChemistry_option3"),
@@ -271,7 +271,7 @@ fn validate_provenance(text: &str, csv: &[u8], n: u64) -> Result<(), String> {
         }
     }
     for (key, expected) in [
-        ("geant4_version_number", 1141),
+        ("geant4_version_number", 1143),
         ("seed", G4_SEED as i64),
         ("pairs_per_case_distance", n as i64),
         ("completion_rows", ROWS as i64),
@@ -456,7 +456,7 @@ mod tests {
 
     fn valid_csv_for(n: u64) -> String {
         let mut s = format!(
-            "# generator: g4rs_ref; mode: pair_matrix_irt_g1f; schema: g1f_pair_v1\n# geant4_version_number: 1141 (Geant4 11.4.1); chemistry: G4EmDNAChemistry_option3; timestep_model: IRT\n# seed: {G4_SEED}; rng: RanecuEngine; engine_seeds: {},{}; pairs: {n}\n# direct G4DNAIRT pair kernel; negative -1 ps sentinel means eventual nonreaction; no scheduler cutoff\n{HEADER}\n{EXCLUSIONS}\n",
+            "# generator: g4rs_ref; mode: pair_matrix_irt_g1f; schema: g1f_pair_v1\n# geant4_version_number: 1143 (Geant4 11.4.3); chemistry: G4EmDNAChemistry_option3; timestep_model: IRT\n# seed: {G4_SEED}; rng: RanecuEngine; engine_seeds: {},{}; pairs: {n}\n# direct G4DNAIRT pair kernel; negative -1 ps sentinel means eventual nonreaction; no scheduler cutoff\n{HEADER}\n{EXCLUSIONS}\n",
             G4_SEED % SEED_BASE + 1,
             G4_SEED / SEED_BASE + 1
         );
@@ -504,8 +504,8 @@ mod tests {
     fn valid_provenance_for(csv: &[u8], n: u64) -> String {
         let command = command(n);
         format!(
-            r#"geant4_version = "11.4.1"
-geant4_version_number = 1141
+            r#"geant4_version = "11.4.3"
+geant4_version_number = 1143
 g4emlow_version = "8.8"
 physics_constructor = "G4EmDNAPhysics_option2"
 chemistry_constructor = "G4EmDNAChemistry_option3"

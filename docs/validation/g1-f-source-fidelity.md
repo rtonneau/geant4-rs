@@ -7,7 +7,7 @@ grill. This is a documentation decision, not an executed validation result.
 ## Decision and historical evidence
 
 G1-F replaces G1 as the prerequisite for integrating real chemical models
-into R05. It establishes agreement with Geant4 11.4.1 on the declared pair
+into R05. It establishes agreement with Geant4 11.4.3 on the declared pair
 domain, not independent physical validity or history-level G(t) accuracy.
 The original combined G1 contract is superseded, not passed. Its frozen
 [matrix](pair-case-matrix.md), evidence and verdicts remain unchanged.
@@ -85,3 +85,15 @@ scheduler infrastructure only, not chemistry or G(t) validation.
 Integration of real chemical models remains blocked until G1-F passes.
 Passing G1-F permits that integration; it does not pass R05/G2 or subsequent
 history/count/yield gates. This documentation change implements no scheduler.
+
+## Authorized version amendment (2026-11-05)
+
+The project lead explicitly updated RR-005 to Geant4 11.4.3 before accepting
+reference evidence. The earlier complete 11.4.1 run remains scratch-only and
+is not used for this gate. RR-004 and historical evidence retain 11.4.1.
+Direct comparison of the local 11.4.1 and 11.4.3 sources found identical
+`source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc`,
+`source/physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc`
+and `source/processes/electromagnetic/dna/utils/src/G4DNAMolecularReactionTable.cc`.
+The pair kernel, option3 table and contact fallback therefore retain the same
+source contract. Seeds, endpoints, exclusions and acceptance criteria are unchanged.

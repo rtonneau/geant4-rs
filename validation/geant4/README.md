@@ -526,7 +526,7 @@ The existence of a supported filename does not authorize or establish a run.
 ## G1-F: source-fidelity matrix (RR-005, user-run only)
 
 Mode: `g4rs_ref pair_matrix_irt_g1f <new-output.csv> <seed> <pairs-per-case-distance>`.
-This additive mode preserves RR-004. Source: Geant4 11.4.1
+This additive mode preserves RR-004. Source: Geant4 11.4.3
 `source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc`,
 `GetIndependentReactionTime` and `SamplePDC`; option3 parameters are unchanged.
 The [prospective contract](../../docs/validation/g1-f-source-fidelity.md)
@@ -566,8 +566,8 @@ if ($LASTEXITCODE -ne 0) { throw 'G1-F failed; output is diagnostic only' }
 Create `validation/reference/provenance_g1f_pair_matrix_n100000.toml`:
 
 ```toml
-geant4_version = "11.4.1"
-geant4_version_number = 1141
+geant4_version = "11.4.3"
+geant4_version_number = 1143
 g4emlow_version = "8.8"
 physics_constructor = "G4EmDNAPhysics_option2"
 chemistry_constructor = "G4EmDNAChemistry_option3"

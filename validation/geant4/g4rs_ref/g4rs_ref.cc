@@ -777,7 +777,7 @@ class Stepping : public G4UserSteppingAction {
     if (gMode == Mode::SpatialDiagnostic) {
       const G4StepPoint* post = step->GetPostStepPoint();
       const G4VProcess* defining = post->GetProcessDefinedStep();
-      const std::string process = defining ? defining->GetProcessName() : "";
+      const std::string process = defining ? std::string(defining->GetProcessName()) : std::string();
       if (process == "e-_G4DNAExcitation" || process == "e-_G4DNAIonisation" ||
           process == "e-_G4DNAAttachment" || process == "e-_G4DNAElectronSolvation") {
         gSpatialSites.push_back({track->GetTrackID(), track->GetParentID(), post->GetPosition(),
@@ -1308,7 +1308,7 @@ int RunPairMatrixG1F(int argc, char** argv)
   constexpr unsigned long long seedBase = 2147483562ULL;
   if (seed >= seedBase * 2147483398ULL || pairs > 1000000ULL)
     PairMatrixFailure("seed exceeds Ranecu encoding or pair count exceeds preregistered cap");
-  if (G4VERSION_NUMBER != 1141) PairMatrixFailure("requires Geant4 11.4.1");
+  if (G4VERSION_NUMBER != 1143) PairMatrixFailure("requires Geant4 11.4.3");
   FILE* f = fopen(argv[2], "wx");
   if (!f) PairMatrixFailure("cannot exclusively create output");
   gMode = Mode::PhysChem; // only selects the existing option3 physics constructor
@@ -1508,7 +1508,7 @@ int main(int argc, char** argv)
     else G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
   }
 
-  // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.1): G4EmDNABuilder
+  // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.3): G4EmDNABuilder
   // always registers a G4UAtomicDeexcitation, and Born2/Emfietzoglou call GetAtomicShell() and
   // GenerateParticles() on it for K-shell ionisation without checking IsFluoActive(). With fluo
   // off its transition tables are not loaded -> fatal exception de0001; with the tables loaded it
