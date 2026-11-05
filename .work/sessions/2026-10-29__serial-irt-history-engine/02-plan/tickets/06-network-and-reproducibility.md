@@ -24,4 +24,4 @@ Expected: both pass.
 
 **Notes:**
 
-G1 must pass before implementation. Production integration is R06.
+Prerequisite satisfied: G1-F PASS at RR-005 200k (closure `7071bd3`); see ../plan.md for evidence and source-version scope. This does not pass R05/G2 or independent physical validation. Production integration is R06.

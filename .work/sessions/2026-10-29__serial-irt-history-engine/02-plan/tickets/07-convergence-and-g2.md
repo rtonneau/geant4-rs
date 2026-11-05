@@ -26,4 +26,4 @@ Expected: all pass, and the convergence verdict reports evidence honestly.
 
 **Notes:**
 
-G1 must pass before implementation. Later full-track Geant4 count acceptance belongs to R07.
+Prerequisite satisfied: G1-F PASS at RR-005 200k (closure `7071bd3`); see ../plan.md for evidence and source-version scope. This does not pass R05/G2 or independent physical validation. Later full-track Geant4 count acceptance belongs to R07.

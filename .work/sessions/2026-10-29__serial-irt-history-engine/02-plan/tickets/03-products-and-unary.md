@@ -22,4 +22,4 @@ Expected: all tests pass.
 
 **Notes:**
 
-Consult Geant4 source and document any deviation. G1 must pass before implementation.
+Consult Geant4 source and document any deviation. Prerequisite satisfied: G1-F PASS at RR-005 200k (closure `7071bd3`); see ../plan.md for evidence and source-version scope. This does not pass R05/G2 or independent physical validation.

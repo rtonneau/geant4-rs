@@ -11,7 +11,7 @@ R05 needs a complete, correlated and deterministic serial chemistry history, pre
 
 - **Current behavior:** Physicochemistry produces a 1 ps snapshot; compiled reaction networks, molecule identity, pair IRT and unary primitives exist, but there is no complete history engine.
 - **Pain point:** Independent pair primitives cannot represent competing reactions, product histories, stale events or time-dependent counts.
-- **Dependencies:** R03 and a passed R04/G1 are mandatory before implementation. G1 is currently OPEN: Brownian evidence is INCONCLUSIVE and Geant4 evidence REQUESTED. Follow R05 in docs/reviews/proposed-roadmap.md and preserve existing evidence and physics-only builds.
+- **Dependencies:** R03 remains required. The approved G1-F source-fidelity gate replaces the original combined R04/G1 implementation prerequisite. G1-F passed on 2026-11-05 (RR-005, Geant4 11.4.3, 200k pairs; closure commit `7071bd3`). Implementation is now unblocked. Follow R05 in docs/reviews/proposed-roadmap.md and preserve existing evidence and physics-only builds.
 - **Tech stack:** Rust, g4-chemistry and g4-sim; caller-owned per-history chemistry RNG; Geant4 11.4.1 option3 IRT as the source reference.
 
 ## Success Metrics
@@ -30,12 +30,26 @@ Use Geant4's finite-horizon cutoff formula at a candidate default multiplier of 
 
 ## Assumptions & Trade-offs
 
-G1 remains a hard implementation gate; planning does not constitute its approval or completion. Cutoffs do not imply mathematically zero omitted probability. Preserve explicit reservoirs and the named reaction-53 exception, source provenance and numerical errors. Exclude intra-history parallelism, arbitrary boundaries, track scoring, CLI, event-heap persistence, IRT-syn and V10 closure. A well-mixed oracle is not V10 spatial validation.
+G1-F is the satisfied implementation prerequisite. The original combined G1 was superseded, not passed; independent physical-law limitations remain open. Cutoffs do not imply mathematically zero omitted probability. Preserve explicit reservoirs and the named reaction-53 exception, source provenance and numerical errors. Exclude intra-history parallelism, arbitrary boundaries, track scoring, CLI, event-heap persistence, IRT-syn and V10 closure. A well-mixed oracle is not V10 spatial validation.
 
 ## Open Questions
 
-R04/G1 remains open pending independently converged Brownian evidence and user-run Geant4 reference data and its acceptance. R05 production acceptance depends on its own cutoff convergence results.
+The G1-F implementation prerequisite is resolved. Independent Brownian/physical-law limitations remain open and are not reclassified by source agreement. R05 production acceptance still requires its own cutoff convergence and G2 evidence.
 
 ## Notes
 
 Use the acceptance limits, detailed scope and exclusions in docs/reviews/proposed-roadmap.md R05; preserve the distinction between local G2 checks and the later R07 full-track Geant4 count gate.
+
+## Prerequisite amendment (2026-11-05)
+
+Approved scope: update prerequisite records only; implementation has not started.
+RR-005 passed all 120 included endpoints at 200k; 24 exact PDC contact endpoints
+remain excluded. Analytic, biased-sampler and contact regressions passed separately.
+Evidence: data `51c22b6`, provenance `0b96afe`, closure `7071bd3`; see
+`docs/validation/g1-f-source-fidelity.md` and `docs/08-roadmap.md`.
+The original OPEN dependency above was replaced by the approved G1-F decision;
+historical G1 evidence and limitations remain preserved in those documents.
+
+RR-005 targets 11.4.3. This amendment does not migrate all R05 source semantics
+from their planned 11.4.1 baseline. Verify each relevant .cc implementation
+and record its version and any differences before implementing that behavior.
