@@ -234,3 +234,12 @@ the separate Q21/R14 ordering limitation remains documented.
 - **M8 scope.** The proton 10 MeV acceptance is deferred until M5; M8 seeds cover e- 100 keV and 1 MeV.
 - **Geant4 runs.** Agent sessions write and compile-check C++ but never run it; runs are requested in `validation/geant4/RUN_REQUESTS.md`.
 - No ADR written: none of these is hard to reverse and surprising at once.
+
+## RR-005 follow-up (2026-11-05)
+
+The authorized Geant4 11.4.3 run supplied complete committed evidence. Its
+100k comparison is INCONCLUSIVE (87 PASS, 33 precision shortfalls, zero FAIL);
+G1-F remains open and real-model integration remains blocked. A separately
+recorded 200k precision level is the next step. Exact PDC contact exclusions
+and independent physical-law limitations remain unchanged. See docs/08 for
+all endpoint results. The previous 11.4.1 scratch run is not gate evidence.

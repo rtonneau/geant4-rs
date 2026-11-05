@@ -289,3 +289,11 @@ toolchain; do not assume the older Qt5 runtime is required. Configure with
 MSVC's stricter Qt6 compile options exposed an ambiguous G4String/empty-literal
 conditional in the spatial diagnostic; explicit std::string conversions preserve
 its behavior and allow the shared executable to build.
+
+Authorized 11.4.3 execution: MSVC 19.50.35729 built and linked successfully.
+Smoke (seed 1, 100 pairs) and production (20261027404, 100000 pairs) exited 0
+with eight completion lines and 120 rows. G4EMLOW 8.8 was explicitly selected;
+runtime PATH used the selected install bin and vcpkg x64-windows bin.
+The initial consumer rejected channel 51's expected spelling; native `O^-1`
+was verified against G4Oxygen.cc and the parser expectation corrected.
+The complete comparison is INCONCLUSIVE on precision, not a runtime failure.

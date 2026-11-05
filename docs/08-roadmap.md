@@ -578,3 +578,147 @@ Guides: adding particle / process / reaction; example configs; mapping table C++
 
 ## M11 Extensions (separate plans)
 1-10 MeV electrons (Q1, deferred by decision), finite boxes/boundaries (UHDR), scavengers/oxygen, IRT-syn and parallel chemistry (E.4), additional particles.
+
+## RR-005 result: Geant4 11.4.3 (2026-11-05)
+
+The explicitly authorized version amendment preserved all statistical criteria.
+Generator `4e5ea99`, data `eba9b3c`, provenance `b7febf0`. Smoke and production
+exited 0, with eight completed channels and 120 ordered rows; 24 exact PDC
+contact endpoints remain excluded. Production uses 100,000 pairs per setting.
+The separate Geant4 SamplePDC contact diagnostic passed before RNG reset.
+
+The strict consumer exited 101: GEANT4 INCONCLUSIVE, 87 PASS, 33 insufficient
+precision, zero FAIL. The 216-endpoint analytic family, biased-sampler rejection
+and Rust contact regression passed in the workspace suite. G1-F remains OPEN;
+no physical-law or history-level claim follows. The next registered precision
+level is 200,000 with new files, not replacement of this evidence.
+
+Consumer plumbing correction: source `G4Oxygen.cc` and native output name the
+channel-51 reactants `O^-1`, not `°O^-1`. The expected spelling was corrected;
+numerical checks and thresholds were not changed.
+
+All endpoint counts below have denominator 100,000. Cdf indices 0..4 denote
+tau 0.01, 0.1, 1, 10, 100.
+
+| Channel | r/a | Endpoint | Rust count | Geant4 count | Verdict |
+|---|---|---|---|---|---|
+| 1 | 1 | Cdf(0) | 100000 | 100000 | Pass |
+| 1 | 1 | Cdf(1) | 100000 | 100000 | Pass |
+| 1 | 1 | Cdf(2) | 100000 | 100000 | Pass |
+| 1 | 1 | Cdf(3) | 100000 | 100000 | Pass |
+| 1 | 1 | Cdf(4) | 100000 | 100000 | Pass |
+| 1 | 1 | NoReaction | 0 | 0 | Pass |
+| 1 | 1.5 | Cdf(0) | 21 | 30 | Pass |
+| 1 | 1.5 | Cdf(1) | 17514 | 17610 | Pass |
+| 1 | 1.5 | Cdf(2) | 48199 | 48385 | Inconclusive |
+| 1 | 1.5 | Cdf(3) | 60758 | 61047 | Inconclusive |
+| 1 | 1.5 | Cdf(4) | 64791 | 65095 | Inconclusive |
+| 1 | 1.5 | NoReaction | 33338 | 33064 | Inconclusive |
+| 1 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 1 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 1 | 3 | Cdf(2) | 5449 | 5301 | Pass |
+| 1 | 3 | Cdf(3) | 22141 | 21962 | Inconclusive |
+| 1 | 3 | Cdf(4) | 29909 | 29894 | Pass |
+| 1 | 3 | NoReaction | 66319 | 66435 | Inconclusive |
+| 2 | 1 | Cdf(0) | 100000 | 100000 | Pass |
+| 2 | 1 | Cdf(1) | 100000 | 100000 | Pass |
+| 2 | 1 | Cdf(2) | 100000 | 100000 | Pass |
+| 2 | 1 | Cdf(3) | 100000 | 100000 | Pass |
+| 2 | 1 | Cdf(4) | 100000 | 100000 | Pass |
+| 2 | 1 | NoReaction | 0 | 0 | Pass |
+| 2 | 1.5 | Cdf(0) | 28 | 33 | Pass |
+| 2 | 1.5 | Cdf(1) | 17533 | 17325 | Pass |
+| 2 | 1.5 | Cdf(2) | 48299 | 48066 | Inconclusive |
+| 2 | 1.5 | Cdf(3) | 60675 | 60519 | Inconclusive |
+| 2 | 1.5 | Cdf(4) | 64830 | 64626 | Inconclusive |
+| 2 | 1.5 | NoReaction | 33263 | 33455 | Inconclusive |
+| 2 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 2 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 2 | 3 | Cdf(2) | 5223 | 5363 | Pass |
+| 2 | 3 | Cdf(3) | 21940 | 21883 | Pass |
+| 2 | 3 | Cdf(4) | 29470 | 29684 | Inconclusive |
+| 2 | 3 | NoReaction | 66720 | 66510 | Inconclusive |
+| 8 | 1 | Cdf(0) | 0 | 0 | Pass |
+| 8 | 1 | Cdf(1) | 55673 | 55716 | Inconclusive |
+| 8 | 1 | Cdf(2) | 100000 | 100000 | Pass |
+| 8 | 1 | Cdf(3) | 100000 | 100000 | Pass |
+| 8 | 1 | Cdf(4) | 100000 | 100000 | Pass |
+| 8 | 1 | NoReaction | 0 | 0 | Pass |
+| 8 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 8 | 1.5 | Cdf(1) | 38396 | 38100 | Inconclusive |
+| 8 | 1.5 | Cdf(2) | 100000 | 100000 | Pass |
+| 8 | 1.5 | Cdf(3) | 100000 | 100000 | Pass |
+| 8 | 1.5 | Cdf(4) | 100000 | 100000 | Pass |
+| 8 | 1.5 | NoReaction | 0 | 0 | Pass |
+| 8 | 3 | Cdf(0) | 440 | 464 | Pass |
+| 8 | 3 | Cdf(1) | 27817 | 27752 | Pass |
+| 8 | 3 | Cdf(2) | 56398 | 56345 | Inconclusive |
+| 8 | 3 | Cdf(3) | 67011 | 66910 | Inconclusive |
+| 8 | 3 | Cdf(4) | 70493 | 70429 | Pass |
+| 8 | 3 | NoReaction | 27908 | 27948 | Pass |
+| 9 | 1 | Cdf(0) | 429 | 424 | Pass |
+| 9 | 1 | Cdf(1) | 27338 | 27213 | Inconclusive |
+| 9 | 1 | Cdf(2) | 56237 | 56143 | Inconclusive |
+| 9 | 1 | Cdf(3) | 67002 | 66628 | Inconclusive |
+| 9 | 1 | Cdf(4) | 70368 | 70221 | Inconclusive |
+| 9 | 1 | NoReaction | 28083 | 28259 | Inconclusive |
+| 9 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 9 | 1.5 | Cdf(1) | 2664 | 2644 | Pass |
+| 9 | 1.5 | Cdf(2) | 28343 | 28483 | Inconclusive |
+| 9 | 1.5 | Cdf(3) | 44946 | 44998 | Inconclusive |
+| 9 | 1.5 | Cdf(4) | 50454 | 50538 | Inconclusive |
+| 9 | 1.5 | NoReaction | 46818 | 46807 | Inconclusive |
+| 9 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 9 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 9 | 3 | Cdf(2) | 2705 | 2704 | Pass |
+| 9 | 3 | Cdf(3) | 17681 | 17551 | Pass |
+| 9 | 3 | Cdf(4) | 25703 | 25647 | Pass |
+| 9 | 3 | NoReaction | 70326 | 70329 | Pass |
+| 11 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 11 | 1.5 | Cdf(1) | 3179 | 3207 | Pass |
+| 11 | 1.5 | Cdf(2) | 18905 | 18859 | Pass |
+| 11 | 1.5 | Cdf(3) | 30192 | 29988 | Inconclusive |
+| 11 | 1.5 | Cdf(4) | 34298 | 34243 | Inconclusive |
+| 11 | 1.5 | NoReaction | 63788 | 63791 | Pass |
+| 11 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 11 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 11 | 3 | Cdf(2) | 1713 | 1771 | Pass |
+| 11 | 3 | Cdf(3) | 10630 | 10569 | Pass |
+| 11 | 3 | Cdf(4) | 15679 | 15623 | Pass |
+| 11 | 3 | NoReaction | 81842 | 81937 | Pass |
+| 17 | 1.5 | Cdf(0) | 1 | 2 | Pass |
+| 17 | 1.5 | Cdf(1) | 6627 | 6527 | Pass |
+| 17 | 1.5 | Cdf(2) | 30011 | 30006 | Pass |
+| 17 | 1.5 | Cdf(3) | 43461 | 43149 | Inconclusive |
+| 17 | 1.5 | Cdf(4) | 48090 | 47668 | Inconclusive |
+| 17 | 1.5 | NoReaction | 49730 | 50088 | Inconclusive |
+| 17 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 17 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 17 | 3 | Cdf(2) | 2848 | 3074 | Pass |
+| 17 | 3 | Cdf(3) | 15194 | 15604 | Inconclusive |
+| 17 | 3 | Cdf(4) | 21778 | 22073 | Inconclusive |
+| 17 | 3 | NoReaction | 74972 | 74760 | Inconclusive |
+| 42 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 42 | 1.5 | Cdf(1) | 557 | 558 | Pass |
+| 42 | 1.5 | Cdf(2) | 4335 | 4280 | Pass |
+| 42 | 1.5 | Cdf(3) | 9041 | 9034 | Pass |
+| 42 | 1.5 | Cdf(4) | 11537 | 11628 | Pass |
+| 42 | 1.5 | NoReaction | 87187 | 87145 | Pass |
+| 42 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 42 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 42 | 3 | Cdf(2) | 430 | 474 | Pass |
+| 42 | 3 | Cdf(3) | 3529 | 3607 | Pass |
+| 42 | 3 | Cdf(4) | 5937 | 6020 | Pass |
+| 42 | 3 | NoReaction | 92730 | 92582 | Pass |
+| 51 | 1.5 | Cdf(0) | 0 | 0 | Pass |
+| 51 | 1.5 | Cdf(1) | 163 | 159 | Pass |
+| 51 | 1.5 | Cdf(2) | 818 | 822 | Pass |
+| 51 | 1.5 | Cdf(3) | 1224 | 1269 | Pass |
+| 51 | 1.5 | Cdf(4) | 1390 | 1431 | Pass |
+| 51 | 1.5 | NoReaction | 98529 | 98488 | Pass |
+| 51 | 3 | Cdf(0) | 0 | 0 | Pass |
+| 51 | 3 | Cdf(1) | 0 | 0 | Pass |
+| 51 | 3 | Cdf(2) | 59 | 61 | Pass |
+| 51 | 3 | Cdf(3) | 351 | 341 | Pass |
+| 51 | 3 | Cdf(4) | 501 | 494 | Pass |
+| 51 | 3 | NoReaction | 99411 | 99422 | Pass |

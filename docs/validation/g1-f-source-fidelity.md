@@ -97,3 +97,11 @@ Direct comparison of the local 11.4.1 and 11.4.3 sources found identical
 and `source/processes/electromagnetic/dna/utils/src/G4DNAMolecularReactionTable.cc`.
 The pair kernel, option3 table and contact fallback therefore retain the same
 source contract. Seeds, endpoints, exclusions and acceptance criteria are unchanged.
+
+## Execution result (2026-11-05)
+
+RR-005 now has complete 11.4.3 evidence at 100k. Its strict consumer reports
+INCONCLUSIVE: 87 endpoints pass, 33 lack precision, none fail. Analytic and
+contact regressions pass. G1-F remains OPEN; the next registered precision
+level is 200k. See `../08-roadmap.md` for all endpoint counts and commits.
+The earlier statements about no execution above describe the approval history.

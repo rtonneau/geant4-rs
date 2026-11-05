@@ -159,7 +159,11 @@ alone does not establish the independent charged Brownian physical-law gate.
 
 ### RR-005: G1-F comparable option3 IRT matrix (2026-11-05)
 
-**Status: REQUESTED; no generator run or reference evidence supplied.**
+**Status: closed at 100k; GEANT4 INCONCLUSIVE (2026-11-05).**
+Generator `4e5ea99`, complete data `eba9b3c`, provenance `b7febf0`.
+Exit 0, eight completion lines, 120 rows. Consumer exit 101: 87 PASS,
+33 insufficient-precision endpoints, zero FAIL. G1-F remains open; next
+precision level 200k requires new files. Full results: docs/08.
 Prospectively approved replacement gate; RR-004 remains unchanged and unpassed.
 
 - Program: `g4rs_ref pair_matrix_irt_g1f`, Geant4 11.4.3 / G4EMLOW 8.8.

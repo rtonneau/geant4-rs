@@ -41,7 +41,7 @@ const REACTANTS: [&str; 8] = [
     "°OH^0,H^0",
     "°OH^0,°OH^0",
     "e_aq^-1,H3O^1",
-    "°O^-1,°O^-1",
+    "O^-1,O^-1",
 ];
 
 fn level(n: u64) -> Result<u64, String> {
@@ -161,7 +161,12 @@ fn parse_csv(text: &str, n: u64) -> Result<Vec<Row>, String> {
                     option3_parameters(id).contact_probability(),
                 )
             {
-                return Err("wrong channel metadata".into());
+                return Err(format!(
+                    "wrong channel metadata id={id}: observed={parts:?}; expected reactants={} radius={} probability={}",
+                    REACTANTS[channel_ids.len()],
+                    option3_parameters(id).effective_radius().nm(),
+                    option3_parameters(id).contact_probability()
+                ));
             }
             channel_ids.push(id);
             continue;
@@ -388,7 +393,7 @@ fn rust_counts(p: TwoBodyReactionParameters, case: usize, distance: usize, n: u6
 }
 
 #[test]
-#[ignore = "G1-F REQUESTED: complete user-run CSV and provenance have not been committed"]
+#[ignore = "G1-F external comparison: 100k evidence is precision-inconclusive"]
 fn g1f_option3_irt_matches_geant4() {
     let reference = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../validation/reference");
     let n = level(
