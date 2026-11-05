@@ -1,5 +1,7 @@
 # H. Implementation roadmap
 
+> **Approved update (2026-11-05):** [G1-F source-fidelity decision](validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
+
 Each milestone ends compilable with `fmt`, `clippy -D warnings`, `cargo test --workspace` green. One validated milestone at a time.
 
 ## M0 Foundations (no physics)

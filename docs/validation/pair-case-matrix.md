@@ -1,5 +1,7 @@
 # R04 isolated pair case matrix (preregistered 2026-10-27)
 
+> **Approved update (2026-11-05):** [G1-F source-fidelity decision](g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
+
 This matrix is fixed before R04 statistical runs. It tests isolated reaction-time
 primitives, not a correlated chemical history. Source version: Geant4 11.4.1.
 Literal IDs and source lines come from [the 72-ID execution matrix](option3-reaction-coverage.md),

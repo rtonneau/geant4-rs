@@ -155,3 +155,27 @@ Bonferroni/effect/equivalence and precision-expansion rules are in
 `docs/validation/pair-case-matrix.md`. Future precision levels use new paths;
 never replace RR-003 or previously committed reference files. Geant4 agreement
 alone does not establish the independent charged Brownian physical-law gate.
+
+
+### RR-005: G1-F comparable option3 IRT matrix (2026-11-05)
+
+**Status: REQUESTED; no generator run or reference evidence supplied.**
+Prospectively approved replacement gate; RR-004 remains unchanged and unpassed.
+
+- Program: `g4rs_ref pair_matrix_irt_g1f`, Geant4 11.4.1 / G4EMLOW 8.8.
+- Working directory: `validation/geant4/g4rs_ref`; executable on PATH.
+- Command: `g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n100000.csv 20261027404 100000`.
+- New files: that CSV and `validation/reference/provenance_g1f_pair_matrix_n100000.toml`.
+- Require a clean committed generator, exit 0, 120 ordered rows, eight channel
+  declarations, the exact 24-endpoint exclusion/contact-regression declaration,
+  complete counts and the final completion marker; then record actual provenance
+  and checksum using README's template. Do not commit partial or smoke output.
+- Consumer: `cargo test --release -p g4-chemistry --test geant4_pair_g1f g1f_option3_irt_matches_geant4 -- --ignored --exact --nocapture`.
+- Acceptance and precision expansion: README G1-F section and
+  `docs/validation/g1-f-source-fidelity.md`. A 100k run can be INCONCLUSIVE;
+  new 200k/400k/800k/1m files are permitted only for insufficient precision.
+- Exact PDC contact is excluded explicitly; the direct SamplePDC fallback
+  diagnostic runs separately before RNG reset. Rust's contact limit is not
+  represented as a Geant4 return. No physical-law PASS is claimed.
+
+Agents may compile-check this mode but must not run it, including smoke tests.

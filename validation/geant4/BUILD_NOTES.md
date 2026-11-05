@@ -268,3 +268,19 @@ the proposal and acceptance contain indeterminate arithmetic; its `-1` return
 is divided by D, so it is not the caller's `-1 ps` nonreaction sentinel.
 This is a source limitation at the registered exact contact, not grounds to
 move the point or use the limiting distribution as a direct Geant4 result.
+
+
+## 11. G1-F / RR-005 (user-run only)
+
+Use section 2 with source `validation/geant4/g4rs_ref` and a fresh build
+`.scratch/tests/2026-11-05__g1f/build`. Require Geant4 11.4.1 even when the
+machine default G4_ROOT names a newer installation. Select a verified 11.4.1
+install through the configure argument; never relax the runtime version guard.
+Resolve Qt from QT5_PREFIX or validate the prefix in a previous successful
+CMake cache as described in section 10. The mode is `pair_matrix_irt_g1f`;
+README and RR-005 contain its command, 120-row schema and provenance contract.
+Do not execute the producer as an agent, even to test the contact diagnostic.
+
+Compile verification (2026-11-05): MSVC 19.50.35729, Ninja, RelWithDebInfo,
+Geant4 11.4.1 configured, compiled and linked successfully. The existing Qt
+prefix was recovered from a verified successful cache. No executable was run.
