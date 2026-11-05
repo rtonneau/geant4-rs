@@ -72,6 +72,40 @@
       "files": [
         "HANDOFF.md"
       ]
+    },
+    {
+      "at": "2026-11-05T21:59:44.528Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-05T22:01:01.271Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-pair-history.md",
+        "03-implement/01-pair-history/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-pair-history"
+      }
+    },
+    {
+      "at": "2026-11-05T22:16:33.122Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-pair-history/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-pair-history",
+        "commit": "0cbeccc"
+      }
     }
   ],
   "current_phase": "ship",
@@ -80,5 +114,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-10-28T23:38:38.805Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "delegate"
 }
