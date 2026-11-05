@@ -22,6 +22,8 @@ pub mod diffusion;
 pub mod displacer;
 pub mod engine;
 pub mod error;
+/// Incremental serial history implementation; currently restricted to disjoint pairs.
+pub mod history;
 pub mod irt;
 pub mod molecule;
 pub mod params;

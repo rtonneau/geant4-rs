@@ -5,6 +5,32 @@ use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ChemistryError {
+    /// A history input, boundary or event timestamp violates its declared time domain.
+    #[error("invalid history {field}: {value} ps (expected {minimum}..={maximum} ps)")]
+    InvalidHistoryTime {
+        field: &'static str,
+        value: f64,
+        minimum: f64,
+        maximum: f64,
+    },
+    /// A finite resource budget was exceeded; no complete scientific result exists.
+    #[error("incomplete history: {resource} capacity {limit} exceeded (requires {required})")]
+    HistoryCapacity {
+        resource: &'static str,
+        limit: usize,
+        required: usize,
+    },
+    /// Repeating a failed advancement could reuse randomness or a partial history.
+    #[error("history previously failed and cannot be advanced")]
+    HistoryAlreadyFailed,
+    /// Repeating a descriptor would initialize the same chemical channel twice.
+    #[error("history contains reaction {reaction_id} twice")]
+    DuplicateHistoryReaction { reaction_id: u16 },
+    /// The first history slice deliberately excludes competing pairs.
+    #[error(
+        "molecule {id:?} participates in competing pairs; unsupported by isolated pair history"
+    )]
+    CompetingHistoryPair { id: MoleculeId },
     /// Conditional placement cannot represent the source expression or its branch.
     #[error("reaction {reaction_id}: placement domain failure in {operation}")]
     PlacementDomain {
