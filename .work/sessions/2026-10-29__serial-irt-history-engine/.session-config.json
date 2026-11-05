@@ -106,6 +106,30 @@
         "ticket": "01-pair-history",
         "commit": "0cbeccc"
       }
+    },
+    {
+      "at": "2026-11-05T22:16:44.143Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-competing-events.md",
+        "03-implement/02-competing-events/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-competing-events"
+      }
+    },
+    {
+      "at": "2026-11-05T22:28:42.710Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-competing-events/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-competing-events",
+        "commit": "7b6b73d"
+      }
     }
   ],
   "current_phase": "ship",
