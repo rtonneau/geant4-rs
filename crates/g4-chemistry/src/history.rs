@@ -1,19 +1,25 @@
-//! Serial history storage and the first, disjoint-pair execution slice.
+//! Serial pair histories with competing events and stable molecule identities.
 //!
 //! Source baseline: Geant4 **11.4.1**, `source/processes/electromagnetic/dna/`
 //! `models/src/G4DNAIRT.cc`: `IRTSampling`/`Sampling` (161-244) initialize
 //! pairs once and add global time to elapsed clocks; `MakeReaction` (393-508)
 //! materializes conditional parent sites and source-ordered products;
 //! `FindReaction` (513-549) processes events through the current global time.
+//! `management/include/G4ITReaction.hh`: `CanAddThisReaction` (223-241)
+//! deduplicates pairs; `SelectThisReaction` (269-274) removes all events involving
+//! either parent. Here alive/generation checks lazily discard invalid events,
+//! preserving unaffected clocks without resampling. Unlike the track-hash tie
+//! comparator in `management/src/G4ITReaction.cc` (45-55), the approved Rust
+//! design deliberately resolves exact ties by canonical insertion order.
 //! The existing [`crate::irt`] and [`crate::placement`] kernels retain their
 //! documented source/numerical limitations. The 11.4.3 G1-F evidence does not
 //! migrate these scheduler semantics from their 11.4.1 baseline.
 //!
 //! This slice accepts a selected set of compiled **pair** descriptors and
-//! rejects competing pairs before drawing randomness. Products are recorded
+//! supports competition between input molecules. Products are recorded
 //! in [`PairReaction`], **not inserted or evolved**. Unary chemistry, product
 //! cascades, spatial search and complete-network scientific scores are not
-//! implemented here. Empty/nonreacting inputs and several disjoint pairs are
+//! implemented here. Empty/nonreacting inputs and competing pair systems are
 //! supported. No claim of complete chemistry or R05/G2 acceptance is made.
 //!
 //! Molecules keep creation-order identities, generation and last materialized
@@ -75,14 +81,14 @@ impl HistoryInput {
     }
 }
 
-/// Finite horizon and storage budgets for the isolated-pair slice.
+/// Finite horizon and storage budgets for the pair-history slice.
 #[derive(Debug, Clone, Copy)]
 pub struct PairHistoryOptions {
     /// Inclusive absolute final time, from 1 ps through 1 us.
     pub end_time: Time,
     /// Maximum arena records, including dead records retained for identity.
     pub max_molecules: usize,
-    /// Maximum simultaneous queued events.
+    /// Maximum simultaneous queued events, including stale entries awaiting removal.
     pub max_pending_events: usize,
     /// Maximum executed reactions (and retained reaction records).
     pub max_reactions: usize,
@@ -153,6 +159,20 @@ struct PairEvent {
     generations: [u64; 2],
 }
 
+impl PairEvent {
+    fn is_current(&self, molecules: &[HistoryMolecule]) -> bool {
+        self.participants[0] != self.participants[1]
+            && self
+                .participants
+                .iter()
+                .zip(self.generations)
+                .all(|(id, generation)| {
+                    let parent = &molecules[id.0 as usize];
+                    parent.alive && parent.generation == generation
+                })
+    }
+}
+
 impl PartialEq for PairEvent {
     fn eq(&self, other: &Self) -> bool {
         self.time.total_cmp(&other.time) == Ordering::Equal && self.ordinal == other.ordinal
@@ -202,7 +222,7 @@ impl EventQueue {
     }
 }
 
-/// Caller-RNG-driven isolated pair history, not a complete chemistry result.
+/// Caller-RNG-driven competing pair history, not a complete chemistry result.
 #[derive(Debug)]
 pub struct PairHistory<'a> {
     input: HistoryInput,
@@ -219,9 +239,11 @@ impl<'a> PairHistory<'a> {
     /// Initialize each eligible unordered pair once, in canonical identity order.
     ///
     /// The supplied descriptors explicitly define this limited pair experiment.
-    /// Duplicate channels, unary channels and molecules eligible for several
-    /// pairs are rejected before any RNG draws. All-pairs scanning is deliberate
-    /// for this initial slice; it is not the production spatial search.
+    /// Duplicate channels and unary channels are rejected before any RNG draws.
+    /// Each unordered pair is sampled once per matching descriptor, with distinct
+    /// molecule identities even for A+A. Candidates sort by ascending identity
+    /// pair, then reaction ID; placement retains source reactant order separately.
+    /// All-pairs scanning is deliberate for this slice, not production spatial search.
     pub fn new(
         input: &HistoryInput,
         descriptors: &[&'a CompiledReaction],
@@ -255,18 +277,28 @@ impl<'a> PairHistory<'a> {
                 alive: true,
             })
             .collect();
-        // Validate the slice before sampling: unsupported competition must not
-        // depend on a stochastic NoReaction outcome. At most N/2 candidates.
-        let mut used = vec![false; molecules.len()];
-        let mut candidates = Vec::new();
-        for first in 0..molecules.len() {
-            for second in (first + 1)..molecules.len() {
+        let mut descriptors = descriptors.to_vec();
+        descriptors.sort_unstable_by_key(|reaction| reaction.source().id);
+        let mut history = Self {
+            input: input.clone(),
+            molecules,
+            descriptors,
+            queue: EventQueue::default(),
+            reactions: Vec::new(),
+            options,
+            now: START_PS,
+            failed: false,
+        };
+        // Stream candidates into the bounded queue rather than retaining an
+        // unbounded quadratic candidate list. Each identity pair occurs once.
+        for first in 0..history.molecules.len() {
+            for second in (first + 1)..history.molecules.len() {
                 let species = [
-                    molecules[first].instance().species,
-                    molecules[second].instance().species,
+                    history.molecules[first].instance().species,
+                    history.molecules[second].instance().species,
                 ];
-                for (reaction_index, reaction) in descriptors.iter().enumerate() {
-                    let reactants = reaction
+                for reaction_index in 0..history.descriptors.len() {
+                    let reactants = history.descriptors[reaction_index]
                         .pair()
                         .expect("validated pair descriptor")
                         .reactants();
@@ -277,67 +309,56 @@ impl<'a> PairHistory<'a> {
                     } else {
                         continue;
                     };
-                    for index in [first, second] {
-                        if used[index] {
-                            return Err(ChemistryError::CompetingHistoryPair {
-                                id: molecules[index].id(),
-                            });
-                        }
-                        used[index] = true;
-                    }
-                    candidates.push((reaction_index, participants));
+                    history.schedule_pair(reaction_index, participants, rng)?;
                 }
-            }
-        }
-        let mut history = Self {
-            input: input.clone(),
-            molecules,
-            descriptors: descriptors.to_vec(),
-            queue: EventQueue::default(),
-            reactions: Vec::new(),
-            options,
-            now: START_PS,
-            failed: false,
-        };
-        for (reaction_index, participants) in candidates {
-            let pair = MoleculePair::new(
-                &history.molecules[participants[0]].molecule,
-                &history.molecules[participants[1]].molecule,
-            )?;
-            let parameters = descriptors[reaction_index]
-                .pair()
-                .expect("validated pair descriptor");
-            let time = match sample_independent_reaction_time(pair, parameters, rng)? {
-                ReactionTime::Immediate => START_PS,
-                ReactionTime::After(delay) => {
-                    let time = START_PS + delay.ps();
-                    if !time.is_finite() || time <= START_PS {
-                        return Err(ChemistryError::InvalidHistoryTime {
-                            field: "absolute pair time",
-                            value: time,
-                            minimum: START_PS,
-                            maximum: options.end_time.ps(),
-                        });
-                    }
-                    time
-                }
-                ReactionTime::NoReaction => continue,
-            };
-            if time <= options.end_time.ps() {
-                history.queue.push(
-                    PairEvent {
-                        time,
-                        ordinal: 0,
-                        reaction_id: descriptors[reaction_index].source().id,
-                        participants: participants.map(|index| history.molecules[index].id()),
-                        generations: [0; 2],
-                    },
-                    START_PS,
-                    options.max_pending_events,
-                )?;
             }
         }
         Ok(history)
+    }
+
+    fn schedule_pair(
+        &mut self,
+        reaction_index: usize,
+        participants: [usize; 2],
+        rng: &mut impl Rng,
+    ) -> Result<(), ChemistryError> {
+        let pair = MoleculePair::new(
+            &self.molecules[participants[0]].molecule,
+            &self.molecules[participants[1]].molecule,
+        )?;
+        let parameters = self.descriptors[reaction_index]
+            .pair()
+            .expect("validated pair descriptor");
+        let time = match sample_independent_reaction_time(pair, parameters, rng)? {
+            ReactionTime::Immediate => START_PS,
+            ReactionTime::After(delay) => {
+                let time = START_PS + delay.ps();
+                if !time.is_finite() || time <= START_PS {
+                    return Err(ChemistryError::InvalidHistoryTime {
+                        field: "absolute pair time",
+                        value: time,
+                        minimum: START_PS,
+                        maximum: self.options.end_time.ps(),
+                    });
+                }
+                time
+            }
+            ReactionTime::NoReaction => return Ok(()),
+        };
+        if time <= self.options.end_time.ps() {
+            self.queue.push(
+                PairEvent {
+                    time,
+                    ordinal: 0,
+                    reaction_id: self.descriptors[reaction_index].source().id,
+                    participants: participants.map(|index| self.molecules[index].id()),
+                    generations: participants.map(|index| self.molecules[index].generation),
+                },
+                START_PS,
+                self.options.max_pending_events,
+            )?;
+        }
+        Ok(())
     }
 
     /// Preserve the immutable input, even after contacts consume input molecules.
@@ -355,7 +376,7 @@ impl<'a> PairHistory<'a> {
         &self.reactions
     }
 
-    /// Number of remaining finite-horizon pair events.
+    /// Number of queued entries, including stale events not yet removed at the head.
     pub fn pending_events(&self) -> usize {
         self.queue.heap.len()
     }
@@ -404,6 +425,13 @@ impl<'a> PairHistory<'a> {
 
     fn execute_through(&mut self, target: f64, rng: &mut impl Rng) -> Result<(), ChemistryError> {
         while let Some(&event) = self.queue.heap.peek() {
+            // Discard invalid entries even beyond the target, so the exposed
+            // next event always has live, unchanged parents. No clocks, placement
+            // draws, reaction budget or scheduler time are spent on stale events.
+            if !event.is_current(&self.molecules) {
+                self.queue.heap.pop();
+                continue;
+            }
             if event.time > target {
                 break;
             }
@@ -413,14 +441,6 @@ impl<'a> PairHistory<'a> {
                 self.options.max_reactions,
             )?;
             let parents = event.participants.map(|id| &self.molecules[id.0 as usize]);
-            // Disjoint initialization guarantees liveness; retain versions in
-            // the event so the next slice can invalidate competing events.
-            debug_assert!(
-                parents
-                    .iter()
-                    .zip(event.generations)
-                    .all(|(parent, generation)| parent.alive && parent.generation == generation)
-            );
             let reaction = self
                 .descriptors
                 .iter()
@@ -496,6 +516,7 @@ fn capacity(resource: &'static str, required: usize, limit: usize) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+    use g4_core::vec3::Vec3;
 
     fn event(time: f64, reaction_id: u16) -> PairEvent {
         PairEvent {
@@ -505,6 +526,43 @@ mod tests {
             participants: [MoleculeId(0), MoleculeId(1)],
             generations: [0, 0],
         }
+    }
+
+    #[test]
+    fn events_require_distinct_live_parents_with_matching_generations() {
+        let parents = [0, 1].map(|id| HistoryMolecule {
+            molecule: Molecule::new(
+                MoleculeId(id),
+                SpeciesInstance {
+                    species: crate::Species::H,
+                    position: Vec3::new(0.0, 0.0, 0.0),
+                    time: Time::from_ps(START_PS),
+                },
+            ),
+            generation: 0,
+            alive: true,
+        });
+        let event = event(START_PS, 1);
+        assert!(event.is_current(&parents));
+        for index in 0..2 {
+            let mut changed = parents;
+            changed[index].generation += 1;
+            assert!(
+                !event.is_current(&changed),
+                "live but version-changed parent"
+            );
+            let mut consumed = parents;
+            consumed[index].alive = false;
+            assert!(
+                !event.is_current(&consumed),
+                "dead parent with matching version"
+            );
+        }
+        let self_pair = PairEvent {
+            participants: [MoleculeId(0); 2],
+            ..event
+        };
+        assert!(!self_pair.is_current(&parents));
     }
 
     #[test]

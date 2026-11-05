@@ -1,4 +1,4 @@
-//! The first history slice executes disjoint pairs only; products are recorded,
+//! Isolated-pair history regressions; products are recorded,
 //! not scheduled. Exact fixtures assert scheduler semantics, not G2 acceptance.
 
 use g4_chemistry::history::{HistoryInput, PairHistory, PairHistoryOptions};
@@ -225,16 +225,6 @@ fn invalid_inputs_times_and_unsupported_slices_fail_before_draws() {
             &mut rng
         ),
         Err(ChemistryError::DuplicateHistoryReaction { reaction_id: 1 })
-    ));
-    let competing = HistoryInput::new(&[instance(Species::H, 0.0); 3]).unwrap();
-    assert!(matches!(
-        PairHistory::new(
-            &competing,
-            &[network.get(1).unwrap()],
-            PairHistoryOptions::default(),
-            &mut rng
-        ),
-        Err(ChemistryError::CompetingHistoryPair { .. })
     ));
     let mut history =
         PairHistory::new(&input, &[], PairHistoryOptions::default(), &mut rng).unwrap();
