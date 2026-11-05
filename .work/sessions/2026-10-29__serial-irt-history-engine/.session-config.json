@@ -130,6 +130,30 @@
         "ticket": "02-competing-events",
         "commit": "7b6b73d"
       }
+    },
+    {
+      "at": "2026-11-05T22:28:54.956Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-products-and-unary.md",
+        "03-implement/03-products-and-unary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-products-and-unary"
+      }
+    },
+    {
+      "at": "2026-11-05T22:51:47.782Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-products-and-unary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-products-and-unary",
+        "commit": "779bd3d"
+      }
     }
   ],
   "current_phase": "ship",
