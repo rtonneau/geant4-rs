@@ -1,5 +1,5 @@
-//! Deterministic competition fixtures for the limited pair-history slice.
-//! Products remain unevolved; these scheduler checks do not establish G2.
+//! Deterministic competition fixtures; products do not react in these selected
+//! networks. These scheduler checks do not establish G2.
 
 use g4_chemistry::history::{HistoryInput, PairHistory, PairHistoryOptions};
 use g4_chemistry::irt::{ReactionTime, sample_independent_reaction_time};
@@ -59,7 +59,8 @@ fn competing_channels_use_canonical_ids_and_retain_source_ordered_lineage() {
         assert_eq!(event.placement.products[0].species, Species::HO2);
         for (id, position) in event
             .participants
-            .into_iter()
+            .iter()
+            .copied()
             .zip(event.placement.parent_positions)
         {
             let parent = &history.molecules()[id.0 as usize];
@@ -218,7 +219,16 @@ fn unaffected_clock_and_placement_survive_competition_and_intermediate_advances(
             .advance_to(Time::from_ps(1_000_000.0), &mut rng)
             .unwrap();
         assert_eq!(history.reactions().len(), 2);
-        assert_eq!(history.reactions()[1], baseline.reactions()[0]);
+        let later = &history.reactions()[1];
+        let baseline_later = &baseline.reactions()[0];
+        assert_eq!(later.reaction_id, baseline_later.reaction_id);
+        assert_eq!(later.time, baseline_later.time);
+        assert_eq!(later.participants, baseline_later.participants);
+        assert_eq!(later.generations, baseline_later.generations);
+        assert_eq!(later.placement, baseline_later.placement);
+        assert_eq!(later.accounting, baseline_later.accounting);
+        // The unrelated earlier event created one product, shifting later IDs.
+        assert_eq!(later.products[0].0, baseline_later.products[0].0 + 1);
         assert_eq!(rng.consumed(), baseline_rng.consumed() + 2);
         assert_eq!(history.pending_events(), 0);
         assert!(history.molecules()[2].is_alive());

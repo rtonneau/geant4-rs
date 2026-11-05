@@ -1,4 +1,4 @@
-//! Serial pair histories with competing events and stable molecule identities.
+//! Serial chemical histories with competing events and stable molecule identities.
 //!
 //! Source baseline: Geant4 **11.4.1**, `source/processes/electromagnetic/dna/`
 //! `models/src/G4DNAIRT.cc`: `IRTSampling`/`Sampling` (161-244) initialize
@@ -15,12 +15,10 @@
 //! documented source/numerical limitations. The 11.4.3 G1-F evidence does not
 //! migrate these scheduler semantics from their 11.4.1 baseline.
 //!
-//! This slice accepts a selected set of compiled **pair** descriptors and
-//! supports competition between input molecules. Products are recorded
-//! in [`PairReaction`], **not inserted or evolved**. Unary chemistry, product
-//! cascades, spatial search and complete-network scientific scores are not
-//! implemented here. Empty/nonreacting inputs and competing pair systems are
-//! supported. No claim of complete chemistry or R05/G2 acceptance is made.
+//! Products receive monotonic identities in source order and immediately sample
+//! clocks against older live molecules and their unary channels. Spatial search
+//! and complete-network scientific scores are not implemented here. No claim of
+//! R05/G2 acceptance is made.
 //!
 //! Molecules keep creation-order identities, generation and last materialized
 //! time. Survivors are never diffused merely to advance the clock. The input
@@ -29,15 +27,33 @@
 //! order. Source reactant order is retained separately for conditional placement.
 //! Unlike upstream's strict `irt < timeMax - globalTime`, the final boundary is
 //! inclusive, as required by the approved R05 design.
+//!
+//! `Sampling` (212-231) temporarily diffuses an older partner to the newly
+//! created molecule's time **only for clock sampling**. Neither its stored site
+//! nor its existing clocks change. `MakeReaction` uses the stored sites and the
+//! delay since that sampling time, not the temporary Brownian site. We retain
+//! source-table parent ordering for the asymmetric placement kernel; upstream
+//! instead uses scheduling-track order. This deliberate deterministic ordering
+//! can change product positions when the new product is source reactant B.
+//! Unary channels (250-281) compete through their earliest independent clock.
+//! Unlike upstream, an earlier pair clock does not suppress that unary clock:
+//! it remains available if a competing reaction consumes only the pair partner.
+//! Only consumption of the unary mobile parent invalidates it. Bulk partners
+//! never receive mobile identities. Per-event accounting includes consumed
+//! reservoirs, implicit water and only the exact reaction-53 source exception.
 
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
+use crate::diffusion::diffuse;
 use crate::irt::{ReactionTime, sample_independent_reaction_time};
 use crate::molecule::{Molecule, MoleculeId, MoleculePair};
-use crate::placement::{ReactionPlacement, place_pair_reaction};
+use crate::placement::{ReactionPlacement, place_pair_reaction, place_unary_reaction};
 use crate::reaction_network::CompiledReaction;
-use crate::{ChemistryError, SpeciesInstance};
+use crate::reactions::{BulkParticipant, ReactionParticipant};
+use crate::species::{SpeciesTable, atoms};
+use crate::unary::sample_unary_reaction_time;
+use crate::{ChemistryError, Species, SpeciesInstance};
 use g4_core::units::Time;
 use rand::Rng;
 
@@ -81,7 +97,7 @@ impl HistoryInput {
     }
 }
 
-/// Finite horizon and storage budgets for the pair-history slice.
+/// Finite horizon and storage budgets for pair and unary histories.
 #[derive(Debug, Clone, Copy)]
 pub struct PairHistoryOptions {
     /// Inclusive absolute final time, from 1 ps through 1 us.
@@ -129,25 +145,70 @@ impl HistoryMolecule {
         self.generation
     }
 
-    /// Whether this input molecule has not been consumed.
+    /// Whether this input molecule or product has not been consumed.
     pub fn is_alive(&self) -> bool {
         self.alive
     }
 }
 
-/// Executed pair lineage and placement; products have no history IDs in this slice.
+/// Integer atom/charge accounting for one executed event.
+///
+/// Components are hydrogen atoms, oxygen atoms and charge in units of e.
+/// `mobile_change + implicit_water * [2, 1, 0] - bulk_composition`
+/// equals `source_exception`. Each event is checked before consuming parents.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReactionAccounting {
+    /// Actual products minus consumed mobile parents.
+    pub mobile_change: [i64; 3],
+    /// One consumed reservoir unit; NoneM is a zero-composition sentinel.
+    pub bulk_consumed: Option<BulkParticipant>,
+    /// Signed implicit water products; negative means consumed solvent water.
+    pub implicit_water: i32,
+    /// Zero except for exact reaction 53: O3- -> H3O+ + O2-, giving [3, 0, 1].
+    pub source_exception: [i64; 3],
+}
+
+/// Executed pair or unary lineage, placement and explicit reservoir accounting.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PairReaction {
+pub struct HistoryReaction {
     /// Absolute event time in ps.
     pub time: Time,
     /// Source-table reaction identity.
     pub reaction_id: u16,
-    /// Parent IDs in source reactant order, including A+A's two distinct IDs.
-    pub participants: [MoleculeId; 2],
+    /// One unary mobile parent or two source-ordered pair parents; never a bulk ID.
+    pub participants: Vec<MoleculeId>,
     /// Versions at scheduling, before consumption increments them.
-    pub generations: [u64; 2],
-    /// Source conditional parent sites and ordered, unevolved products.
+    pub generations: Vec<u64>,
+    /// Monotonic identities in source product order, including repeated species.
+    pub products: Vec<MoleculeId>,
+    /// Source conditional parent sites and ordered products.
     pub placement: ReactionPlacement,
+    /// Checked mobile, reservoir, implicit-water and source-exception terms.
+    pub accounting: ReactionAccounting,
+}
+
+/// Compatibility name for the former pair-only reaction record.
+pub type PairReaction = HistoryReaction;
+
+#[derive(Debug, Clone, Copy)]
+struct ParentVersion {
+    id: MoleculeId,
+    generation: u64,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum EventParents {
+    Pair([ParentVersion; 2]),
+    Unary(ParentVersion),
+}
+
+impl EventParents {
+    fn as_slice(&self) -> &[ParentVersion] {
+        match self {
+            Self::Pair(parents) => parents,
+            Self::Unary(parent) => std::slice::from_ref(parent),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -155,21 +216,18 @@ struct PairEvent {
     time: f64,
     ordinal: u64,
     reaction_id: u16,
-    participants: [MoleculeId; 2],
-    generations: [u64; 2],
+    parents: EventParents,
+    sampled_at: f64,
 }
 
 impl PairEvent {
     fn is_current(&self, molecules: &[HistoryMolecule]) -> bool {
-        self.participants[0] != self.participants[1]
-            && self
-                .participants
-                .iter()
-                .zip(self.generations)
-                .all(|(id, generation)| {
-                    let parent = &molecules[id.0 as usize];
-                    parent.alive && parent.generation == generation
-                })
+        let parents = self.parents.as_slice();
+        (parents.len() == 1 || parents[0].id != parents[1].id)
+            && parents.iter().all(|version| {
+                let parent = &molecules[version.id.0 as usize];
+                parent.alive && parent.generation == version.generation
+            })
     }
 }
 
@@ -222,7 +280,7 @@ impl EventQueue {
     }
 }
 
-/// Caller-RNG-driven competing pair history, not a complete chemistry result.
+/// Caller-RNG-driven pair and unary history, not a production chemistry result.
 #[derive(Debug)]
 pub struct PairHistory<'a> {
     input: HistoryInput,
@@ -233,13 +291,14 @@ pub struct PairHistory<'a> {
     options: PairHistoryOptions,
     now: f64,
     failed: bool,
+    compositions: [[i64; 3]; Species::ALL.len()],
 }
 
 impl<'a> PairHistory<'a> {
     /// Initialize each eligible unordered pair once, in canonical identity order.
     ///
-    /// The supplied descriptors explicitly define this limited pair experiment.
-    /// Duplicate channels and unary channels are rejected before any RNG draws.
+    /// The supplied descriptors explicitly define this chemical experiment.
+    /// Duplicate channels are rejected before any RNG draws.
     /// Each unordered pair is sampled once per matching descriptor, with distinct
     /// molecule identities even for A+A. Candidates sort by ascending identity
     /// pair, then reaction ID; placement retains source reactant order separately.
@@ -253,11 +312,6 @@ impl<'a> PairHistory<'a> {
         validate_time("end time", options.end_time.ps(), START_PS, MAX_END_PS)?;
         capacity("molecules", input.snapshot.len(), options.max_molecules)?;
         for (index, reaction) in descriptors.iter().enumerate() {
-            if reaction.pair().is_none() {
-                return Err(ChemistryError::UnsupportedReactionOrder {
-                    reaction_id: reaction.source().id,
-                });
-            }
             if descriptors[..index]
                 .iter()
                 .any(|r| r.source().id == reaction.source().id)
@@ -279,6 +333,15 @@ impl<'a> PairHistory<'a> {
             .collect();
         let mut descriptors = descriptors.to_vec();
         descriptors.sort_unstable_by_key(|reaction| reaction.source().id);
+        let species = SpeciesTable::option3()?;
+        let compositions = Species::ALL.map(|mobile| {
+            let (h, o) = atoms(mobile);
+            [
+                i64::from(h),
+                i64::from(o),
+                i64::from(species.get(mobile).charge),
+            ]
+        });
         let mut history = Self {
             input: input.clone(),
             molecules,
@@ -288,32 +351,52 @@ impl<'a> PairHistory<'a> {
             options,
             now: START_PS,
             failed: false,
+            compositions,
         };
         // Stream candidates into the bounded queue rather than retaining an
         // unbounded quadratic candidate list. Each identity pair occurs once.
         for first in 0..history.molecules.len() {
             for second in (first + 1)..history.molecules.len() {
-                let species = [
-                    history.molecules[first].instance().species,
-                    history.molecules[second].instance().species,
-                ];
-                for reaction_index in 0..history.descriptors.len() {
-                    let reactants = history.descriptors[reaction_index]
-                        .pair()
-                        .expect("validated pair descriptor")
-                        .reactants();
-                    let participants = if species == reactants {
-                        [first, second]
-                    } else if [species[1], species[0]] == reactants {
-                        [second, first]
-                    } else {
-                        continue;
-                    };
-                    history.schedule_pair(reaction_index, participants, rng)?;
-                }
+                history.schedule_matching_pair(first, second, rng)?;
             }
         }
+        for parent in 0..history.molecules.len() {
+            history.schedule_unary(parent, rng)?;
+        }
         Ok(history)
+    }
+
+    fn schedule_matching_pair(
+        &mut self,
+        first: usize,
+        second: usize,
+        rng: &mut impl Rng,
+    ) -> Result<(), ChemistryError> {
+        let species = [
+            self.molecules[first].instance().species,
+            self.molecules[second].instance().species,
+        ];
+        for index in 0..self.descriptors.len() {
+            let Some(parameters) = self.descriptors[index].pair() else {
+                continue;
+            };
+            let participants = if species == parameters.reactants() {
+                [first, second]
+            } else if [species[1], species[0]] == parameters.reactants() {
+                [second, first]
+            } else {
+                continue;
+            };
+            self.schedule_pair(index, participants, rng)?;
+        }
+        Ok(())
+    }
+
+    fn parent_version(&self, index: usize) -> ParentVersion {
+        ParentVersion {
+            id: self.molecules[index].id(),
+            generation: self.molecules[index].generation,
+        }
     }
 
     fn schedule_pair(
@@ -322,39 +405,103 @@ impl<'a> PairHistory<'a> {
         participants: [usize; 2],
         rng: &mut impl Rng,
     ) -> Result<(), ChemistryError> {
-        let pair = MoleculePair::new(
-            &self.molecules[participants[0]].molecule,
-            &self.molecules[participants[1]].molecule,
+        let reaction = self.descriptors[reaction_index];
+        let mut sampling_parents = participants.map(|index| self.molecules[index].molecule);
+        // These temporary sites are deliberately not retained in the arena or
+        // event: upstream uses them for r0 only, not for conditional placement.
+        for (parent, diffusivity) in sampling_parents
+            .iter_mut()
+            .zip(reaction.reactant_diffusivities())
+        {
+            let instance = *parent.instance();
+            let position = diffuse(
+                instance.position,
+                diffusivity,
+                Time::from_ps(self.now - instance.time.ps()),
+                rng,
+            )?;
+            *parent = Molecule::new(
+                parent.id(),
+                SpeciesInstance {
+                    position,
+                    ..instance
+                },
+            );
+        }
+        let pair = MoleculePair::new(&sampling_parents[0], &sampling_parents[1])?;
+        let delay = sample_independent_reaction_time(
+            pair,
+            reaction.pair().expect("matching pair descriptor"),
+            rng,
         )?;
-        let parameters = self.descriptors[reaction_index]
-            .pair()
-            .expect("validated pair descriptor");
-        let time = match sample_independent_reaction_time(pair, parameters, rng)? {
-            ReactionTime::Immediate => START_PS,
+        if let Some(time) = self.absolute_time(delay, "absolute pair time")? {
+            self.queue.push(
+                PairEvent {
+                    time,
+                    ordinal: 0,
+                    reaction_id: reaction.source().id,
+                    parents: EventParents::Pair(participants.map(|i| self.parent_version(i))),
+                    sampled_at: self.now,
+                },
+                self.now,
+                self.options.max_pending_events,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn absolute_time(
+        &self,
+        delay: ReactionTime,
+        field: &'static str,
+    ) -> Result<Option<f64>, ChemistryError> {
+        let time = match delay {
+            ReactionTime::Immediate => self.now,
             ReactionTime::After(delay) => {
-                let time = START_PS + delay.ps();
-                if !time.is_finite() || time <= START_PS {
+                let time = self.now + delay.ps();
+                if !time.is_finite() || time <= self.now {
                     return Err(ChemistryError::InvalidHistoryTime {
-                        field: "absolute pair time",
+                        field,
                         value: time,
-                        minimum: START_PS,
+                        minimum: self.now,
                         maximum: self.options.end_time.ps(),
                     });
                 }
                 time
             }
-            ReactionTime::NoReaction => return Ok(()),
+            ReactionTime::NoReaction => return Ok(None),
         };
-        if time <= self.options.end_time.ps() {
+        Ok((time <= self.options.end_time.ps()).then_some(time))
+    }
+
+    fn schedule_unary(&mut self, parent: usize, rng: &mut impl Rng) -> Result<(), ChemistryError> {
+        let mut earliest: Option<(f64, u16)> = None;
+        for reaction in &self.descriptors {
+            let Some(parameters) = reaction.unary() else {
+                continue;
+            };
+            if parameters.mobile() != self.molecules[parent].instance().species {
+                continue;
+            }
+            let delay = sample_unary_reaction_time(parameters, rng)?;
+            if let Some(time) = self.absolute_time(delay, "absolute unary time")?
+                && earliest.is_none_or(|(best, _)| time < best)
+            {
+                earliest = Some((time, reaction.source().id));
+            }
+        }
+        // Other unary channels can never win for this unchanged mobile parent.
+        // Keep the earliest even if a currently scheduled pair precedes it.
+        if let Some((time, reaction_id)) = earliest {
             self.queue.push(
                 PairEvent {
                     time,
                     ordinal: 0,
-                    reaction_id: self.descriptors[reaction_index].source().id,
-                    participants: participants.map(|index| self.molecules[index].id()),
-                    generations: participants.map(|index| self.molecules[index].generation),
+                    reaction_id,
+                    parents: EventParents::Unary(self.parent_version(parent)),
+                    sampled_at: self.now,
                 },
-                START_PS,
+                self.now,
                 self.options.max_pending_events,
             )?;
         }
@@ -366,7 +513,7 @@ impl<'a> PairHistory<'a> {
         self.input.snapshot()
     }
 
-    /// Arena in identity order; includes dead parents and no unevolved products.
+    /// Arena in identity order, including dead parents and source-ordered products.
     pub fn molecules(&self) -> &[HistoryMolecule] {
         &self.molecules
     }
@@ -440,33 +587,60 @@ impl<'a> PairHistory<'a> {
                 self.reactions.len().saturating_add(1),
                 self.options.max_reactions,
             )?;
-            let parents = event.participants.map(|id| &self.molecules[id.0 as usize]);
-            let reaction = self
+            let reaction = *self
                 .descriptors
                 .iter()
                 .find(|reaction| reaction.source().id == event.reaction_id)
                 .expect("queued reaction belongs to immutable descriptors");
-            let elapsed = Time::from_ps(event.time - parents[0].instance().time.ps());
-            let placement = place_pair_reaction(
-                MoleculePair::new(&parents[0].molecule, &parents[1].molecule)?,
-                reaction,
-                elapsed,
-                rng,
+            let first_product = self.molecules.len();
+            capacity(
+                "molecules",
+                first_product.saturating_add(reaction.source().products.len()),
+                self.options.max_molecules,
             )?;
-            let record = PairReaction {
+            let elapsed = Time::from_ps(event.time - event.sampled_at);
+            let placement = match event.parents {
+                EventParents::Pair(parents) => place_pair_reaction(
+                    MoleculePair::new(
+                        &self.molecules[parents[0].id.0 as usize].molecule,
+                        &self.molecules[parents[1].id.0 as usize].molecule,
+                    )?,
+                    reaction,
+                    elapsed,
+                    rng,
+                )?,
+                EventParents::Unary(parent) => place_unary_reaction(
+                    &self.molecules[parent.id.0 as usize].molecule,
+                    reaction,
+                    elapsed,
+                    rng,
+                )?,
+            };
+            let accounting = self.check_accounting(reaction, &event, &placement)?;
+            let record = HistoryReaction {
                 time: Time::from_ps(event.time),
                 reaction_id: event.reaction_id,
-                participants: event.participants,
-                generations: event.generations,
+                participants: event.parents.as_slice().iter().map(|p| p.id).collect(),
+                generations: event
+                    .parents
+                    .as_slice()
+                    .iter()
+                    .map(|p| p.generation)
+                    .collect(),
+                products: (first_product..first_product + placement.products.len())
+                    .map(|id| MoleculeId(id as u64))
+                    .collect(),
                 placement,
+                accounting,
             };
             self.queue.heap.pop();
-            for (id, position) in event
-                .participants
-                .into_iter()
+            for (parent_version, position) in event
+                .parents
+                .as_slice()
+                .iter()
                 .zip(record.placement.parent_positions)
             {
-                let parent = &mut self.molecules[id.0 as usize];
+                let parent = &mut self.molecules[parent_version.id.0 as usize];
                 parent.molecule = Molecule::new(
                     parent.id(),
                     SpeciesInstance {
@@ -478,10 +652,117 @@ impl<'a> PairHistory<'a> {
                 parent.alive = false;
                 parent.generation += 1;
             }
+            for (id, product) in record.products.iter().zip(&record.placement.products) {
+                self.molecules.push(HistoryMolecule {
+                    molecule: Molecule::new(
+                        *id,
+                        SpeciesInstance {
+                            species: product.species,
+                            position: product.position,
+                            time: record.time,
+                        },
+                    ),
+                    generation: 0,
+                    alive: true,
+                });
+            }
             self.now = event.time;
             self.reactions.push(record);
+            // Later siblings are not candidates until their source-order turn.
+            // This exactly-once creation scan avoids old-old resampling, including
+            // pairs whose initial independent clock returned NoReaction.
+            for new in first_product..self.molecules.len() {
+                for older in 0..new {
+                    if self.molecules[older].alive {
+                        self.schedule_matching_pair(older, new, rng)?;
+                    }
+                }
+                self.schedule_unary(new, rng)?;
+            }
         }
         Ok(())
+    }
+
+    fn check_accounting(
+        &self,
+        reaction: &CompiledReaction,
+        event: &PairEvent,
+        placement: &ReactionPlacement,
+    ) -> Result<ReactionAccounting, ChemistryError> {
+        let source = reaction.source();
+        let parents = event.parents.as_slice();
+        let actual_reactants = parents.iter().map(|p| {
+            ReactionParticipant::Mobile(self.molecules[p.id.0 as usize].instance().species)
+        });
+        let expected_mobile = source
+            .reactants
+            .iter()
+            .copied()
+            .filter(|p| matches!(p, ReactionParticipant::Mobile(_)));
+        if !actual_reactants.eq(expected_mobile)
+            || !placement
+                .products
+                .iter()
+                .map(|p| ReactionParticipant::Mobile(p.species))
+                .eq(source.products.iter().copied())
+        {
+            return Err(ChemistryError::ReactionSourceMismatch {
+                reaction_id: source.id,
+            });
+        }
+        let mut mobile_change = [0; 3];
+        for parent in parents {
+            let species = self.molecules[parent.id.0 as usize].instance().species;
+            for (sum, value) in mobile_change
+                .iter_mut()
+                .zip(self.compositions[species.index()])
+            {
+                *sum -= value;
+            }
+        }
+        for product in &placement.products {
+            for (sum, value) in mobile_change
+                .iter_mut()
+                .zip(self.compositions[product.species.index()])
+            {
+                *sum += value;
+            }
+        }
+        let bulk_consumed = reaction.unary().map(|p| p.bulk());
+        let bulk = match bulk_consumed {
+            Some(BulkParticipant::H2OB) => [2, 1, 0],
+            Some(BulkParticipant::H3OpB) => [3, 1, 1],
+            Some(BulkParticipant::OHmB) => [1, 1, -1],
+            Some(BulkParticipant::NoneM) | None => [0, 0, 0],
+        };
+        let water = i64::from(source.implicit_water);
+        let source_exception =
+            std::array::from_fn(|i| mobile_change[i] + [2 * water, water, 0][i] - bulk[i]);
+        let exact_53 = source.id == 53
+            && source.balance_exception
+            && source.reactants
+                == [
+                    ReactionParticipant::Mobile(Species::O3m),
+                    ReactionParticipant::Bulk(BulkParticipant::NoneM),
+                ]
+            && source.products
+                == [
+                    ReactionParticipant::Mobile(Species::H3Op),
+                    ReactionParticipant::Mobile(Species::O2m),
+                ]
+            && source.implicit_water == 0
+            && source_exception == [3, 0, 1];
+        if !(exact_53 || (!source.balance_exception && source_exception == [0; 3])) {
+            return Err(ChemistryError::ReactionSourceMismatch {
+                reaction_id: source.id,
+            });
+        }
+        Ok(ReactionAccounting {
+            mobile_change,
+            bulk_consumed,
+            implicit_water: source.implicit_water,
+            source_exception,
+        })
     }
 }
 
@@ -518,13 +799,61 @@ mod tests {
     use super::*;
     use g4_core::vec3::Vec3;
 
+    #[test]
+    fn accounting_rejects_changed_products_and_noncanonical_reaction_53_residual() {
+        let network = crate::reactions::ReactionTable::option3()
+            .unwrap()
+            .compile(&SpeciesTable::option3().unwrap())
+            .unwrap();
+        let reaction = network.get(53).unwrap();
+        let input = HistoryInput::new(&[SpeciesInstance {
+            species: Species::O3m,
+            position: Vec3::new(0.0, 0.0, 0.0),
+            time: Time::from_ps(START_PS),
+        }])
+        .unwrap();
+        let mut rng = g4_core::testing::ScriptedRng::new(&[1e-12]);
+        let mut history =
+            PairHistory::new(&input, &[reaction], PairHistoryOptions::default(), &mut rng).unwrap();
+        let event = *history.queue.heap.peek().unwrap();
+        let mut placement = place_unary_reaction(
+            &history.molecules[0].molecule,
+            reaction,
+            Time::from_ps(event.time - START_PS),
+            &mut rng,
+        )
+        .unwrap();
+        assert_eq!(
+            history
+                .check_accounting(reaction, &event, &placement)
+                .unwrap()
+                .source_exception,
+            [3, 0, 1]
+        );
+        placement.products[0].species = Species::H;
+        assert_eq!(
+            history.check_accounting(reaction, &event, &placement),
+            Err(ChemistryError::ReactionSourceMismatch { reaction_id: 53 })
+        );
+        placement.products[0].species = Species::H3Op;
+        // No blanket exemption for a descriptor carrying balance_exception.
+        history.compositions[Species::H3Op.index()][0] += 1;
+        assert_eq!(
+            history.check_accounting(reaction, &event, &placement),
+            Err(ChemistryError::ReactionSourceMismatch { reaction_id: 53 })
+        );
+    }
+
     fn event(time: f64, reaction_id: u16) -> PairEvent {
         PairEvent {
             time,
             ordinal: 0,
             reaction_id,
-            participants: [MoleculeId(0), MoleculeId(1)],
-            generations: [0, 0],
+            parents: EventParents::Pair([0, 1].map(|id| ParentVersion {
+                id: MoleculeId(id),
+                generation: 0,
+            })),
+            sampled_at: START_PS,
         }
     }
 
@@ -559,7 +888,12 @@ mod tests {
             );
         }
         let self_pair = PairEvent {
-            participants: [MoleculeId(0); 2],
+            parents: EventParents::Pair(
+                [ParentVersion {
+                    id: MoleculeId(0),
+                    generation: 0,
+                }; 2],
+            ),
             ..event
         };
         assert!(!self_pair.is_current(&parents));

@@ -1,5 +1,5 @@
-//! Isolated-pair history regressions; products are recorded,
-//! not scheduled. Exact fixtures assert scheduler semantics, not G2 acceptance.
+//! Isolated-pair regressions with products that do not react in these selected
+//! networks. Exact fixtures assert scheduler semantics, not G2 acceptance.
 
 use g4_chemistry::history::{HistoryInput, PairHistory, PairHistoryOptions};
 use g4_chemistry::molecule::MoleculeId;
@@ -87,6 +87,7 @@ fn contact_closure_consumes_each_pair_once_in_canonical_order() {
         history
             .molecules()
             .iter()
+            .take(records.len())
             .all(|m| !m.is_alive() && m.generation() == 1)
     );
     assert_eq!(history.pending_events(), 0);
@@ -208,15 +209,15 @@ fn invalid_inputs_times_and_unsupported_slices_fail_before_draws() {
             Err(ChemistryError::InvalidHistoryTime { .. })
         ));
     }
-    assert!(matches!(
+    assert!(
         PairHistory::new(
             &input,
             &[network.get(53).unwrap()],
             PairHistoryOptions::default(),
             &mut rng
-        ),
-        Err(ChemistryError::UnsupportedReactionOrder { .. })
-    ));
+        )
+        .is_ok()
+    ); // A unary descriptor with no matching mobile parent consumes no draws.
     assert!(matches!(
         PairHistory::new(
             &input,
