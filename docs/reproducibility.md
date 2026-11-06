@@ -133,6 +133,31 @@ read from that version's tag. G1-F's 11.4.3 pair evidence does not validate the
 scheduler or change its baseline. The documented history ordering, inclusive
 horizon and unary-fallback deviations remain in force.
 
+R05-C1 now provides a separate [cutoff convergence report](validation/irt-history-convergence.md).
+Its protocol was committed before sampling at `c7188b35`. It compares all-pairs
+with indexed multipliers 1/2/4 on 65,536 clustered and 65,536 dilute synthetic
+inputs (seed 20261106007), retaining 64 paired batches per ensemble, all 15
+species and six observations through 1 us. Each policy restarts the same
+history's chemistry stream; covariance is retained even though omitted
+candidates change subsequent draw assignments. A test-only Rayon batch wrapper
+preserves serial histories and ordered output. The report records input/code
+hashes, full reproduction command and measured candidate/event/payload counts.
+The compact batch statistics, all endpoint results and provenance are preserved
+under `validation/irt_history/evidence/r05_c1/`. A fresh checkout can verify
+their hashes and independently recompute every interval/verdict with
+`python validation/irt_history/audit_r05_c1.py` (Python 3.10+, standard library,
+no simulation or scratch files required). This audit returning zero means the
+recorded evidence is intact, not that its scientific verdict passed.
+
+The result is **INCONCLUSIVE: 687 of 1,080 endpoints pass, 393 are unresolved**.
+Of these, 114 intervals cross an acceptance boundary and 279 have no observed
+paired differences, which the committed protocol does not treat as statistical
+proof. No sampled reference mean fell below 0.1 molecule/history; the rare-count
+branch is tested deterministically but lacks campaign evidence. **G2 and R06
+production integration remain blocked.** Multiplier 1 remains an unaccepted
+candidate default. The explicit ignored statistical gate exits nonzero for
+this result; ordinary workspace test success is not a convergence pass.
+
 ## M7 isolated diffusion and two-body IRT
 Integrated histories own one `Stage::Chemistry` stream per history, created from the existing `RngStreams`; there is no shared mutable RNG. The IRT and diffusion primitives accept a caller-provided RNG and do not select streams themselves. Free diffusion consumes four open-(0,1) uniforms (two Box-Muller pairs) when both `D` and `dt` are positive; zero `D` or zero `dt` returns the original position bitwise and consumes none. IRT draw counts depend on the outcome branch: strict TDC overlap is immediate without a draw; otherwise TDC consumes one draw, using it both for the ultimate-probability decision and, when successful, the inverse-erfc time. Neutral PDC draws for contact or ultimate probability, then proposal/acceptance pairs up to 10,000 proposals; exact equality uses its continuum-limit draws after the ultimate-probability gate. Open uniforms deliberately omit Geant4's theoretical endpoints; invalid arithmetic and convergence exhaustion are typed errors, and outcomes are explicit (`Immediate`, `After`, `NoReaction`) rather than overloaded sentinel times (ADR 0003).
 
