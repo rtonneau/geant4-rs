@@ -511,3 +511,103 @@ binomial errors, absolute effect <0.01 and the adjusted confidence interval
 strictly inside (-0.01,+0.01). Precision expansion alone permits a new complete
 run with a new filename/provenance. Missing data remain REQUESTED. This is
 source-fidelity evidence, separate from the Brownian physical-law verdict.
+
+The consumer selects a precision level with `R04_GEANT4_PAIRS` (default
+`100000`), restricted to 100000, 200000, 400000, 800000 and 1000000. It
+expects `pair_matrix_irt_r04_n<N>.csv` and
+`provenance_r04_pair_matrix_n<N>.toml`, and validates the level-specific
+command, counts, markers, source-ordered Geant4 configuration names and hash.
+For example, after an independently authorized and fully validated 200000-pair
+run, set `R04_GEANT4_PAIRS=200000` and invoke the ignored consumer with
+`cargo test --release -p g4-chemistry --test geant4_pair_r04 r04_option3_irt_matches_geant4 -- --ignored --exact --nocapture`.
+The existence of a supported filename does not authorize or establish a run.
+
+
+## G1-F: source-fidelity matrix (RR-005, user-run only)
+
+Mode: `g4rs_ref pair_matrix_irt_g1f <new-output.csv> <seed> <pairs-per-case-distance>`.
+This additive mode preserves RR-004. Source: Geant4 11.4.3
+`source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc`,
+`GetIndependentReactionTime` and `SamplePDC`; option3 parameters are unchanged.
+The [prospective contract](../../docs/validation/g1-f-source-fidelity.md)
+is source fidelity only, not independent physical validation.
+
+Before statistical sampling, the mode directly calls the public
+`SamplePDC(1,0)` and requires its rejection fallback `-1`. It then restores
+Ranecu to the requested seeds. This diagnostic tests the singular proposal,
+not every charged caller branch. The caller's fallback is divided by D and
+is distinct from the `-1 ps` nonreaction sentinel. The Rust regression
+`rust_pdc_contact_is_a_documented_continuum_limit_not_source_fallback` pins
+Rust's deliberately different finite positive contact-limit sampling.
+No reference output is inferred from that Rust test.
+
+The CSV schema is `g1f_pair_v1`: the same 11 columns and parameter checks as
+RR-004, but **120 ordered data rows**. Iterate IDs 1,2,8,9,11,17,42,51 in
+that order; TDC distances are 1,1.5,3; PDC distances are 1.5,3. Each distance
+has five CDF rows at tau 0.01,0.1,1,10,100 and one eventual nonreaction row.
+All four PDC exact-contact blocks (24 endpoints) are excluded, not shifted.
+The first comment identifies mode `pair_matrix_irt_g1f` and schema
+`g1f_pair_v1`. Immediately after the column header the required comment is:
+
+```text
+# exclusions: PDC exact contact; reaction_ids: 11,17,42,51; r0_over_a: 1; endpoints: 24; contact_regression: SamplePDC(1,0)=-1
+```
+
+The remaining metadata, channel comments and completion marker follow RR-004,
+with `rows: 120`. Reject partial output, missing metadata or unexpected times.
+Use a clean committed generator revision before producing reference evidence.
+From `validation/geant4/g4rs_ref`, with the compiled executable on PATH:
+
+```powershell
+g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n100000.csv 20261027404 100000
+if ($LASTEXITCODE -ne 0) { throw 'G1-F failed; output is diagnostic only' }
+```
+
+Create `validation/reference/provenance_g1f_pair_matrix_n100000.toml`:
+
+```toml
+geant4_version = "11.4.3"
+geant4_version_number = 1143
+g4emlow_version = "8.8"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+timestep_model = "IRT"
+mode = "pair_matrix_irt_g1f"
+schema = "g1f_pair_v1"
+seed = 20261027404
+rng_engine = "RanecuEngine"
+engine_seeds = [933675347, 10]
+pairs_per_case_distance = 100000
+reaction_ids = [1, 2, 8, 9, 11, 17, 42, 51]
+r0_over_a = [1.0, 1.5, 3.0] # union; exclusion_policy removes PDC contact
+tau = [0.01, 0.1, 1.0, 10.0, 100.0]
+excluded_endpoints = 24
+exclusion_policy = "pdc_exact_contact"
+contact_regression = "SamplePDC(1,0)=-1"
+completion_rows = 120
+command = "g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n100000.csv 20261027404 100000"
+working_directory = "validation/geant4/g4rs_ref"
+date = "<actual run date>"
+generator_commit = "<actual 40-character commit>"
+generator_dirty = false
+compiler = "<actual compiler/version>"
+platform = "<actual OS/platform>"
+csv_sha256 = "<actual SHA-256 of complete CSV>"
+```
+
+The strict consumer runs from the repository root:
+
+```powershell
+cargo test --release -p g4-chemistry --test geant4_pair_g1f g1f_option3_irt_matches_geant4 -- --ignored --exact --nocapture
+```
+
+Independent Rust seed: 20261027403. Retain the 144-family two-sided Bonferroni
+threshold 4.495384196564731 at alpha 0.001, independent stabilized binomial
+SE, `abs(z) <= zcrit`, and `abs(diff)+zcrit*SE < 0.01` at all 120 endpoints.
+Insufficient precision is INCONCLUSIVE. Expand only for precision through
+100k,200k,400k,800k,1m, never to chase significance. For another registered N,
+set `G1F_GEANT4_PAIRS=N`, use new `pair_matrix_irt_g1f_n<N>.csv` and
+`provenance_g1f_pair_matrix_n<N>.toml`, and change command/statistics accordingly.
+The Rust case/distance ordinals retain holes for excluded contacts.
+The consumer reports GEANT4 only; G1-F also requires the analytic and contact
+regressions. It does not close physical validity, R05/G2 or G(t) gates.

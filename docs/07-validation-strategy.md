@@ -1,5 +1,7 @@
 # G. Validation strategy
 
+> **Approved update (2026-11-05):** [G1-F source-fidelity decision](validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
+
 Four levels (never conflated; reports state which level a claim has):
 L1 mathematical/algorithmic unit tests; L2 numerical comparison with Geant4 algorithms (same inputs, deterministic quantities: cross sections, CDF tables); L3 statistical comparison with Geant4 simulations (distributions); L4 comparison with published/experimental data. **Agreement at L2/L3 does not establish L4.**
 

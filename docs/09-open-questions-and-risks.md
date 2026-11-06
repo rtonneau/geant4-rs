@@ -1,5 +1,9 @@
 # I. Open questions and risks
 
+> **Current result (2026-11-05): G1-F PASS.** RR-005 at 200k passed all 120 included Geant4 11.4.3 endpoints; 24 PDC contact endpoints remain excluded. Analytic, biased-sampler and contact regressions passed. Real chemical model integration into R05 is now permitted; R05/G2, physical validity and G(t) gates remain unpassed. Earlier OPEN statements below are historical.
+
+> **Approved update (2026-11-05):** [G1-F source-fidelity decision](validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
+
 ## M7 isolated two-body IRT and local oracles
 - **Scope boundary:** unbounded free diffusion, independent two-body option3 IRT outcomes, charged PDC, unary clocks and conditional source-literal product placement are R03 primitives. All 72 entries compile to descriptors, but there is no many-species scheduler, production ODE API, finite-volume boundary or completed external Geant4 pair comparison. SBS and Gillespie/LSODA exist only as validation tests. The 1 ps M6 species list is an initial condition, not evidence of R05 history execution. See [the coverage matrix](validation/option3-reaction-coverage.md).
 - **Model fidelity:** charged TDC uses Geant4 11.4.1's signed Onsager effective-distance mapping. V9 supports this as a fidelity test of that source prescription, not a general exact electrostatic first-passage claim. Charged PDC now follows the source `rc != 0` branch with deterministic high-precision anchors; R04's independent distribution and Geant4 pair gates remain outstanding. R03 placement retains the dimensionally anomalous `MakeReaction` line-433 Gaussian expression literally in Geant4 native units.
@@ -232,3 +236,19 @@ the separate Q21/R14 ordering limitation remains documented.
 - **M8 scope.** The proton 10 MeV acceptance is deferred until M5; M8 seeds cover e- 100 keV and 1 MeV.
 - **Geant4 runs.** Agent sessions write and compile-check C++ but never run it; runs are requested in `validation/geant4/RUN_REQUESTS.md`.
 - No ADR written: none of these is hard to reverse and surprising at once.
+
+## RR-005 follow-up (2026-11-05)
+
+The authorized Geant4 11.4.3 run supplied complete committed evidence. Its
+100k comparison is INCONCLUSIVE (87 PASS, 33 precision shortfalls, zero FAIL);
+G1-F remains open and real-model integration remains blocked. A separately
+recorded 200k precision level is the next step. Exact PDC contact exclusions
+and independent physical-law limitations remain unchanged. See docs/08 for
+all endpoint results. The previous 11.4.1 scratch run is not gate evidence.
+
+## RR-005 precision follow-up resolved (2026-11-05)
+
+The authorized 200k expansion passed all included endpoints with unchanged
+criteria. The 100k precision shortfall is resolved for G1-F. Analytic and
+contact regressions passed separately; G1-F is PASS. Physical-law limitations,
+24 excluded contact endpoints and history-level validation remain open.

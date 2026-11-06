@@ -136,9 +136,64 @@ arithmetic. The exact returned value was not logged. This edge case needs a
 source-faithful resolution before retrying; do not classify an unexpected
 return as physical nonreaction or change the registered grid silently.
 
+Diagnostic rerun 2026-10-29: after adding failure-only value logging, the
+100-pair seed-1 smoke exited 1 at channel 11, contact, pair index 1. The
+returned native value was `-108695652173.91306`, or
+`-108695652173913.05 ps`, not the `-1 ps` no-reaction sentinel. For `b=0`,
+`SamplePDC` computes `p=0`, `q=inf`, and then `X=0`; its acceptance expression
+contains `0/0`. Its 10,001-rejection fallback returns `-1` in the sampler's
+intermediate units, and the caller divides it by the relative diffusion
+coefficient. This explains the observed negative value. The diagnostic output
+is incomplete and is not a reference fixture. Exact contact cannot be sampled
+faithfully by this unmodified Geant4 path after the reaction gate accepts.
+An analytically derived limiting sampler would be a modified reference, not a
+direct Geant4 result; no such substitution is authorized by this registration.
+
 Require 144 rows, exact coverage, valid counts, the requested seed/statistics,
 exit 0 and final complete marker before committing new evidence. The frozen
 Bonferroni/effect/equivalence and precision-expansion rules are in
 `docs/validation/pair-case-matrix.md`. Future precision levels use new paths;
 never replace RR-003 or previously committed reference files. Geant4 agreement
 alone does not establish the independent charged Brownian physical-law gate.
+
+
+### RR-005: G1-F comparable option3 IRT matrix (2026-11-05)
+
+**Status: closed at 100k; GEANT4 INCONCLUSIVE (2026-11-05).**
+Generator `4e5ea99`, complete data `eba9b3c`, provenance `b7febf0`.
+Exit 0, eight completion lines, 120 rows. Consumer exit 101: 87 PASS,
+33 insufficient-precision endpoints, zero FAIL. G1-F remains open; next
+precision level 200k requires new files. Full results: docs/08.
+Prospectively approved replacement gate; RR-004 remains unchanged and unpassed.
+
+- Program: `g4rs_ref pair_matrix_irt_g1f`, Geant4 11.4.3 / G4EMLOW 8.8.
+- Working directory: `validation/geant4/g4rs_ref`; executable on PATH.
+- Command: `g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n100000.csv 20261027404 100000`.
+- New files: that CSV and `validation/reference/provenance_g1f_pair_matrix_n100000.toml`.
+- Require a clean committed generator, exit 0, 120 ordered rows, eight channel
+  declarations, the exact 24-endpoint exclusion/contact-regression declaration,
+  complete counts and the final completion marker; then record actual provenance
+  and checksum using README's template. Do not commit partial or smoke output.
+- Consumer: `cargo test --release -p g4-chemistry --test geant4_pair_g1f g1f_option3_irt_matches_geant4 -- --ignored --exact --nocapture`.
+- Acceptance and precision expansion: README G1-F section and
+  `docs/validation/g1-f-source-fidelity.md`. A 100k run can be INCONCLUSIVE;
+  new 200k/400k/800k/1m files are permitted only for insufficient precision.
+- Exact PDC contact is excluded explicitly; the direct SamplePDC fallback
+  diagnostic runs separately before RNG reset. Rust's contact limit is not
+  represented as a Geant4 return. No physical-law PASS is claimed.
+
+Agents may compile-check this mode but must not run it, including smoke tests.
+
+Version amendment: explicitly authorized 2026-11-05 to use 11.4.3. The earlier
+11.4.1 production output is scratch-only; no reference fixture was accepted.
+
+### RR-005 authorized 200k expansion (2026-11-05)
+
+Status: closed, GEANT4 PASS. The user authorized this precision-only expansion
+after 100k was inconclusive. From `validation/geant4/g4rs_ref`:
+`g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n200000.csv 20261027404 200000`.
+New CSV `pair_matrix_irt_g1f_n200000.csv` (data commit `51c22b6`) and
+`provenance_g1f_pair_matrix_n200000.toml` (`0b96afe`) preserve 100k evidence.
+Producer exit 0, eight channel completion lines, 120 rows. Consumer with
+`G1F_GEANT4_PAIRS=200000` exited 0: all 120 included endpoints PASS;
+24 PDC exact-contact endpoints excluded. No thresholds or seeds changed.

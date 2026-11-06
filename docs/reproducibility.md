@@ -82,6 +82,82 @@ Consequences: adding a species or a channel, changing the processing order (docs
 
 M6 B does not add random draws. Physics histories are computed in parallel; their event lists are then converted with the per-history `PhysChem` stream and reduced sequentially in ascending history id, batch by batch. `run_physchem_summary` is therefore bitwise independent of thread count and batch scheduling. Production attribution, displacement sums and same-decay pair distances are accumulated while the already-selected channel products are emitted and consume no RNG values.
 
+## R05 serial history reproducibility
+
+`g4-chemistry::history::run_history` executes the complete compiled option3
+network on an immutable 1 ps snapshot, using a caller-owned chemistry RNG.
+The 72-channel network includes 52 pair and 20 unary channels. Invalid source
+signatures and unsupported PDC rates fail during compilation, before sampling;
+history horizons outside 1 ps through 1 us fail before any RNG draw. No
+unsupported channel is silently dropped or replaced with another kinetic law.
+
+Initial candidate pairs are sampled in canonical molecule-ID order, with
+matching channels in source-ID order, followed by unary clocks in molecule-ID
+and source-ID order. Event ties use insertion order. Each event consumes its
+parents once and creates monotonic product IDs in source product order. Each
+new product then samples pairs against older live identities and its unary
+channels. Temporary diffusion of older partners, IRT sampling and conditional
+placement consume the same per-history stream. Invalidated events, count
+observations and trace recording consume no draws. Search policy, cutoff,
+input creation order or channel changes can change subsequent draws; bitwise
+identity is not promised between different search policies.
+
+`g4-chemistry/tests/history_network.rs` executes 64 synthetic mixed-species
+histories with seed 20261106006, two molecules of each of the 15 species and
+the full unchanged network. It reconstructs every observed population from
+the lineage, checking parent consumption and source-ordered product identities.
+The workload exercises TDC/PDC, neutral/attractive/repulsive pairs, unary events
+and subsequent reactions of products. This complements the separate per-channel
+execution and atom/charge accounting tests in `history_reactions.rs`.
+
+`g4-sim/tests/history_reproducibility.rs` is a **test-only** Rayon wrapper.
+Its fixed seed is 20261106016, with history IDs 37 through 100, 30 synthetic
+molecules per history, and observations at 1, 10, 100, 1000, 100000 and 1000000 ps.
+For each of indexed search and all-pairs search independently, it compares
+every returned count, diagnostic and lineage field, all floating-point bits,
+and 16 subsequent open-uniform values from each stage stream. Pools of 1, 2
+and 8 threads, batch sizes 1, 7, 64 and 128, and forward/reverse history
+submission produce identical results after ordering by history ID. Chemistry
+leaves the Physics and PhysChem stream states unchanged. Synthetic positions
+use the PhysChem stream only to provide reproducible varied inputs; this is
+not a coupled irradiation workload.
+
+The wrapper is feature-gated, and `cargo test -p g4-sim --no-default-features`
+retains the physics-only build. Production orchestration still stops at
+physicochemistry; integrating the serial history engine is R06. These exact
+same-platform tests establish deterministic execution for the specified
+workloads, not cutoff convergence, R05/G2 acceptance or many-body physical
+accuracy. The source baseline remains Geant4 **11.4.1**:
+`G4EmDNAChemistry_option3.cc:146-664` and `G4DNAIRT.cc:161-281,393-508`,
+read from that version's tag. G1-F's 11.4.3 pair evidence does not validate the
+scheduler or change its baseline. The documented history ordering, inclusive
+horizon and unary-fallback deviations remain in force.
+
+R05-C1 now provides a separate [cutoff convergence report](validation/irt-history-convergence.md).
+Its protocol was committed before sampling at `c7188b35`. It compares all-pairs
+with indexed multipliers 1/2/4 on 65,536 clustered and 65,536 dilute synthetic
+inputs (seed 20261106007), retaining 64 paired batches per ensemble, all 15
+species and six observations through 1 us. Each policy restarts the same
+history's chemistry stream; covariance is retained even though omitted
+candidates change subsequent draw assignments. A test-only Rayon batch wrapper
+preserves serial histories and ordered output. The report records input/code
+hashes, full reproduction command and measured candidate/event/payload counts.
+The compact batch statistics, all endpoint results and provenance are preserved
+under `validation/irt_history/evidence/r05_c1/`. A fresh checkout can verify
+their hashes and independently recompute every interval/verdict with
+`python validation/irt_history/audit_r05_c1.py` (Python 3.10+, standard library,
+no simulation or scratch files required). This audit returning zero means the
+recorded evidence is intact, not that its scientific verdict passed.
+
+The result is **INCONCLUSIVE: 687 of 1,080 endpoints pass, 393 are unresolved**.
+Of these, 114 intervals cross an acceptance boundary and 279 have no observed
+paired differences, which the committed protocol does not treat as statistical
+proof. No sampled reference mean fell below 0.1 molecule/history; the rare-count
+branch is tested deterministically but lacks campaign evidence. **G2 and R06
+production integration remain blocked.** Multiplier 1 remains an unaccepted
+candidate default. The explicit ignored statistical gate exits nonzero for
+this result; ordinary workspace test success is not a convergence pass.
+
 ## M7 isolated diffusion and two-body IRT
 Integrated histories own one `Stage::Chemistry` stream per history, created from the existing `RngStreams`; there is no shared mutable RNG. The IRT and diffusion primitives accept a caller-provided RNG and do not select streams themselves. Free diffusion consumes four open-(0,1) uniforms (two Box-Muller pairs) when both `D` and `dt` are positive; zero `D` or zero `dt` returns the original position bitwise and consumes none. IRT draw counts depend on the outcome branch: strict TDC overlap is immediate without a draw; otherwise TDC consumes one draw, using it both for the ultimate-probability decision and, when successful, the inverse-erfc time. Neutral PDC draws for contact or ultimate probability, then proposal/acceptance pairs up to 10,000 proposals; exact equality uses its continuum-limit draws after the ultimate-probability gate. Open uniforms deliberately omit Geant4's theoretical endpoints; invalid arithmetic and convergence exhaustion are typed errors, and outcomes are explicit (`Immediate`, `After`, `NoReaction`) rather than overloaded sentinel times (ADR 0003).
 

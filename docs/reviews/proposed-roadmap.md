@@ -1,5 +1,7 @@
 # Proposed GPS roadmap: validated native Rust track chemistry
 
+> **Approved update (2026-11-05):** [G1-F source-fidelity decision](../validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
+
 Date: 2026-10-26. Baseline: `1bdcb2d391b5ac88b8802ac360ef1ac2bc9934b6`. **Approval proposal, not an active roadmap modification.** Evidence: [development-state.md](development-state.md). Exhaustive old-to-new mapping: [roadmap-review.md](roadmap-review.md).
 
 ## Executive summary and major decisions
@@ -26,8 +28,8 @@ Priority: P0 = immediate evidence-integrity prerequisite; P1 = electron delivery
 | Phase | Ordered seed(s) | Required predecessors | Milestone exit |
 |---|---|---|---|
 | A: trustworthy baseline | R01, then R02 | Existing checkout and approved migration | G0: strict maintained gates, honest support/provenance, malformed input rejected |
-| B: chemistry kernels | R03, then R04 | R02; R04 also R01 | G1: every option3 regime executable; independent pair evidence passes |
-| C: chemistry histories | R05 | R03 and R04 G1 | G2: deterministic serial scheduler, conservation/identity/time/search tests |
+| B: chemistry kernels | R03, then R04 | R02; R04 also R01 | G1-F: declared Geant4 pair domain passes; physical limitations retained |
+| C: chemistry histories | R05 | R03; real-model integration requires R04 G1-F; synthetic infrastructure may proceed | G2: deterministic serial scheduler, conservation/identity/time/search tests |
 | D: electron application | R06, R08; then R07 | R06 needs R05/R02; R08 needs R06 schema; R07 needs R04/R06/R08 | G3: full-slowing electron G(t), CLI/V13 and separate count/yield gates accepted |
 | E: retained capabilities | R09; R10 then R11 | R09 needs G3; R10 needs G3/R02; R11 needs R10 and G3 | G4a: track segment accepted; G4b: proton/H transport then 10 MeV G(t) accepted |
 | F: measured hardening | R12 | G3/R08; rerun after G4 capabilities | G5: bounded/scaled workload evidence and current extension/release guidance |
@@ -128,7 +130,7 @@ R09 and R10 do not depend on each other. R12 may follow G3 before proton work if
 
 ### R05 — `serial-irt-history-engine`
 
-**Title/objective:** Evolve one complete correlated chemical history safely and deterministically. **Priority/complexity:** P1 / XL. **Traceability:** split scheduler seed; early V13; network-invariant part of the orphan oracle seed. **Dependencies:** R03 and R04/G1. Internal tickets should progress through two-particle, competing triplet, products/unary, then full-network histories—not independent public frameworks.
+**Title/objective:** Evolve one complete correlated chemical history safely and deterministically. **Priority/complexity:** P1 / XL. **Traceability:** split scheduler seed; early V13; network-invariant part of the orphan oracle seed. **Dependencies:** R03; R04/G1-F for real chemical model integration. Time, identity and event-competition infrastructure with deterministic synthetic reactions may proceed before G1-F; this is not G2 acceptance. Internal tickets should progress through two-particle, competing triplet, products/unary, then full-network histories—not independent public frameworks.
 
 **Scope and fixed design:**
 

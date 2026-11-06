@@ -1,0 +1,121 @@
+{
+  "schema": "geant4-rs/r05-c1-evidence/v1",
+  "protocol_commit": "c7188b35bd06420e1ba914c5f404e0c2c2fcfc5b",
+  "engine_base": "f62e1e66df578ec194ba208248872b92a3c42e71",
+  "run_head": "c7188b35bd06420e1ba914c5f404e0c2c2fcfc5b",
+  "working_tree_dirty": true,
+  "dirty_scope": "Uncommitted history_convergence.rs harness plus GPS session/log metadata; production implementation unchanged.",
+  "started_utc": "2026-11-05T23:53:22.5152353Z",
+  "compiler": "rustc 1.97.0 (2d8144b78 2026-07-07), LLVM 22.1.6",
+  "target": "x86_64-pc-windows-msvc",
+  "platform": "Microsoft Windows 10.0.26100",
+  "profile": "optimized test profile, opt-level 3",
+  "geant4_source_version": "11.4.1 (G4VERSION_NUMBER 1141)",
+  "geant4_executed": false,
+  "command": "cargo test -p g4-chemistry --test history_convergence preregistered_cutoff_convergence_gate -- --ignored --exact --nocapture",
+  "command_exit_code": 101,
+  "master_seed": 20261106007,
+  "history_ids": {
+    "Clustered": [
+      0,
+      65535
+    ],
+    "Dilute": [
+      65536,
+      131071
+    ]
+  },
+  "batches_per_ensemble": 64,
+  "histories_per_batch": 1024,
+  "stage_mapping": {
+    "input_positions": "PhysChem",
+    "each_policy_reset": "Chemistry"
+  },
+  "network": "embedded option3; all 15 mobile species and 72 reaction descriptors",
+  "horizon_ps": 1000000,
+  "observation_times_ps": [
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "observation_convention": "right-continuous mobile counts, no G-value normalization",
+  "policies": [
+    "all-pairs",
+    "1",
+    "2",
+    "4"
+  ],
+  "limits": {
+    "retained_molecules": 100000,
+    "pending_events": 100000,
+    "executed_reactions": 100000,
+    "observations": 1024,
+    "trace": null
+  },
+  "scientific_verdict": "Inconclusive",
+  "endpoint_categories": {
+    "Pass": 687,
+    "Inconclusive": 393
+  },
+  "g2_passed": false,
+  "source_log": {
+    "sha256_raw": "39a826333dd794b8c4f5534a67d7d18b042092018be347817ca9550a60865e2f",
+    "bytes_raw": 2171398,
+    "optional_local_path": ".scratch/tests/2026-10-29__serial-irt-history-engine/ticket07-campaign.log"
+  },
+  "capture_sha256_raw": {
+    "protocol_document": "958d596308a725a43a9f67c0135c7ce939c620370a6fb471267945c53e0013ab",
+    "crates/g4-chemistry/tests/history_convergence.rs": "f26918299b0e05c2ac1f1a03d116037478e9b256d397c6af2877083ab2e6a1e8",
+    "Cargo.lock": "469fb57fc7b52930c82e2730f98bab13911863df80826c7394c678027fbdbe1d",
+    "data/chemistry/species_option3.toml": "4d727b7e87b5696889d4b7ad9dc69814cfe65200593f7f1d2fc5a9dbef965f87",
+    "data/chemistry/reactions_option3.toml": "8a992acb1f9973f84fa5149528a6599010cd270895fa6eef4682136babf2888d",
+    "G4DNAIRT.cc": "cdd2bec595262ac672f4d5d5f4b15b28d04f06d11579aca254692ca6e23b4686"
+  },
+  "preservation": "Lossless extraction from the original hash-verified log after review; no resampling or recomputation of recorded endpoints. Fifteen species count sums grouped into each batch/policy/time row. UTF-8 with LF canonical hashes permit Git line-ending conversion.",
+  "initial_candidate_records": [
+    "INITIAL_CANDIDATES,Clustered,[435, 135, 265, 435]",
+    "INITIAL_CANDIDATES,Dilute,[435, 96, 396, 435]"
+  ],
+  "resource_records": [
+    "RESOURCE,Clustered,all-pairs,Resources { candidates: 53085603, channels: 23220912, scheduled: 854605, executed: 604123, peak_pending: 23, max_arena: 65, max_index: 0, peak_row: 36, peak_payload_bytes: 12016 }",
+    "RESOURCE,Clustered,1,Resources { candidates: 16538124, channels: 7322621, scheduled: 855454, executed: 604580, peak_pending: 24, max_arena: 71, max_index: 71, peak_row: 14, peak_payload_bytes: 11792 }",
+    "RESOURCE,Clustered,2,Resources { candidates: 34480819, channels: 15466930, scheduled: 855863, executed: 605091, peak_pending: 25, max_arena: 65, max_index: 65, peak_row: 36, peak_payload_bytes: 12864 }",
+    "RESOURCE,Clustered,4,Resources { candidates: 53085603, channels: 23220912, scheduled: 854605, executed: 604123, peak_pending: 23, max_arena: 65, max_index: 65, peak_row: 36, peak_payload_bytes: 13080 }",
+    "RESOURCE,Dilute,all-pairs,Resources { candidates: 46504939, channels: 21352503, scheduled: 310593, executed: 310363, peak_pending: 8, max_arena: 55, max_index: 0, peak_row: 36, peak_payload_bytes: 6704 }",
+    "RESOURCE,Dilute,1,Resources { candidates: 10250615, channels: 4816109, scheduled: 310277, executed: 310047, peak_pending: 9, max_arena: 56, max_index: 56, peak_row: 35, peak_payload_bytes: 8640 }",
+    "RESOURCE,Dilute,2,Resources { candidates: 41523492, channels: 19077314, scheduled: 310762, executed: 310521, peak_pending: 9, max_arena: 56, max_index: 56, peak_row: 36, peak_payload_bytes: 7824 }",
+    "RESOURCE,Dilute,4,Resources { candidates: 46504939, channels: 21352503, scheduled: 310593, executed: 310363, peak_pending: 8, max_arena: 55, max_index: 55, peak_row: 36, peak_payload_bytes: 7256 }"
+  ],
+  "high_population_fixture": {
+    "command": "cargo test -p g4-chemistry --test history_spatial sparse_high_population_reports_bounded_storage_events_and_candidates -- --exact --nocapture",
+    "exit_code": 0,
+    "input_molecules": 10000,
+    "candidate_visits": 5000,
+    "attempted_pair_channels": 5000,
+    "scheduled_events": 5000,
+    "executed_reactions": 5000,
+    "peak_pending_events": 5000,
+    "arena_records": 15000,
+    "spatial_entries": 15000,
+    "peak_candidate_row": 1,
+    "peak_retained_payload_bytes": 2630432,
+    "payload_is_rss": false
+  },
+  "artifacts": {
+    "batches.csv": {
+      "bytes_lf_utf8": 307340,
+      "sha256_lf_utf8": "1620d29286313055a39c6ebfb8995dd22066bbc0dc9e596d5dddadfc2b64c452"
+    },
+    "endpoints.csv": {
+      "bytes_lf_utf8": 140750,
+      "sha256_lf_utf8": "53a130820d9cf56155e01be58b47c3a1871538f6143f1a8bb54c36cf64c9bd04"
+    },
+    "audit_r05_c1.py": {
+      "bytes_lf_utf8": 7494,
+      "sha256_lf_utf8": "795521da3a3565cacd51cb6d28709f261986c66de643682ae9856012516ff95e"
+    }
+  }
+}

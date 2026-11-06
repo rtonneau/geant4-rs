@@ -3,8 +3,11 @@
 //! Normative source: Geant4 11.4.1
 //! `source/processes/electromagnetic/dna/models/src/G4DNAIRT.cc:393-495`,
 //! `MakeReaction`; the unary fake partner is created at lines 277-280.
-//! The caller supplies parent positions at a common sampling time and an elapsed
-//! delay. This module does not diffuse a history, assign IDs, or schedule products.
+//! The caller supplies stored parent sites and the delay since clock sampling.
+//! For an isolated pair those sites share a time. In a history, an older partner
+//! retains its stored site: `Sampling` (212-231) uses a temporary Brownian site
+//! for the clock only, whereas `MakeReaction` reads the original track site.
+//! This module does not diffuse a history, assign IDs, or schedule products.
 //!
 //! **Source limitation:** line 433 passes `s12 + s22*s22/s12`, where
 //! `s12 = 2 D1 dt` and `s22 = 2 D2 dt`, as a Gaussian *standard deviation*.
@@ -57,8 +60,10 @@ pub struct ReactionPlacement {
 ///
 /// Parents must match **source reactant order** (unlike the symmetric IRT clock).
 /// The formula is asymmetric in the parents, so swapping them silently would
-/// change its meaning. Molecule record times are not used: positions must already
-/// refer to a common sampling time, and `elapsed` is measured from that time.
+/// change its meaning. Molecule record times are not used. Supply the stored
+/// sites, not temporary sites used by lazy partner-time clock sampling, and
+/// measure `elapsed` from the pair clock's sampling time (the newer parent's
+/// birth in a history, which need not be source reactant A's record time).
 pub fn place_pair_reaction(
     pair: MoleculePair<'_>,
     reaction: &CompiledReaction,

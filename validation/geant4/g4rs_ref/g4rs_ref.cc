@@ -777,7 +777,7 @@ class Stepping : public G4UserSteppingAction {
     if (gMode == Mode::SpatialDiagnostic) {
       const G4StepPoint* post = step->GetPostStepPoint();
       const G4VProcess* defining = post->GetProcessDefinedStep();
-      const std::string process = defining ? defining->GetProcessName() : "";
+      const std::string process = defining ? std::string(defining->GetProcessName()) : std::string();
       if (process == "e-_G4DNAExcitation" || process == "e-_G4DNAIonisation" ||
           process == "e-_G4DNAAttachment" || process == "e-_G4DNAElectronSolvation") {
         gSpatialSites.push_back({track->GetTrackID(), track->GetParentID(), post->GetPosition(),
@@ -1267,8 +1267,11 @@ int RunPairMatrix(int argc, char** argv)
       const double scale = radius * radius / diffusion;
       for (unsigned long long pair = 0; pair < pairs; ++pair) {
         const double time = sampler.GetIndependentReactionTime(a, b, distance * radius);
-        if (!std::isfinite(time) || (time < 0 && time != -1 * ps))
+        if (!std::isfinite(time) || (time < 0 && time != -1 * ps)) {
+          fprintf(stderr, "pair_matrix_irt: channel=%d distance=%.17g pair=%llu time_native=%.17g time_ps=%.17g\n",
+                  id, distance, pair, time, time/ps);
           PairMatrixFailure("unexpected IRT result");
+        }
         if (time < 0) ++counts[5];
         else for (size_t i = 0; i < 5; ++i)
           if (time <= taus[i] * scale) ++counts[i];
@@ -1295,10 +1298,110 @@ int RunPairMatrix(int argc, char** argv)
   return 0;
 }
 
+// Separate prospective G1-F contract; RR-004 remains unchanged.
+int RunPairMatrixG1F(int argc, char** argv)
+{
+  if (argc != 5) PairMatrixFailure("expected output path, seed and pairs per case/distance");
+  const auto seed = ParsePairInteger(argv[3]);
+  const auto pairs = ParsePairInteger(argv[4]);
+  // Injective base decomposition into the two valid Ranecu seed ranges, also on Windows.
+  constexpr unsigned long long seedBase = 2147483562ULL;
+  if (seed >= seedBase * 2147483398ULL || pairs > 1000000ULL)
+    PairMatrixFailure("seed exceeds Ranecu encoding or pair count exceeds preregistered cap");
+  if (G4VERSION_NUMBER != 1143) PairMatrixFailure("requires Geant4 11.4.3");
+  FILE* f = fopen(argv[2], "wx");
+  if (!f) PairMatrixFailure("cannot exclusively create output");
+  gMode = Mode::PhysChem; // only selects the existing option3 physics constructor
+  auto* param = G4EmParameters::Instance();
+  param->SetTimeStepModel(G4ChemTimeStepModel::IRT);
+  param->SetFluo(false);
+  param->SetAuger(false);
+  param->SetAugerCascade(false);
+  param->SetPixe(false);
+  auto* rm = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
+  rm->SetUserInitialization(new Detector);
+  rm->SetUserInitialization(new Physics);
+  rm->Initialize();
+  G4LossTableManager::Instance()->SetAtomDeexcitation(nullptr);
+  G4DNAChemistryManager::Instance()->Initialize();
+  auto* table = G4DNAMolecularReactionTable::GetReactionTable();
+  G4DNAIRT sampler;
+  sampler.SetReactionTable(table);
+  auto* oldEngine = G4Random::getTheEngine();
+  CLHEP::RanecuEngine engine;
+  const long seeds[2] = {static_cast<long>(seed % seedBase + 1),
+                         static_cast<long>(seed / seedBase + 1)};
+  engine.setSeeds(seeds, 0);
+  G4Random::setTheEngine(&engine);
+  fprintf(f, "# generator: g4rs_ref; mode: pair_matrix_irt_g1f; schema: g1f_pair_v1\n");
+  fprintf(f, "# geant4_version_number: %d (%s); chemistry: G4EmDNAChemistry_option3; timestep_model: IRT\n", G4VERSION_NUMBER, G4Version.c_str());
+  fprintf(f, "# seed: %llu; rng: RanecuEngine; engine_seeds: %ld,%ld; pairs: %llu\n", seed, seeds[0], seeds[1], pairs);
+  fprintf(f, "# direct G4DNAIRT pair kernel; negative -1 ps sentinel means eventual nonreaction; no scheduler cutoff\n");
+  // Direct public-kernel regression, separate from statistical pair draws.
+  // G4DNAIRT.cc: SamplePDC(a,0) exhausts rejection and returns -1.
+  if (sampler.SamplePDC(1., 0.) != -1.)
+    PairMatrixFailure("G1-F contact fallback changed; investigate source before accepting");
+  engine.setSeeds(seeds, 0); // contact diagnostic must not alter statistical stream
+  fprintf(f, "reaction_id,r0_over_a,a_nm,D_nm2_per_ps,onsager_nm,kobs_M_inv_s_inv,endpoint,tau,observation_time_ps,total_pairs,event_count\n");
+  fprintf(f, "# exclusions: PDC exact contact; reaction_ids: 11,17,42,51; r0_over_a: 1; endpoints: 24; contact_regression: SamplePDC(1,0)=-1\n");
+  const int ids[] = {1, 2, 8, 9, 11, 17, 42, 51};
+  const double distances[] = {1., 1.5, 3.};
+  const double taus[] = {0.01, 0.1, 1., 10., 100.};
+  size_t rows = 0;
+  for (int id : ids) {
+    const auto* reaction = table->GetReaction(id);
+    if (!reaction || reaction->GetReactionType() != (id >= 11 ? 1 : 0))
+      PairMatrixFailure("missing channel or wrong IRT type");
+    const auto* a = reaction->GetReactant1();
+    const auto* b = reaction->GetReactant2();
+    const double radius = id >= 11 ? reaction->GetReactionRadius() : reaction->GetEffectiveReactionRadius();
+    const double diffusion = a->GetDiffusionCoefficient() + b->GetDiffusionCoefficient();
+    if (!(radius > 0 && diffusion > 0) || !std::isfinite(radius + diffusion))
+      PairMatrixFailure("invalid option3 parameters");
+    fprintf(f, "# channel: %d; reactants: %s,%s; effective_radius_nm: %.17g; contact_probability: %.17g\n", id,
+            a->GetName().c_str(), b->GetName().c_str(), reaction->GetEffectiveReactionRadius()/nm, reaction->GetProbability());
+    for (double distance : distances) {
+      if (id >= 11 && distance == 1.) continue; // explicit G1-F domain exclusion
+      unsigned long long counts[6] = {};
+      const double scale = radius * radius / diffusion;
+      for (unsigned long long pair = 0; pair < pairs; ++pair) {
+        const double time = sampler.GetIndependentReactionTime(a, b, distance * radius);
+        if (!std::isfinite(time) || (time < 0 && time != -1 * ps)) {
+          fprintf(stderr, "pair_matrix_irt_g1f: channel=%d distance=%.17g pair=%llu time_native=%.17g time_ps=%.17g\n",
+                  id, distance, pair, time, time/ps);
+          PairMatrixFailure("unexpected IRT result");
+        }
+        if (time < 0) ++counts[5];
+        else for (size_t i = 0; i < 5; ++i)
+          if (time <= taus[i] * scale) ++counts[i];
+      }
+      for (size_t i = 0; i < 6; ++i) {
+        fprintf(f, "%d,%.17g,%.17g,%.17g,%.17g,%.17g,%s,", id, distance,
+                radius/nm, diffusion/(nm*nm/ps), reaction->GetOnsagerRadius()/nm,
+                reaction->GetObservedReactionRateConstant()/(1e-3*m3/(mole*s)),
+                i == 5 ? "no_reaction" : "cdf");
+        if (i == 5) fprintf(f, "inf,inf,");
+        else fprintf(f, "%.17g,%.17g,", taus[i], taus[i]*scale/ps);
+        fprintf(f, "%llu,%llu\n", pairs, counts[i]);
+        ++rows;
+      }
+      if (fflush(f) || ferror(f)) PairMatrixFailure("output write failed");
+    }
+    fprintf(stderr, "pair_matrix_irt_g1f: channel %d complete\n", id);
+  }
+  if (rows != 120) PairMatrixFailure("incomplete matrix");
+  fprintf(f, "# complete: true; seed: %llu; pairs: %llu; rows: %zu\n", seed, pairs, rows);
+  if (fclose(f)) PairMatrixFailure("output close failed");
+  G4Random::setTheEngine(oldEngine);
+  delete rm;
+  return 0;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
 {
+  if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt_g1f") return RunPairMatrixG1F(argc, argv);
   if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt") return RunPairMatrix(argc, argv);
   if (argc < 3) {
     fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...> | two_body_h_h <out.csv> <seed> <pairs>\n", argv[0]);
@@ -1405,7 +1508,7 @@ int main(int argc, char** argv)
     else G4Scheduler::Instance()->SetUserAction(new InitialSpeciesAction());
   }
 
-  // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.1): G4EmDNABuilder
+  // SetFluo(false) alone is not enough with the DNA ionisation models (11.4.3): G4EmDNABuilder
   // always registers a G4UAtomicDeexcitation, and Born2/Emfietzoglou call GetAtomicShell() and
   // GenerateParticles() on it for K-shell ionisation without checking IsFluoActive(). With fluo
   // off its transition tables are not loaded -> fatal exception de0001; with the tables loaded it

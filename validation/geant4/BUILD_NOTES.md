@@ -1,26 +1,20 @@
 # g4rs_ref: build and run runbook (Geant4 11.4.1, Windows / MSVC)
-
 How to build and run the reference generator `validation/geant4/g4rs_ref` (C++, links the installed
 Geant4) and what to do when it fails. Written for an agent with no prior context: follow sections 1-4
 in order, then use section 5 (symptom -> fix) if something breaks. Do not change the physics settings
 of the generator (see `../README.md`); only fix build/runtime problems.
-
 All paths below are **variables**, never hard-code them. The checked-in generator source and
 `CMakeLists.txt` contain no machine paths.
-
 ## 1. Prerequisites (verify first, stop and report if one is missing)
-
 | Variable | Meaning | Example (author's machine) |
 |---|---|---|
 | `G4_ROOT` | Geant4 **install** dir (contains `lib\cmake\Geant4`, `bin\`) | `E:\GEANT4\geant4-v11.4.1-install` |
 | `G4LEDATA` | dataset dir that ends in `G4EMLOW8.8` (DNA data) | `E:\GEANT4\geant4-data\G4EMLOW8.8` |
 | `DEV_DIR` | dev root, only used to find vcpkg | `C:\Users\rtonneau\DEV` |
 | `QT5_PREFIX` | prefix that contains `lib\cmake\Qt5Core` (e.g. a conda env `...\envs\qt5\Library`) | `E:\miniconda3\envs\qt5\Library` |
-
 Also needed: Visual Studio with the C++ workload (MSVC, `vcvars64.bat`), CMake >= 3.16, Ninja, and
 vcpkg (`%DEV_DIR%\vcpkg`, only if the Geant4 install was built with vcpkg libraries such as HDF5; its
 `installed\x64-windows\bin` must be on PATH at run time).
-
 Checks:
 ```powershell
 Test-Path "$env:G4_ROOT\lib\cmake\Geant4\Geant4Config.cmake"     # must be True
@@ -30,13 +24,10 @@ Test-Path "$env:QT5_PREFIX\lib\cmake\Qt5Core"                    # must be True
 Geant4 must be the version in `../README.md` (11.4.1, data set G4EMLOW 8.8); other versions change the
 reference numbers. If `G4_ROOT` or `DEV_DIR` is unset, stop and ask the user (the user-level setup
 script is `~/dotfiles/scripts/setup-dev-env.ps1`); never guess a path.
-
 ## 2. Build (copy-paste, run from `validation/geant4/g4rs_ref`)
-
 Why this is not plain `cmake`: PowerShell / Git Bash have no MSVC environment (issue A), and the Geant4
 install was built with Qt, so `find_package(Geant4)` demands Qt5 even for a batch program (issue B).
 Use a **fresh, untracked build directory** (`build-msvc`); never reuse an old `build/` (stale caches).
-
 ```powershell
 $ErrorActionPreference = 'Stop'
 $vc = (Get-ChildItem "C:\Program Files\Microsoft Visual Studio\*\*\VC\Auxiliary\Build\vcvars64.bat" |
@@ -49,7 +40,6 @@ if ($LASTEXITCODE -ne 0) { throw "build failed" }
 ```
 Success = last line `Linking CXX executable g4rs_ref.exe`. `vswhere.exe is not recognized` printed by the
 bat file is harmless. "`CMAKE_TOOLCHAIN_FILE` unused" is harmless. Do not commit `build-msvc/`.
-
 ## 3. Run environment (needed in every new shell)
 
 ```powershell
@@ -259,3 +249,46 @@ reference evidence. Geant4's neutral PDC contact case has `b=0` in
 exact unexpected return was not instrumented. Resolve and document the source
 edge case before running production, without silently changing the grid or
 counting invalid results as nonreaction. See RR-004 for status.
+
+Diagnostic rerun 2026-10-29: failure-only logging captured channel 11,
+contact, pair index 1, returning `-108695652173.91306` in native units
+(`-108695652173913.05 ps`). The seed-1, 100-pair smoke exited 1; its partial
+CSV is not evidence. `SamplePDC( a, 0 )` exhausts its rejection loop because
+the proposal and acceptance contain indeterminate arithmetic; its `-1` return
+is divided by D, so it is not the caller's `-1 ps` nonreaction sentinel.
+This is a source limitation at the registered exact contact, not grounds to
+move the point or use the limiting distribution as a direct Geant4 result.
+
+
+## 11. G1-F / RR-005 (user-run only)
+
+Use section 2 with source `validation/geant4/g4rs_ref` and a fresh build
+`.scratch/tests/2026-11-05__g1f/build-1143`. Require Geant4 11.4.3 using the
+verified G4_ROOT installation. Select a verified 11.4.3
+install through the configure argument; never relax the runtime version guard.
+Resolve Qt from QT5_PREFIX or validate the prefix in a previous successful
+CMake cache as described in section 10. The mode is `pair_matrix_irt_g1f`;
+README and RR-005 contain its command, 120-row schema and provenance contract.
+Do not execute the producer as an agent, even to test the contact diagnostic.
+
+Historical compile verification (2026-11-05) used Geant4 11.4.1 and Qt5.
+The user subsequently authorized RR-005 execution and migration to 11.4.3.
+For 11.4.3 this installation exports Qt6 dependencies resolved by the vcpkg
+toolchain; do not assume the older Qt5 runtime is required. Configure with
+`-DGeant4_DIR=<G4_ROOT>/lib/cmake/Geant4` and the section 2 toolchain.
+MSVC's stricter Qt6 compile options exposed an ambiguous G4String/empty-literal
+conditional in the spatial diagnostic; explicit std::string conversions preserve
+its behavior and allow the shared executable to build.
+
+Authorized 11.4.3 execution: MSVC 19.50.35729 built and linked successfully.
+Smoke (seed 1, 100 pairs) and production (20261027404, 100000 pairs) exited 0
+with eight completion lines and 120 rows. G4EMLOW 8.8 was explicitly selected;
+runtime PATH used the selected install bin and vcpkg x64-windows bin.
+The initial consumer rejected channel 51's expected spelling; native `O^-1`
+was verified against G4Oxygen.cc and the parser expectation corrected.
+The complete comparison is INCONCLUSIVE on precision, not a runtime failure.
+
+The authorized 200k precision expansion rebuilt the unchanged binary (Ninja:
+no work), reused its successful smoke verification, and exited 0 with eight
+channels and 120 rows. `G1F_GEANT4_PAIRS=200000` selects the new complete
+fixture; the strict consumer passed all 120 endpoints. Preserve the 100k files.

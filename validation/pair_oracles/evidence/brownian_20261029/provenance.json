@@ -1,0 +1,49 @@
+{
+  "started_utc": "2026-10-29T08:39:58.649023+00:00",
+  "command": [
+    "cargo",
+    "test",
+    "--release",
+    "-p",
+    "g4-chemistry",
+    "--test",
+    "pair_brownian",
+    "brownian",
+    "--",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "platform": "Windows-11-10.0.26100-SP0",
+  "python": "3.13.11",
+  "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: x86_64-pc-windows-msvc\nrelease: 1.97.0\nLLVM version: 22.1.6\n",
+  "git_head": "8d2882174bfe945ac8d87dd416ba458d770141b2",
+  "dirty_status": " M crates/g4-chemistry/tests/geant4_pair_r04.rs\n M crates/g4-chemistry/tests/pair_brownian.rs\n M crates/g4-chemistry/tests/pair_oracle/mod.rs\n M docs/validation/pair-oracle-convergence.md\n M validation/geant4/BUILD_NOTES.md\n M validation/geant4/README.md\n M validation/geant4/RUN_REQUESTS.md\n M validation/geant4/g4rs_ref/g4rs_ref.cc\n?? crates/g4-chemistry/tests/fixtures/pair_coulomb_finite_anchors.json\n?? crates/g4-chemistry/tests/pair_oracle/escape.rs\n?? crates/g4-chemistry/tests/pair_oracle/experiment.rs\n?? crates/g4-chemistry/tests/pair_oracle/stopped.rs\n?? docs/validation/pair-coulomb-pde.md\n?? docs/validation/r04-continuation-plan.md\n?? validation/pair_oracles/__pycache__/\n?? validation/pair_oracles/coulomb_pde.py\n?? validation/pair_oracles/evidence/\n?? validation/pair_oracles/run_brownian.py\n?? validation/pair_oracles/test_coulomb_pde.py\n",
+  "environment": {
+    "PAIR_ORACLE_MAX_PAIRS": "1000000",
+    "PAIR_ORACLE_LEVELS": "5",
+    "PAIR_ORACLE_RADIUS": "16",
+    "PAIR_ORACLE_HORIZON": "100",
+    "RAYON_NUM_THREADS": "6"
+  },
+  "files": {
+    "Cargo.lock": "469fb57fc7b52930c82e2730f98bab13911863df80826c7394c678027fbdbe1d",
+    "Cargo.toml": "e5d9f89b0d60ee1f17625042b8ae54083c96be38bc7a07706aa9f2fd36ea3ea2",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\charged.rs": "d7af49d8c0226d215f8bb3b306173f4850ae32b31c16ddf3533a2c1f6b40067a",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\escape.rs": "e2d3b6d05dab54e1ea2522539effadbaa656bc36b5db3ac6a127e4320333053b",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\experiment.rs": "2d0c5ddf51ac80c7de20500f3cf6b3c8d846fee68abcf1aa8b350ed634e2ff82",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\mod.rs": "fbcdc9b208ca6735758605e3bf68dcee4dddcd196c70379cf47949ba20c5e0c5",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\neutral.rs": "4a00f1eae5d8ce96cc01cf0c6bbe14dfc475da71b7e18e22136752303153a61d",
+    "crates\\g4-chemistry\\tests\\pair_oracle\\stopped.rs": "70fdebb990ce3ae5dcffbcc0d4d9ac478dc6fe72eb7201eb7aa31713530f65e0",
+    "crates\\g4-chemistry\\tests\\pair_brownian.rs": "6d0f9f3e4a721936ba933c1ce44317b16ee9be585918cd2a2d3309ee008d9c35",
+    "crates\\g4-chemistry\\tests\\fixtures\\pair_analytic_anchors.json": "b78bf7772841b90eef949f848fda8df67400566f0bacd6d44919edd7d89a52b9",
+    "crates\\g4-chemistry\\tests\\fixtures\\pair_coulomb_anchors.json": "e4666e65b90e7ea035149051d3d49a4ae895a0c468f0be50cf4cf41a86fb4a7a",
+    "crates\\g4-chemistry\\tests\\fixtures\\pair_coulomb_finite_anchors.json": "3a44ca02de940394785adcae354fa1a6c9863a4530efdc872d30021b1c2af52d",
+    "validation\\pair_oracles\\run_brownian.py": "3df4b26c94c6521c6f1f80b78cfa3d759ec78b492f7a3ea9ba8bf43f8d66dd42",
+    "docs\\validation\\pair-case-matrix.md": "fcf7977836a69e5eeefe0c8c6a3669dc0996e641bb77990bee266a0e63c679a8"
+  },
+  "completed": true,
+  "exit_code": 0,
+  "elapsed_seconds": 2133.576540599999,
+  "ended_utc": "2026-10-29T09:15:32.529039+00:00",
+  "unchanged_sources": true
+}

@@ -1,0 +1,19 @@
+{
+  "checked_utc": "2026-10-29T08:42:54.225551+00:00",
+  "git_head": "8d2882174bfe945ac8d87dd416ba458d770141b2",
+  "files": {
+    "crates/g4-core/src/rng.rs": {
+      "sha256": "99ed8ae5e22704eaa008a78aaa7d75a76c300ba7aa2da1d7d6f7595a1de77828",
+      "tracked_head_clean": true
+    },
+    "crates/g4-core/Cargo.toml": {
+      "sha256": "3bb7d5cca7da2bfdf3eabda90dea4dfb6d0d5748e9cfca1215792b4b4644dcab",
+      "tracked_head_clean": true
+    },
+    "crates/g4-chemistry/Cargo.toml": {
+      "sha256": "998af912b8d94b9f65ae0cac55d39858b50941b20b0a12dca47b4b9d373c884b",
+      "tracked_head_clean": true
+    }
+  },
+  "note": "Supplemental check during run; all files unmodified from captured HEAD. Recheck after run."
+}

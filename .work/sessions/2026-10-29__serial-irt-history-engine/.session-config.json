@@ -1,0 +1,296 @@
+{
+  "session_id": "2026-10-29__serial-irt-history-engine",
+  "feature_name": "serial-irt-history-engine",
+  "scratch_dir": ".scratch/tests/2026-10-29__serial-irt-history-engine",
+  "created_at": "2026-10-28T23:20:55.681Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-10-28T23:20:55.681Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-28T23:36:05.781Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-10-28T23:36:14.677Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-10-28T23:38:38.805Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/serial-irt-history-engine",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-10-28T23:38:38.838Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-pair-history.md",
+        "02-plan/tickets/02-competing-events.md",
+        "02-plan/tickets/03-products-and-unary.md",
+        "02-plan/tickets/04-observation-and-limits.md",
+        "02-plan/tickets/05-spatial-index.md",
+        "02-plan/tickets/06-network-and-reproducibility.md",
+        "02-plan/tickets/07-convergence-and-g2.md"
+      ],
+      "detail": {
+        "tickets": 7
+      }
+    },
+    {
+      "at": "2026-11-05T20:06:32.166Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish"
+      }
+    },
+    {
+      "at": "2026-11-05T21:43:57.038Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-05T21:59:44.528Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-05T22:01:01.271Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-pair-history.md",
+        "03-implement/01-pair-history/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-pair-history"
+      }
+    },
+    {
+      "at": "2026-11-05T22:16:33.122Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-pair-history/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-pair-history",
+        "commit": "0cbeccc"
+      }
+    },
+    {
+      "at": "2026-11-05T22:16:44.143Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-competing-events.md",
+        "03-implement/02-competing-events/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-competing-events"
+      }
+    },
+    {
+      "at": "2026-11-05T22:28:42.710Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-competing-events/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-competing-events",
+        "commit": "7b6b73d"
+      }
+    },
+    {
+      "at": "2026-11-05T22:28:54.956Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-products-and-unary.md",
+        "03-implement/03-products-and-unary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-products-and-unary"
+      }
+    },
+    {
+      "at": "2026-11-05T22:51:47.782Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-products-and-unary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-products-and-unary",
+        "commit": "779bd3d"
+      }
+    },
+    {
+      "at": "2026-11-05T22:51:59.090Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-observation-and-limits.md",
+        "03-implement/04-observation-and-limits/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-observation-and-limits"
+      }
+    },
+    {
+      "at": "2026-11-05T23:10:53.249Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-observation-and-limits/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-observation-and-limits",
+        "commit": "5bb56ed"
+      }
+    },
+    {
+      "at": "2026-11-05T23:11:03.604Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-spatial-index.md",
+        "03-implement/05-spatial-index/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-spatial-index"
+      }
+    },
+    {
+      "at": "2026-11-05T23:31:11.945Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/05-spatial-index/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-spatial-index",
+        "commit": "bc8d1ef"
+      }
+    },
+    {
+      "at": "2026-11-05T23:31:23.763Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/06-network-and-reproducibility.md",
+        "03-implement/06-network-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-network-and-reproducibility"
+      }
+    },
+    {
+      "at": "2026-11-05T23:42:53.171Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/06-network-and-reproducibility/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "06-network-and-reproducibility",
+        "commit": "516cfe1"
+      }
+    },
+    {
+      "at": "2026-11-05T23:43:03.679Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/07-convergence-and-g2.md",
+        "03-implement/07-convergence-and-g2/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-convergence-and-g2"
+      }
+    },
+    {
+      "at": "2026-11-06T00:15:32.121Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/07-convergence-and-g2/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-convergence-and-g2",
+        "commit": "0039fea"
+      }
+    },
+    {
+      "at": "2026-11-06T00:16:18.523Z",
+      "event": "changelog_written",
+      "phase": "finish-pending",
+      "detail": {
+        "bump": "minor"
+      }
+    },
+    {
+      "at": "2026-11-06T00:16:41.262Z",
+      "event": "pr_opened",
+      "phase": "finish-pending",
+      "detail": {
+        "url": "https://github.com/rtonneau/geant4-rs/pull/29"
+      }
+    },
+    {
+      "at": "2026-11-06T00:16:34.772Z",
+      "event": "session_finished",
+      "phase": "finished",
+      "files": [
+        "INDEX.md"
+      ]
+    }
+  ],
+  "current_phase": "finished",
+  "git": {
+    "branch": "feat/serial-irt-history-engine",
+    "base_branch": "main",
+    "branch_created_at": "2026-10-28T23:38:38.805Z",
+    "pr_url": "https://github.com/rtonneau/geant4-rs/pull/29"
+  },
+  "ship_mode": "delegate",
+  "changelog": {
+    "bump": "minor",
+    "floor": "minor",
+    "reason": null,
+    "bullets": 2,
+    "path": ".work/changelog/2026-10-29__serial-irt-history-engine.md",
+    "written_at": "2026-11-06T00:16:18.514Z"
+  },
+  "finished_at": "2026-11-06T00:16:34.772Z"
+}

@@ -1,0 +1,6 @@
+   Compiling g4-core v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-core)
+    Checking g4-chemistry v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-chemistry)
+    Checking g4-data v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-data)
+    Checking g4-physics v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-physics)
+    Checking g4-sim v0.1.0 (E:\DEV\RUST\geant4-rs\crates\g4-sim)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.51s

@@ -1,0 +1,674 @@
+//! G1-F: source-matched, isolated Geant4 option3 IRT pairs.
+//! The 120 included endpoints retain the original 144-endpoint threshold; V9 and RR-003 retain
+//! their original tests. Missing reference evidence is REQUESTED, not PASS.
+
+mod common;
+
+use std::path::PathBuf;
+
+use common::{isolated_pair, option3_parameters};
+use g4_chemistry::irt::{ReactionTime, sample_independent_reaction_time};
+use g4_chemistry::molecule::MoleculePair;
+use g4_chemistry::reaction_parameters::TwoBodyReactionParameters;
+use g4_core::rng::{RngStreams, Stage};
+use g4_core::units::RateConstant;
+use sha2::{Digest, Sha256};
+
+const IDS: [u16; 8] = [1, 2, 8, 9, 11, 17, 42, 51];
+const DISTANCES: [f64; 3] = [1.0, 1.5, 3.0];
+const TAU: [f64; 5] = [0.01, 0.1, 1.0, 10.0, 100.0];
+const ROWS: usize = 120;
+const EXCLUSIONS: &str = "# exclusions: PDC exact contact; reaction_ids: 11,17,42,51; r0_over_a: 1; endpoints: 24; contact_regression: SamplePDC(1,0)=-1";
+
+fn grid() -> Vec<(usize, usize)> {
+    (0..8)
+        .flat_map(|case| {
+            (0..3)
+                .filter(move |&distance| case < 4 || distance != 0)
+                .map(move |distance| (case, distance))
+        })
+        .collect()
+}
+fn preceding_rows(case: usize) -> usize {
+    grid().iter().filter(|&&(c, _)| c < case).count() * 6
+}
+const N: u64 = 100_000;
+const REACTANTS: [&str; 8] = [
+    "H^0,H^0",
+    "e_aq^-1,H^0",
+    "e_aq^-1,e_aq^-1",
+    "H3O^1,OH^-1",
+    "°OH^0,H^0",
+    "°OH^0,°OH^0",
+    "e_aq^-1,H3O^1",
+    "O^-1,O^-1",
+];
+
+fn level(n: u64) -> Result<u64, String> {
+    if [100_000, 200_000, 400_000, 800_000, 1_000_000].contains(&n) {
+        Ok(n)
+    } else {
+        Err(format!("unregistered pair count {n}"))
+    }
+}
+fn command(n: u64) -> String {
+    format!(
+        "g4rs_ref pair_matrix_irt_g1f ../../reference/pair_matrix_irt_g1f_n{n}.csv {G4_SEED} {n}"
+    )
+}
+const G4_SEED: u64 = 20_261_027_404;
+const RUST_SEED: u64 = 20_261_027_403;
+const SEED_BASE: u64 = 2_147_483_562;
+// Phi^-1(1 - 0.001/(2*144)); two-sided Bonferroni family.
+const Z_CRIT: f64 = 4.495_384_196_564_731;
+const EFFECT_LIMIT: f64 = 0.01;
+const HEADER: &str = "reaction_id,r0_over_a,a_nm,D_nm2_per_ps,onsager_nm,kobs_M_inv_s_inv,endpoint,tau,observation_time_ps,total_pairs,event_count";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Endpoint {
+    Cdf(usize),
+    NoReaction,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct Row {
+    id: u16,
+    distance: f64,
+    endpoint: Endpoint,
+    event_count: u64,
+}
+
+fn close(actual: f64, expected: f64) -> bool {
+    actual.is_finite() && (actual - expected).abs() <= 1e-12 * expected.abs().max(1e-12)
+}
+
+fn float(value: &str, field: &str) -> Result<f64, String> {
+    value
+        .parse::<f64>()
+        .map_err(|_| format!("invalid {field}: {value}"))
+}
+
+fn parse_csv(text: &str, n: u64) -> Result<Vec<Row>, String> {
+    let n = level(n)?;
+    let lines: Vec<_> = text.lines().collect();
+    let marker = format!("# complete: true; seed: {G4_SEED}; pairs: {n}; rows: {ROWS}");
+    if lines.last().copied() != Some(marker.as_str()) {
+        return Err("missing or mismatched final completion marker".into());
+    }
+    if lines.first().copied()
+        != Some("# generator: g4rs_ref; mode: pair_matrix_irt_g1f; schema: g1f_pair_v1")
+        || !lines.get(1).is_some_and(|s| {
+            s.starts_with("# geant4_version_number: 1143 (")
+                && s.ends_with("; chemistry: G4EmDNAChemistry_option3; timestep_model: IRT")
+        })
+        || lines.get(2).copied()
+            != Some(
+                format!(
+                    "# seed: {G4_SEED}; rng: RanecuEngine; engine_seeds: {},{}; pairs: {n}",
+                    G4_SEED % SEED_BASE + 1,
+                    G4_SEED / SEED_BASE + 1
+                )
+                .as_str(),
+            )
+        || lines.get(3).copied()
+            != Some(
+                "# direct G4DNAIRT pair kernel; negative -1 ps sentinel means eventual nonreaction; no scheduler cutoff",
+            )
+        || lines.get(4).copied() != Some(HEADER)
+    {
+        return Err("CSV generator, settings, or header mismatch".into());
+    }
+    if lines.get(5).copied() != Some(EXCLUSIONS) {
+        return Err("missing exclusion/contact regression declaration".into());
+    }
+    let mut rows = Vec::with_capacity(ROWS);
+    let mut channel_ids = Vec::new();
+    for line in &lines[6..lines.len() - 1] {
+        if let Some(comment) = line.strip_prefix("# channel: ") {
+            let parts: Vec<_> = comment.split("; ").collect();
+            if parts.len() != 4 {
+                return Err("incomplete channel comment".into());
+            }
+            let id = parts[0]
+                .parse::<u16>()
+                .map_err(|_| "invalid channel comment")?;
+            if channel_ids.len() >= IDS.len()
+                || id != IDS[channel_ids.len()]
+                || rows.len() != preceding_rows(channel_ids.len())
+            {
+                return Err("unexpected channel comment position".into());
+            }
+            let reactants = parts[1]
+                .strip_prefix("reactants: ")
+                .ok_or("missing reactants")?;
+            if reactants != REACTANTS[channel_ids.len()]
+                || !close(
+                    float(
+                        parts[2]
+                            .strip_prefix("effective_radius_nm: ")
+                            .ok_or("missing effective radius")?,
+                        "effective radius",
+                    )?,
+                    option3_parameters(id).effective_radius().nm(),
+                )
+                || !close(
+                    float(
+                        parts[3]
+                            .strip_prefix("contact_probability: ")
+                            .ok_or("missing contact probability")?,
+                        "contact probability",
+                    )?,
+                    option3_parameters(id).contact_probability(),
+                )
+            {
+                return Err(format!(
+                    "wrong channel metadata id={id}: observed={parts:?}; expected reactants={} radius={} probability={}",
+                    REACTANTS[channel_ids.len()],
+                    option3_parameters(id).effective_radius().nm(),
+                    option3_parameters(id).contact_probability()
+                ));
+            }
+            channel_ids.push(id);
+            continue;
+        }
+        if line.starts_with('#') || line.is_empty() {
+            return Err("unexpected comment or empty data row".into());
+        }
+        let fields: Vec<_> = line.split(',').collect();
+        if fields.len() != 11 {
+            return Err(format!("row {} has {} fields", rows.len(), fields.len()));
+        }
+        let index = rows.len();
+        if index >= ROWS {
+            return Err("extra data row".into());
+        }
+        let (case, distance) = grid()[index / 6];
+        let endpoint = index % 6;
+        let id = fields[0]
+            .parse::<u16>()
+            .map_err(|_| "invalid reaction ID")?;
+        if id != IDS[case] || channel_ids.last() != Some(&id) || channel_ids.len() != case + 1 {
+            return Err(format!(
+                "row {index} has missing, duplicate or unordered channel"
+            ));
+        }
+        let p = option3_parameters(id);
+        let expected = [
+            DISTANCES[distance],
+            p.reaction_radius().nm(),
+            p.relative_diffusivity().nm2_per_ps(),
+            p.onsager_radius().nm(),
+            p.observed_rate().nm3_per_ps() / RateConstant::from_per_molar_per_s(1.0).nm3_per_ps(),
+        ];
+        for (field, target) in fields[1..6].iter().zip(expected) {
+            if !close(float(field, "option3 setting")?, target) {
+                return Err(format!("row {index} has wrong source setting"));
+            }
+        }
+        let row_endpoint = if endpoint == 5 {
+            if fields[6..9] != ["no_reaction", "inf", "inf"] {
+                return Err(format!("row {index} has wrong no-reaction endpoint"));
+            }
+            Endpoint::NoReaction
+        } else {
+            let time = TAU[endpoint] * p.reaction_radius().nm().powi(2)
+                / p.relative_diffusivity().nm2_per_ps();
+            if fields[6] != "cdf"
+                || !close(float(fields[7], "tau")?, TAU[endpoint])
+                || !close(float(fields[8], "observation time")?, time)
+            {
+                return Err(format!("row {index} has wrong finite endpoint"));
+            }
+            Endpoint::Cdf(endpoint)
+        };
+        let total = fields[9].parse::<u64>().map_err(|_| "invalid pair count")?;
+        let event_count = fields[10]
+            .parse::<u64>()
+            .map_err(|_| "invalid event count")?;
+        if total != n || event_count > n {
+            return Err(format!("row {index} has incomplete or impossible count"));
+        }
+        rows.push(Row {
+            id,
+            distance: DISTANCES[distance],
+            endpoint: row_endpoint,
+            event_count,
+        });
+    }
+    if rows.len() != ROWS || channel_ids != IDS {
+        return Err("missing or duplicate rows/channels".into());
+    }
+    for block in rows.chunks_exact(6) {
+        for pair in block[..5].windows(2) {
+            if pair[0].event_count > pair[1].event_count {
+                return Err("nonmonotonic CDF counts".into());
+            }
+        }
+        if block[4].event_count + block[5].event_count > n {
+            return Err("CDF and eventual nonreaction exceed total pairs".into());
+        }
+    }
+    Ok(rows)
+}
+
+fn validate_provenance(text: &str, csv: &[u8], n: u64) -> Result<(), String> {
+    let n = level(n)?;
+    let expected_command = command(n);
+    let value: toml::Value = toml::from_str(text).map_err(|e| e.to_string())?;
+    let string = |key: &str| value.get(key).and_then(toml::Value::as_str);
+    let integer = |key: &str| value.get(key).and_then(toml::Value::as_integer);
+    for (key, expected) in [
+        ("geant4_version", "11.4.3"),
+        ("g4emlow_version", "8.8"),
+        ("physics_constructor", "G4EmDNAPhysics_option2"),
+        ("chemistry_constructor", "G4EmDNAChemistry_option3"),
+        ("timestep_model", "IRT"),
+        ("mode", "pair_matrix_irt_g1f"),
+        ("schema", "g1f_pair_v1"),
+        ("exclusion_policy", "pdc_exact_contact"),
+        ("contact_regression", "SamplePDC(1,0)=-1"),
+        ("rng_engine", "RanecuEngine"),
+        ("command", expected_command.as_str()),
+        ("working_directory", "validation/geant4/g4rs_ref"),
+    ] {
+        if string(key) != Some(expected) {
+            return Err(format!("wrong provenance {key}"));
+        }
+    }
+    for (key, expected) in [
+        ("geant4_version_number", 1143),
+        ("seed", G4_SEED as i64),
+        ("pairs_per_case_distance", n as i64),
+        ("completion_rows", ROWS as i64),
+        ("excluded_endpoints", 24),
+    ] {
+        if integer(key) != Some(expected) {
+            return Err(format!("wrong provenance {key}"));
+        }
+    }
+    if value.get("generator_dirty").and_then(toml::Value::as_bool) != Some(false) {
+        return Err("generator was dirty or cleanliness unrecorded".into());
+    }
+    let array = |key: &str| {
+        value
+            .get(key)
+            .and_then(toml::Value::as_array)
+            .ok_or_else(|| format!("missing provenance {key}"))
+    };
+    if array("engine_seeds")?
+        .iter()
+        .map(toml::Value::as_integer)
+        .collect::<Vec<_>>()
+        != [
+            Some((G4_SEED % SEED_BASE + 1) as i64),
+            Some((G4_SEED / SEED_BASE + 1) as i64),
+        ]
+        || array("reaction_ids")?
+            .iter()
+            .map(toml::Value::as_integer)
+            .collect::<Vec<_>>()
+            != IDS.map(|id| Some(i64::from(id)))
+    {
+        return Err("wrong provenance engine seeds or channels".into());
+    }
+    for (key, expected) in [("r0_over_a", &DISTANCES[..]), ("tau", &TAU[..])] {
+        let found = array(key)?;
+        if found.len() != expected.len()
+            || !found
+                .iter()
+                .zip(expected)
+                .all(|(v, &e)| v.as_float().or_else(|| v.as_integer().map(|n| n as f64)) == Some(e))
+        {
+            return Err(format!("wrong provenance {key}"));
+        }
+    }
+    for key in ["compiler", "platform", "date"] {
+        if string(key).is_none_or(str::is_empty) {
+            return Err(format!("missing provenance {key}"));
+        }
+    }
+    let commit = string("generator_commit").ok_or("missing generator commit")?;
+    if commit.len() != 40 || !commit.bytes().all(|c| c.is_ascii_hexdigit()) {
+        return Err("invalid generator commit".into());
+    }
+    let hash = format!("{:x}", Sha256::digest(csv));
+    if string("csv_sha256") != Some(hash.as_str()) {
+        return Err("CSV SHA-256 does not match provenance".into());
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Verdict {
+    Pass,
+    Fail,
+    Inconclusive,
+}
+
+fn compare(rust_count: u64, g4_count: u64, n: u64) -> (Verdict, f64, f64, f64) {
+    let difference = (rust_count as f64 - g4_count as f64) / n as f64;
+    // Half-count stabilization avoids zero estimated variance for unobserved
+    // rare events. Samples and seeds are independent, never paired.
+    let p_r = (rust_count as f64 + 0.5) / (n as f64 + 1.0);
+    let p_g = (g4_count as f64 + 0.5) / (n as f64 + 1.0);
+    let se = ((p_r * (1.0 - p_r) + p_g * (1.0 - p_g)) / n as f64).sqrt();
+    let z = difference / se;
+    let margin = Z_CRIT * se;
+    let verdict = if z.abs() > Z_CRIT || difference.abs() - margin >= EFFECT_LIMIT {
+        Verdict::Fail
+    } else if difference.abs() + margin >= EFFECT_LIMIT {
+        Verdict::Inconclusive
+    } else if difference.abs() >= EFFECT_LIMIT {
+        Verdict::Fail
+    } else {
+        Verdict::Pass
+    };
+    (verdict, z, difference.abs(), margin)
+}
+
+fn rust_counts(p: TwoBodyReactionParameters, case: usize, distance: usize, n: u64) -> [u64; 6] {
+    let mut counts = [0; 6];
+    let radius = p.reaction_radius().nm();
+    let molecules = isolated_pair(p, DISTANCES[distance] * radius, 0);
+    let pair = MoleculePair::new(&molecules[0], &molecules[1]).unwrap();
+    let streams = RngStreams::new(RUST_SEED);
+    for i in 0..n {
+        let history = ((case * 3 + distance) as u64) * n + i;
+        let mut rng = streams.stream(history, Stage::Chemistry).unwrap();
+        let tau = match sample_independent_reaction_time(pair, &p, &mut rng).unwrap() {
+            ReactionTime::Immediate => 0.0,
+            ReactionTime::After(t) => {
+                t.ps() * p.relative_diffusivity().nm2_per_ps() / radius.powi(2)
+            }
+            ReactionTime::NoReaction => {
+                counts[5] += 1;
+                continue;
+            }
+        };
+        for (j, observation) in TAU.iter().enumerate() {
+            counts[j] += u64::from(tau <= *observation);
+        }
+    }
+    counts
+}
+
+#[test]
+#[ignore = "G1-F external comparison: 100k evidence is precision-inconclusive"]
+fn g1f_option3_irt_matches_geant4() {
+    let reference = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../validation/reference");
+    let n = level(
+        std::env::var("G1F_GEANT4_PAIRS")
+            .map_or(N, |s| s.parse().expect("invalid G1F_GEANT4_PAIRS")),
+    )
+    .expect("unregistered precision level");
+    let path = reference.join(format!("pair_matrix_irt_g1f_n{n}.csv"));
+    let csv = std::fs::read(&path).expect("G1-F REQUESTED: missing complete Geant4 CSV");
+    let provenance =
+        std::fs::read_to_string(reference.join(format!("provenance_g1f_pair_matrix_n{n}.toml")))
+            .expect("G1-F REQUESTED: missing provenance");
+    validate_provenance(&provenance, &csv, n).expect("G1-F invalid provenance");
+    let rows = parse_csv(std::str::from_utf8(&csv).expect("G1-F CSV is not UTF-8"), n)
+        .expect("G1-F incomplete or invalid Geant4 CSV");
+    let mut failures = Vec::new();
+    let mut inconclusive = Vec::new();
+    let mut row_index = 0;
+    for (case, &id) in IDS.iter().enumerate() {
+        let p = option3_parameters(id);
+        for distance in 0..3 {
+            if case >= 4 && distance == 0 {
+                continue;
+            }
+            let counts = rust_counts(p, case, distance, n);
+            for count in counts {
+                let row = rows[row_index];
+                row_index += 1;
+                let (verdict, z, effect, margin) = compare(count, row.event_count, n);
+                eprintln!(
+                    "GEANT4 id={} r/a={} endpoint={:?} Rust={}/{} G4={}/{} z={z:.6} zcrit={Z_CRIT:.6} abs_diff={effect:.6} adjusted_margin={margin:.6} effect_limit={EFFECT_LIMIT:.6} {verdict:?}",
+                    row.id, row.distance, row.endpoint, count, n, row.event_count, n
+                );
+                let label = format!(
+                    "id={} r/a={} endpoint={:?}",
+                    row.id, row.distance, row.endpoint
+                );
+                match verdict {
+                    Verdict::Pass => {}
+                    Verdict::Fail => failures.push(label),
+                    Verdict::Inconclusive => inconclusive.push(label),
+                }
+            }
+        }
+    }
+    let verdict = if !failures.is_empty() {
+        "FAIL"
+    } else if !inconclusive.is_empty() {
+        "INCONCLUSIVE"
+    } else {
+        "PASS"
+    };
+    eprintln!(
+        "G1-F GEANT4={verdict}; included=120 excluded=24; ANALYTIC and Rust contact regression must pass separately; physical validity not claimed"
+    );
+    assert!(
+        failures.is_empty() && inconclusive.is_empty(),
+        "G1-F GEANT4={verdict}; failures={failures:?}; insufficient precision={inconclusive:?}"
+    );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn valid_csv_for(n: u64) -> String {
+        let mut s = format!(
+            "# generator: g4rs_ref; mode: pair_matrix_irt_g1f; schema: g1f_pair_v1\n# geant4_version_number: 1143 (Geant4 11.4.3); chemistry: G4EmDNAChemistry_option3; timestep_model: IRT\n# seed: {G4_SEED}; rng: RanecuEngine; engine_seeds: {},{}; pairs: {n}\n# direct G4DNAIRT pair kernel; negative -1 ps sentinel means eventual nonreaction; no scheduler cutoff\n{HEADER}\n{EXCLUSIONS}\n",
+            G4_SEED % SEED_BASE + 1,
+            G4_SEED / SEED_BASE + 1
+        );
+        for (case, id) in IDS.into_iter().enumerate() {
+            let p = option3_parameters(id);
+            s.push_str(&format!("# channel: {id}; reactants: {}; effective_radius_nm: {:.17}; contact_probability: {:.17}\n", REACTANTS[case], p.effective_radius().nm(), p.contact_probability()));
+            for ratio in DISTANCES {
+                if id >= 11 && ratio == 1.0 {
+                    continue;
+                }
+                for (endpoint, maybe_tau) in TAU.into_iter().map(Some).chain([None]).enumerate() {
+                    let (label, tau, time) = if let Some(tau) = maybe_tau {
+                        (
+                            "cdf",
+                            tau.to_string(),
+                            (tau * p.reaction_radius().nm().powi(2)
+                                / p.relative_diffusivity().nm2_per_ps())
+                            .to_string(),
+                        )
+                    } else {
+                        ("no_reaction", "inf".to_string(), "inf".to_string())
+                    };
+                    s.push_str(&format!(
+                        "{id},{ratio},{:.17},{:.17},{:.17},{:.17},{label},{tau},{time},{n},{}\n",
+                        p.reaction_radius().nm(),
+                        p.relative_diffusivity().nm2_per_ps(),
+                        p.onsager_radius().nm(),
+                        p.observed_rate().nm3_per_ps()
+                            / RateConstant::from_per_molar_per_s(1.0).nm3_per_ps(),
+                        if endpoint == 5 { 0 } else { endpoint as u64 }
+                    ));
+                }
+            }
+        }
+        s.push_str(&format!(
+            "# complete: true; seed: {G4_SEED}; pairs: {n}; rows: {ROWS}\n"
+        ));
+        s
+    }
+
+    pub(super) fn valid_csv() -> String {
+        valid_csv_for(N)
+    }
+
+    fn valid_provenance_for(csv: &[u8], n: u64) -> String {
+        let command = command(n);
+        format!(
+            r#"geant4_version = "11.4.3"
+geant4_version_number = 1143
+g4emlow_version = "8.8"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+timestep_model = "IRT"
+mode = "pair_matrix_irt_g1f"
+schema = "g1f_pair_v1"
+seed = {G4_SEED}
+rng_engine = "RanecuEngine"
+engine_seeds = [{}, {}]
+pairs_per_case_distance = {n}
+reaction_ids = [1, 2, 8, 9, 11, 17, 42, 51]
+r0_over_a = [1.0, 1.5, 3.0]
+tau = [0.01, 0.1, 1.0, 10.0, 100.0]
+command = "{command}"
+working_directory = "validation/geant4/g4rs_ref"
+date = "2026-10-27"
+generator_commit = "0123456789abcdef0123456789abcdef01234567"
+generator_dirty = false
+compiler = "MSVC 19.50"
+platform = "Windows"
+csv_sha256 = "{:x}"
+completion_rows = 120
+excluded_endpoints = 24
+exclusion_policy = "pdc_exact_contact"
+contact_regression = "SamplePDC(1,0)=-1"
+"#,
+            G4_SEED % SEED_BASE + 1,
+            G4_SEED / SEED_BASE + 1,
+            Sha256::digest(csv)
+        )
+    }
+
+    pub(super) fn valid_provenance(csv: &[u8]) -> String {
+        valid_provenance_for(csv, N)
+    }
+
+    #[test]
+    fn accepts_complete_matrix_and_provenance() {
+        let csv = valid_csv();
+        assert_eq!(parse_csv(&csv, N).unwrap().len(), ROWS);
+        validate_provenance(&valid_provenance(csv.as_bytes()), csv.as_bytes(), N).unwrap();
+    }
+
+    #[test]
+    fn rejects_missing_duplicate_unordered_or_wrong_settings() {
+        let csv = valid_csv();
+        let line = csv.lines().find(|s| s.starts_with("1,1,0.")).unwrap();
+        assert!(parse_csv(&csv.replacen(&format!("{line}\n"), "", 1), N).is_err());
+        assert!(
+            parse_csv(
+                &csv.replacen(&format!("{line}\n"), &format!("{line}\n{line}\n"), 1),
+                N
+            )
+            .is_err()
+        );
+        assert!(parse_csv(&csv.replacen("1,1,", "1,2,", 1), N).is_err());
+        assert!(parse_csv(&csv.replacen("1,1,", "2,1,", 1), N).is_err());
+        assert!(parse_csv(&csv.replacen(",100000,0\n", ",99999,0\n", 1), N).is_err());
+        assert!(parse_csv(&csv.replacen("# complete: true", "# complete: false", 1), N).is_err());
+        assert!(parse_csv(&csv.replacen("rows: 120", "rows: 120 ", 1), N).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_counts_and_provenance() {
+        let csv = valid_csv();
+        assert!(parse_csv(&csv.replacen(",100000,0\n", ",100000,100001\n", 1), N).is_err());
+        let provenance = valid_provenance(csv.as_bytes());
+        for bad in [
+            provenance.replace("generator_dirty = false", "generator_dirty = true"),
+            provenance.replace("seed = 20261027404", "seed = 1"),
+            provenance.replace(
+                "pairs_per_case_distance = 100000",
+                "pairs_per_case_distance = 200000",
+            ),
+            provenance.replace("G4EmDNAChemistry_option3", "G4EmDNAChemistry_option2"),
+            provenance.replace("csv_sha256 = \"", "csv_sha256 = \"0"),
+        ] {
+            assert!(validate_provenance(&bad, csv.as_bytes(), N).is_err());
+        }
+    }
+
+    #[test]
+    fn rejects_wrong_or_reordered_source_reactants() {
+        let csv = valid_csv();
+        assert!(parse_csv(&csv.replacen("reactants: H^0,H^0", "reactants: X,Y", 1), N).is_err());
+        assert!(
+            parse_csv(
+                &csv.replacen("reactants: e_aq^-1,H^0", "reactants: H^0,e_aq^-1", 1),
+                N
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn supports_only_preregistered_precision_levels() {
+        for n in [100_000, 200_000, 400_000, 800_000, 1_000_000] {
+            let csv = valid_csv_for(n);
+            let provenance = valid_provenance_for(csv.as_bytes(), n);
+            assert_eq!(parse_csv(&csv, n).unwrap().len(), ROWS);
+            assert!(validate_provenance(&provenance, csv.as_bytes(), n).is_ok());
+            assert!(parse_csv(&csv, if n == N { 200_000 } else { N }).is_err());
+        }
+        assert!(level(300_000).is_err());
+    }
+
+    #[test]
+    fn bias_and_underpowered_equivalence_are_rejected() {
+        assert_eq!(compare(100_000, 100_000, 200_000).0, Verdict::Pass);
+        assert_eq!(compare(50_000, 50_000, N).0, Verdict::Inconclusive);
+        assert_eq!(compare(55_000, 50_000, N).0, Verdict::Fail);
+        assert_eq!(compare(101_600, 100_000, 200_000).0, Verdict::Fail);
+        assert_eq!(compare(5, 0, 100).0, Verdict::Inconclusive);
+    }
+}
+
+#[test]
+fn g1f_grid_excludes_only_exact_pdc_contact() {
+    let rows = parse_csv(&tests::valid_csv(), N).unwrap();
+    assert_eq!(rows.len(), 120);
+    assert!(rows.iter().all(|r| r.id < 11 || r.distance != 1.0));
+}
+
+#[test]
+fn rejects_missing_exclusions_and_reintroduced_contact() {
+    let csv = tests::valid_csv();
+    assert!(parse_csv(&csv.replace(EXCLUSIONS, ""), N).is_err());
+    assert!(parse_csv(&csv.replacen("11,1.5,", "11,1,", 1), N).is_err());
+    let provenance = tests::valid_provenance(csv.as_bytes());
+    assert!(
+        validate_provenance(
+            &provenance.replace("excluded_endpoints = 24", "excluded_endpoints = 0"),
+            csv.as_bytes(),
+            N
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn rust_pdc_contact_is_a_documented_continuum_limit_not_source_fallback() {
+    for id in [11, 17, 42, 51] {
+        let p = option3_parameters(id);
+        let molecules = isolated_pair(p, p.reaction_radius().nm(), 0);
+        let pair = MoleculePair::new(&molecules[0], &molecules[1]).unwrap();
+        let streams = RngStreams::new(RUST_SEED);
+        let mut positive = 0;
+        for i in 0..128 {
+            let mut rng = streams.stream(i, Stage::Chemistry).unwrap();
+            match sample_independent_reaction_time(pair, &p, &mut rng).unwrap() {
+                ReactionTime::After(t) => {
+                    assert!(t.ps().is_finite() && t.ps() > 0.0);
+                    positive += 1;
+                }
+                ReactionTime::NoReaction => {}
+                ReactionTime::Immediate => panic!("contact continuum is not immediate: {id}"),
+            }
+        }
+        assert!(positive > 0, "id={id}");
+    }
+}
