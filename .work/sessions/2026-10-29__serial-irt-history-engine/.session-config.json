@@ -226,9 +226,33 @@
         "ticket": "06-network-and-reproducibility",
         "commit": "516cfe1"
       }
+    },
+    {
+      "at": "2026-11-05T23:43:03.679Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/07-convergence-and-g2.md",
+        "03-implement/07-convergence-and-g2/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-convergence-and-g2"
+      }
+    },
+    {
+      "at": "2026-11-06T00:15:32.121Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/07-convergence-and-g2/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "07-convergence-and-g2",
+        "commit": "0039fea"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/serial-irt-history-engine",
     "base_branch": "main",
