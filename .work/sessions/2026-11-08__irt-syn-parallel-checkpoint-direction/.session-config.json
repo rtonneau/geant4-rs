@@ -58,6 +58,40 @@
       "detail": {
         "tickets": 10
       }
+    },
+    {
+      "at": "2026-11-08T21:32:03.126Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-08T21:32:03.343Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-reference-contract.md",
+        "03-implement/01-reference-contract/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-reference-contract"
+      }
+    },
+    {
+      "at": "2026-11-08T21:48:21.425Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-reference-contract/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-reference-contract",
+        "commit": "7496eae"
+      }
     }
   ],
   "current_phase": "ship",
@@ -66,5 +100,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-11-08T21:30:32.832Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "delegate"
 }
