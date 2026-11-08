@@ -1,5 +1,196 @@
 # Geant4 reference data for the M2 and M3 validation
 
+## IRT-syn reference contract (2026-11-08)
+
+This prospective contract accompanies [ADR 0004](../../.work/adr/0004-irt-syn-production-contract.md)
+and the [SYN gates](../../docs/07-validation-strategy.md#irt-syn-prospective-gates-2026-11-08).
+It does not change existing modes, data, provenance or acceptance criteria.
+No IRT-syn comparison has passed merely because this contract is recorded.
+
+### Version and source-review record
+
+Geant4 **11.4.1 remains the normative baseline**. On 2026-11-08 both versioned
+source trees under `${DEV_DIR}/GEANT4/geant4-v<version>-source/geant4-v<version>`
+were read directly, following their junctions. Their `source/global/management/include/G4Version.hh`
+identifies 1141 / `geant4-11-04-patch-01` and 1143 / `geant4-11-04-patch-03`.
+They are unpacked trees without git metadata: no commit identity is inferred.
+`${G4_ROOT}` currently names an 11.4.3 installation. This is not authorization
+to relabel it 11.4.1 or migrate existing fixtures. The absent local
+`.claude/.claude-project.json` and user `CONFIG_RESOLUTION.md` were not invented;
+the environment-based versioned source layout above was inspected directly.
+
+The following reviewed files are byte-identical in the two local trees.
+`D` denotes `source/processes/electromagnetic/dna`, `P` denotes
+`source/physics_lists/constructors/electromagnetic/src`, and `E` denotes
+`examples/extended/medical/dna`. SHA-256 pins the inspected bytes in **both**
+versions; it does not certify an entire distribution or binary.
+
+| Path | SHA-256 (both trees) |
+|---|---|
+| `D/models/src/G4DNAIndependentReactionTimeModel.cc` | `250f2fb7d3fe458fecd7d48aa7b8ef6405a94a89f8c2cb1c5e8a89bd21f96d16` |
+| `D/models/src/G4DNAIndependentReactionTimeStepper.cc` | `abb9670a93d21ac656d489f63a29c000e8d44e9c6516cfc1e0b1e56e9ee5dbcc` |
+| `D/models/src/G4DiffusionControlledReactionModel.cc` | `a05e2d3ebd98a792f10f064a9eceb4a2af2fe3bbe40d76efc5bcb6984d759e3e` |
+| `D/models/src/G4DNAMakeReaction.cc` | `8ae87604437c1f7d57f410961c01d51adf9215e5a35f6702247ad6592a1f0559` |
+| `D/utils/src/G4DNAMolecularReactionTable.cc` | `6d0b42c0add6298f072469c14038c136d50170b9c35c413cfd32dcfe9d710e6b` |
+| `D/utils/src/G4IRTUtils.cc` | `bcb3fc7fea2f0c8386986f14b604a923598d341988549243ea683552d9acb340` |
+| `D/processes/src/G4DNABrownianTransportation.cc` | `4039fc87550686d4b14ca592bb8a38990024cd78434bf259ff0375ea49735123` |
+| `D/management/src/G4Scheduler.cc` | `4279b4129817870efd92818f3448bb0a1bd870fd90f13b48cf80a85fc4112c05` |
+| `D/management/src/G4ITModelProcessor.cc` | `a5ce7ca23be8966db0bdec3d68ced96162d0c7e97d4950f56c6d3f557d2c0701` |
+| `P/G4EmDNAChemistry_option3.cc` | `b71251a01606632a56647fcaf3d3023e8c95ab8ca38f2aed9a9838c55b912855` |
+| `D/processes/src/G4DNASecondOrderReaction.cc` | `57ba6639146498820b33d97c3918ce472bba58e81b85a636de337e7f32ea6b3b` |
+| `D/processes/src/G4DNAScavengerProcess.cc` | `533da4fc6d4fc8e0431e3ea5e660bbb138c77e26cac1e6bde46ebf8eb72d645d` |
+| `E/chem6/src/PhysicsList.cc` | `392980c3c339b64889877081dbb0899d9a935141d583d0204662ab3b0358af7f` |
+| `E/UHDR/src/EmDNAChemistry.cc` | `9d604ef382514125c46c6094d79b4df75755979a17acd4cf5ae6151e26a161a0` |
+
+Additional inspected context: `E/chem6/beam.in`, `E/UHDR/src/PhysicsList.cc`,
+`P/G4EmDNAChemistry_option2.cc`, `P/G4ChemDissociationChannels_option1.cc`,
+and the inline `GetKact` definition in `D/utils/include/G4IRTUtils.hh`.
+The normative reference configuration is `G4EmDNAPhysics_option2` plus
+`G4EmDNAChemistry_option3` with `/process/chem/TimeStepModel IRT_syn` selected
+**before initialization**. Chemistry option2 is not a synonym for IRT-syn.
+The chem6 default macro selects IRT, so an unchanged chem6 run is not a SYN reference.
+UHDR demonstrates IRT-syn registration with additional scavenger processes and
+bounded/periodic transport; its complete physics setup is not the unbounded-water baseline.
+
+New 11.4.3 runs may supply explicitly versioned supplemental evidence. Closing
+a normative 11.4.1 gate requires 11.4.1 evidence, or a separately approved,
+documented baseline amendment with dependency/data review and new filenames.
+Matching these source files alone does not prove equivalence of whole simulations.
+Every new run records the actual library version, constructor, model selection,
+data versions/checksums, source hashes, generator revision/dirty state, compiler,
+platform, exact command, independent seed and complete statistics. Required
+runs for this approved session are user-authorized through the dedicated
+reference-run subagent after their RUN_REQUESTS entry and consumer exist;
+the historical user-run-only wording elsewhere is not an active permission blocker.
+
+### Executable semantics and prospective Rust boundary
+
+1. **Synchronization.** `IndependentReactionTimeModel::Initialize` wires the
+   independent-time stepper, diffusion-controlled sampler and `G4DNAMakeReaction`.
+   `Stepper::Prepare` clears candidates and saved positions after an interaction
+   step; collision steps retain pending candidates, and products add candidates.
+   `CalculateStep` visits each unordered mobile pair once; event times are
+   absolute `globalTime + elapsed`. `Scheduler::Stepping` chooses the smaller
+   process/pair step, gives process steps priority at equality, transports before
+   committing reactions, and clears candidates when capped at its stop time.
+   Selected pairs restore their saved sampling positions before placement.
+   Therefore synchronizing is not permission to redraw every pair at every
+   observation, injection or checkpoint. Rust must preserve pending clocks,
+   saved positions and invalidation state or prove the replacement conditional law.
+   Exact common times and canonical identity-based ties are Rust requirements;
+   Geant4's loose synchronization check and container tie order are not proofs
+   of worker safety. No reviewed source implements our region ownership or
+   coordinator arbitration: validate those against the serial state machine.
+2. **Diffusion.** In homogeneous free water, Brownian `ComputeStep` draws three
+   independent normal increments with standard deviation `sqrt(2 D dt)`.
+   Source species coefficients and constructor overrides are authoritative;
+   no temperature rescaling or forces are added. Zero time or zero diffusivity
+   must preserve position. Reaction placement below is a separate conditional
+   operation, not a second unconditional diffusion of selected reactants.
+3. **Pairs.** With separation `r >= a > 0`, `D = D1 + D2 > 0`, the sampler
+   uses `W = a/r`, uniform `U`, and, if `U < W`,
+   `t1 = (r-a)^2 / (4 D erfcInv(U/W)^2)`; otherwise no reaction.
+   Type 0 returns `t1`. Type 1 sets `kdif = 4 pi D a NA` (halved for
+   identical configurations), `kact = kdif*kobs/(kdif-kobs)`, accepts with
+   probability `kact/(kact+kdif)`, and adds
+   `t2 = (X*a*kdif/(kact+kdif))^2/D`, where `X = -ln(U2)/abs(N(0,2))`
+   and `N(0,2)` here denotes variance 2. Charged pairs use the table's effective
+   radius; this sampler does not apply the option3 `G4DNAIRT` charged-distance
+   substitution. `ComputeEffectiveRadius` uses one species' D for identical
+   reactants, while the encounter uses their sum. `SetReactionType(1)` uses
+   van der Waals radii and the source Onsager mapping. Audit reuse field by field;
+   common reaction literals do not imply common kernels. Negative-time sentinels
+   become explicit no-reaction outcomes; invalid/nonfinite arithmetic is an error.
+4. **Contact.** The stepper uses strict `r*r < a*a`. At scheduler start only,
+   it attempts an immediate event with the table probability; equality goes
+   through the encounter sampler (type 0 gives zero time, type 1 can add delay).
+   Initial overlap, exact contact and overlaps after injection/products need
+   distinct tests. The source resets `fSampledMinTimeStep` per track, not per
+   pair: rejected overlap can inherit a previous candidate time. This is an
+   unresolved source anomaly, not an approved physical rule or a silent Rust fix.
+   Coincident mobile reactants can reach a fatal placement error.
+5. **Placement.** `MakeReaction::UpdatePositionForReaction` places the mobile
+   partner on an immobile reactant. For two mobile reactants and positive step
+   duration it samples a contact vector `S1` of length `a`, with phi uniform
+   and `cos(theta) = 1 + ln(1-U*(1-exp(-2 alpha)))/alpha`,
+   `alpha = a*r/(2*(D1+D2)*dt)`. It builds
+   `S2 = p1+(D1/D2)*p2 + Gaussian3(0, sigma)`, with the literal source
+   `sigma = 2*D1*dt + (2*D1*dt)^2/(2*D2*dt)` passed as a Gaussian width;
+   then `R1=(D1*S1+D2*S2)/(D1+D2)` and `R2=D2*(S2-S1)/(D1+D2)`.
+   For direct-kernel source diagnostics evaluate this literal expression in
+   Geant4 native mm/ns units, then convert positions to nm: its dimensional
+   inconsistency makes numerical evaluation in other units non-equivalent.
+   The width's dimensional meaning and lab-axis angular construction require
+   executable diagnostics. Call-path review of
+   `D/management/src/G4ITModelProcessor.cc::ComputeTrackReaction` finds it calls
+   `FindReaction` directly; that path reaches `MakeReaction` without calling
+   `TestReactibility`. Since `fTimeStep` starts at zero and only that latter
+   method assigns it, static call-path analysis implies the ordinary IRT-syn
+   path leaves this positive-duration branch inactive. A search of the entire
+   `source/` tree found the only `TestReactibility` call in the separate
+   `G4DNAMolecularReaction::FindReaction` implementation, not the IRT-syn path;
+   the base interface has no implicit call. This is source evidence, not an
+   executed trace: the scheduler-level diagnostic must confirm it. Positive-dt tests must be
+   labelled direct-kernel diagnostics, not normal scheduler placement behavior.
+   Do not insert a square root, rotate the axis or substitute elapsed pair time
+   without a documented deviation decision. At zero duration mobile positions
+   remain unchanged. All products share `(reactionSite + randP)/2`, where
+   `reactionSite=(sqrt(D2)*R1+sqrt(D1)*R2)/(sqrt(D1)+sqrt(D2))`
+   and `randP=(1-U)*R1+U*R2`; parents are killed. Source placement agreement
+   and physical translation/rotation/dimensional consistency are separate gates.
+6. **Unary and bulk channels.** The option3 table contains first/pseudo-first-order
+   entries, but its `ConstructProcess` does not register their scavenger processes.
+   The IRT-syn pair stepper searches mobile tracks, not implicit bulk participants.
+   Thus the standard baseline must not be claimed to execute all 72 table entries.
+   UHDR explicitly registers `G4DNAScavengerProcess`: water propensity is the
+   rate literal; other bulk propensity is `N*k/(V*NA)`, and products use the
+   parent position. It selects a channel with total propensity but uses that
+   selected channel's inverse rate as the clock scale. This is not a verified
+   competing-exponential oracle. `G4DNASecondOrderReaction` separately retains
+   residual interaction length at scale `1/(k*concentration)` and kills the parent.
+   A Rust unary law `T=-ln(U)/sum(lambda)` with rate-weighted channel choice is
+   a prospective extension requiring an analytic competing-hazard gate and an
+   explicit custom reference constructor, not a claimed default IRT-syn behavior.
+   Until resolved, source-only pair validation excludes implicit bulk/unary events;
+   a production network requiring them cannot silently omit them.
+
+### Search, applicability and unresolved release gates
+
+The reviewed stepper calls the **no-argument** `G4IRTUtils::GetRCutOff`:
+`R = 1.45 nm + 2 sqrt((2*9.46e9 nm^2/s)*(1000 ns))*erfcInv(0.01)`.
+It rejects sampled elapsed times greater than scheduler **end time**, not
+explicitly the remaining duration. These are executable finite-search/time
+policies, not exact unbounded Brownian propagation or a global one-percent
+error guarantee. A geometric worker boundary must never act as this cutoff.
+
+Rust's correctness oracle enumerates all eligible unordered pairs for a finite
+molecule population in an unbounded medium. Any production finite search uses
+an explicit remaining horizon and an auditable omitted-pair probability bound;
+sum the pair upper bounds to at most `1e-6` per completed history, including
+all rebuilds, or fall back to all pairs. A per-pair `0.01` bound cannot be reused
+as that history bound. For diffusion-controlled pairs a bound is
+`(a/r)*erfc((r-a)/sqrt(4*D*h))`; only use it for other channels after proving
+domination. Record the accumulated bound and cutoff policy in provenance and
+checkpoints. This is a prospective deviation from the source cutoff and needs
+the separate all-pairs sensitivity gate, not altered Geant4 fixtures.
+
+Supported numerical kernel inputs are finite positions/times, nonnegative D,
+positive pair radius and total D, and type-1 rates `0 < kobs < kdif` with finite
+derived values. Unsupported limits fail explicitly; they do not become physical
+non-reaction. Source-fixed water parameters (including the table's 293.15 K /
+80.1 Onsager constants) are not a validated temperature range. The prospective
+integrated envelope is the existing electron window, chemical start at each
+track's validated physicochemical handoff, through 1 microsecond, no walls or
+external reservoirs. Source quirks in contact, positive-duration placement,
+unary execution and stop/injection synchronization remain **OPEN release gates**.
+Tickets may implement diagnostics and isolated kernels; none may advertise
+validated production chemistry until applicable exclusions are resolved or
+explicitly narrowed in a reviewed contract amendment before production results.
+
+New modes must freeze their exact input manifest, seed family, schema and
+commands in RUN_REQUESTS.md and register exact consumers in `validation/gates.json`
+before generating evidence. This ticket adds no generator mode or scientific run.
+
 **Status.** M2: the generator modes `xs`, `mfp`, `track` were compiled and run by the project lead
 (Geant4 11.4.1, Windows/MSVC); the CSVs are committed in `validation/reference/` and the M2 gate passes
 (`cargo test -p g4-sim --test geant4_reference -- --ignored --nocapture`, docs/08). M3: the modes `xslow`
