@@ -1,0 +1,33 @@
+geant4_version = "11.4.1"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+timestep_model = "IRT_syn"
+mode = "paired"
+schema = "syn_paired_v1"
+claim = "finite-input mapping only"
+source_sha256 = "8ae87604437c1f7d57f410961c01d51adf9215e5a35f6702247ad6592a1f0559"
+g4emlow_version = "8.8"
+seed = 20261109071
+tapes_per_setting = 16
+completion_rows = 1200
+csv_sha256 = "7e58af162931c5263a86f7fcf38c652b48f933405efeeb37d9512cb9f299b36b"
+generator_commit = "2df15d1d652d9dfb2ff582e389c2ea1a02825746"
+generator_dirty = true
+generator_source_sha256 = "SynPaired.cc=15b3ab50c16d9709b0d15035ae6520a187fc70a44eed5c6274e57feb85c86aa2; CMakeLists.txt=f2252010ed1858b037bde5f9248052f20e4834234a142dc332c55cb6079d5bb1"
+compiler = "MSVC 19.50.35729 x64"
+platform = "Windows NT 10.0.26100.0 x64"
+date = "2026-11-09"
+actual_command = "\"D:\\DEV\\RUST\\geant4-rs\\.scratch\\tests\\2026-11-08__irt-syn-parallel-checkpoint-direction/02-paired-build/g4rs_syn_ref.exe\" paired \"D:\\DEV\\RUST\\geant4-rs\\.scratch\\tests\\2026-11-08__irt-syn-parallel-checkpoint-direction/02-rr007/production-fixed.csv\" 20261109071 16"
+compile_definitions = "G4RS_SYN_MAKE_SOURCE=\"D:/DEV/GEANT4/geant4-v11.4.1-source/geant4-v11.4.1/source/processes/electromagnetic/dna/models/src/G4DNAMakeReaction.cc\"; local G4DNAMakeReaction=G4rsSynMakeReaction; G4RandGauss=SynNormal<__LINE__>; G4UniformRand()=SynUniform(__LINE__); normals188/189/190,phi192,theta195,product107"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+g4emlow_md5_note = "Archive checksum declared by installed Geant4Config.cmake; archive unavailable for local rehash."
+command = "g4rs_syn_ref paired ../../reference/syn_paired_1141.csv 20261109071 16"
+data_commit = "9607036827be6954fb5423f294275d36c383661c"
+runtime_seconds = 0.6392869999999999
+runtime_banner = "geant4-11-04-patch-01 [MT]"
+working_directory = "D:\\DEV\\RUST\\geant4-rs"
+geant4_source_revision = "v11.4.1 release tree, no git metadata"
+g4emlow_directory = "D:/GEANT4/geant4-data/G4EMLOW8.8"
+primitive_manifest = "t=0..15; j=(t+seed%16)%16; z=[(j%7-3)*.75,((3*j+1)%7-3)*.5,((5*j+2)%7-3)*1.25]; u=[(j%8+.5)/8,((3*j+1)%8+.5)/8,((5*j+2)%8+.5)/8]; bits zx1,zy2,zz4,phi8,theta16,product32"
+expected_source_errors = 144
+coordinate_comparisons = 8064
