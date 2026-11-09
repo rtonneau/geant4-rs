@@ -92,6 +92,128 @@
         "ticket": "01-reference-contract",
         "commit": "7496eae"
       }
+    },
+    {
+      "at": "2026-11-08T21:48:22.014Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-syn-kernels.md",
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels"
+      }
+    },
+    {
+      "at": "2026-11-08T22:22:21.040Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "SYN-2 prospective variance precision exceeds approved 1% band at 1m cap (expected 1.238% half-width); user budget/estimator amendment pending. RR-006 passed; partial implementation verified and preserved."
+      }
+    },
+    {
+      "at": "2026-11-08T22:22:21.307Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T07:07:51.941Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-09T07:35:53.182Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "RR-007 smoke crashed 0xC0000374 before output. Recovery diagnostic script denied by PowerShell PSSecurityException UnauthorizedAccess (scripts disabled). No bypass; source restored and rebuild passed. Cause unconfirmed; recovery count 1."
+      }
+    },
+    {
+      "at": "2026-11-09T07:35:53.472Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T07:48:54.661Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-09T08:38:34.607Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "RR-008 ordinary scheduler smoke access violation 0xC0000005 before rows despite successful normative build. RR-007 adapter recovered and mapping passed; authorized recovery count2 used. Production trace unvalidated; 233 positive-duration analytic moment endpoints remain inconclusive."
+      }
+    },
+    {
+      "at": "2026-11-09T08:38:34.902Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T08:41:18.642Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-09T09:07:26.498Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "RR008 crash fixed and independently reviewed; fresh smoke and registered production complete, exact Rust consumer INCONCLUSIVE: channel11 +z has zero positive events in both replicas. No extra samples authorized;233 prior inconclusives preserved. Evidence committed2264b14/9b4aaf4."
+      }
+    },
+    {
+      "at": "2026-11-09T09:07:26.791Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
     }
   ],
   "current_phase": "ship",
