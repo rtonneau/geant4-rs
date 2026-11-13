@@ -85,6 +85,30 @@
         "ticket": "01-reference-version-bump",
         "commit": "438dad0"
       }
+    },
+    {
+      "at": "2026-11-13T16:28:26.893Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-boundary-source-audit.md",
+        "03-implement/02-boundary-source-audit/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-boundary-source-audit"
+      }
+    },
+    {
+      "at": "2026-11-13T16:28:27.364Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-boundary-source-audit/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-boundary-source-audit",
+        "commit": "6970f50"
+      }
     }
   ],
   "current_phase": "ship",
