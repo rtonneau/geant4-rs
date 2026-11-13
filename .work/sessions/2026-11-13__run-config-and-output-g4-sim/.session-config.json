@@ -110,6 +110,30 @@
         "ticket": "02-escape-observer-hook",
         "commit": "f029574"
       }
+    },
+    {
+      "at": "2026-11-13T21:28:46.054Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-escape-summary.md",
+        "03-implement/03-escape-summary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-escape-summary"
+      }
+    },
+    {
+      "at": "2026-11-13T21:31:39.899Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-escape-summary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-escape-summary",
+        "commit": "0c30a79"
+      }
     }
   ],
   "current_phase": "ship",
