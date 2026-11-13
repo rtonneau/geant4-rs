@@ -16,16 +16,24 @@
 //! (`G4GeometryTolerance::SetSurfaceTolerance`, `G4GeometryTolerance.cc:92-107`); this module
 //! uses the default value only.
 //!
+//! Curved surfaces use the radial tolerance [`RAD_TOLERANCE`] instead, and phi boundaries the
+//! angular tolerance [`ANG_TOLERANCE`], both with the Geant4 default values.
+//!
 //! # Deviations from Geant4
 //!
 //! - `distance_to_out` returns `None` for a start point that classifies as
 //!   [`Inside::Outside`]. Geant4 does not check this case and returns an unspecified distance.
 //! - A point with a NaN coordinate classifies as [`Inside::Outside`] (Geant4 behaviour is
 //!   undefined for NaN).
+//! - Constructors reject non-finite parameters, and an opening angle above `2 pi`, which
+//!   Geant4 silently resets to `2 pi`.
 
 mod box_solid;
+mod phi_segment;
+mod tubs;
 
 pub use box_solid::BoxSolid;
+pub use tubs::TubsSolid;
 
 use crate::vec3::Vec3;
 use serde::{Deserialize, Serialize};
@@ -44,6 +52,27 @@ pub const HALF_CAR_TOLERANCE: f64 = 0.5 * CAR_TOLERANCE;
 /// Smallest accepted half-length, `2*kCarTolerance` (`G4Box.cc:65-73`), in nm: a thinner
 /// solid would be no thicker than its own surface.
 pub const MIN_HALF_LENGTH: f64 = 2.0 * CAR_TOLERANCE;
+
+/// Geant4's radial tolerance `kRadTolerance`, in nm.
+///
+/// Geant4 sets `fRadTolerance = 1E-9 * mm` (`source/global/management/src/
+/// G4GeometryTolerance.cc:50`), read by `G4Tubs::G4Tubs` (`G4Tubs.cc:82`). 1e-9 mm = 1e-3 nm.
+/// `SetSurfaceTolerance` would rescale it with `kCarTolerance` (`G4GeometryTolerance.cc:96`);
+/// only the default is used.
+pub const RAD_TOLERANCE: f64 = 1.0e-3;
+
+/// Half the radial surface thickness, `halfRadTolerance` (`G4Tubs.cc:86`), in nm.
+pub const HALF_RAD_TOLERANCE: f64 = 0.5 * RAD_TOLERANCE;
+
+/// Geant4's angular tolerance `kAngTolerance`, in rad.
+///
+/// Geant4 sets `fAngTolerance = 1E-9 * rad` (`source/global/management/src/
+/// G4GeometryTolerance.cc:49`), read by `G4Tubs::G4Tubs` (`G4Tubs.cc:83`). It is not
+/// rescaled by `SetSurfaceTolerance`.
+pub const ANG_TOLERANCE: f64 = 1.0e-9;
+
+/// Half the angular surface thickness, `halfAngTolerance` (`G4Tubs.cc:87`), in rad.
+pub const HALF_ANG_TOLERANCE: f64 = 0.5 * ANG_TOLERANCE;
 
 /// Classification of a point with respect to a solid (Geant4 `EInside`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,6 +97,19 @@ pub enum GeometryError {
         field: &'static str,
         value: f64,
         min: f64,
+    },
+    /// A size that must be strictly positive is zero or negative.
+    #[error("geometry parameter {field} = {value} nm must be positive")]
+    NotPositive { field: &'static str, value: f64 },
+    /// Radii that violate `0 <= rmin < rmax`.
+    #[error("radii must satisfy 0 <= rmin < rmax, got rmin = {rmin} nm and rmax = {rmax} nm")]
+    InvalidRadii { rmin: f64, rmax: f64 },
+    /// An angle outside its allowed range.
+    #[error("geometry parameter {field} = {value} rad must lie in {range}")]
+    AngleOutOfRange {
+        field: &'static str,
+        value: f64,
+        range: &'static str,
     },
     /// A direction is zero or not finite, so it has no unit vector.
     #[error("direction ({x}, {y}, {z}) is zero or not finite")]
@@ -111,11 +153,25 @@ impl Direction {
 /// centre = [0.0, 0.0, 0.0]        # nm
 /// half_lengths = [10.0, 10.0, 5.0] # nm
 /// ```
+///
+/// A tube segment (angles in rad):
+///
+/// ```toml
+/// shape = "tubs"
+/// centre = [0.0, 0.0, 0.0] # nm
+/// rmin = 0.0               # nm
+/// rmax = 50.0              # nm
+/// half_z = 20.0            # nm
+/// start_phi = 0.0          # rad
+/// delta_phi = 6.283185307179586
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "RawVolume", into = "RawVolume")]
 pub enum Volume {
     /// Rectangular box, Geant4 `G4Box`.
     Box(BoxSolid),
+    /// Cylindrical tube segment about the z axis, Geant4 `G4Tubs`.
+    Tubs(TubsSolid),
 }
 
 impl Volume {
@@ -127,10 +183,29 @@ impl Volume {
         BoxSolid::new(centre, half_lengths).map(Self::Box)
     }
 
+    /// Tube segment about the z axis through `centre` (nm): radii `rmin` and `rmax` (nm),
+    /// half-length `half_z` (nm) along z, and the phi range from `start_phi` over
+    /// `delta_phi` (rad).
+    ///
+    /// Fails unless every value is finite, `half_z > 0`, `0 <= rmin < rmax` and
+    /// `0 < delta_phi <= 2 pi` (`G4Tubs.cc:89-106`, `G4Tubs.icc:129-161`). The start angle is
+    /// normalised as in Geant4; see [`TubsSolid::start_phi`].
+    pub fn tubs(
+        centre: Vec3,
+        rmin: f64,
+        rmax: f64,
+        half_z: f64,
+        start_phi: f64,
+        delta_phi: f64,
+    ) -> Result<Self, GeometryError> {
+        TubsSolid::new(centre, rmin, rmax, half_z, start_phi, delta_phi).map(Self::Tubs)
+    }
+
     /// Centre of the solid, nm.
     pub fn centre(&self) -> Vec3 {
         match self {
             Self::Box(b) => b.centre(),
+            Self::Tubs(t) => t.centre(),
         }
     }
 
@@ -143,6 +218,7 @@ impl Volume {
         let q = p - self.centre();
         match self {
             Self::Box(b) => b.inside_local(q),
+            Self::Tubs(t) => t.inside_local(q),
         }
     }
 
@@ -160,6 +236,7 @@ impl Volume {
         let v = v.as_vec3();
         Some(match self {
             Self::Box(b) => b.distance_to_out_local(q, v),
+            Self::Tubs(t) => t.distance_to_out_local(q, v),
         })
     }
 }
@@ -171,6 +248,14 @@ enum RawVolume {
     Box {
         centre: [f64; 3],
         half_lengths: [f64; 3],
+    },
+    Tubs {
+        centre: [f64; 3],
+        rmin: f64,
+        rmax: f64,
+        half_z: f64,
+        start_phi: f64,
+        delta_phi: f64,
     },
 }
 
@@ -190,6 +275,14 @@ impl TryFrom<RawVolume> for Volume {
                 centre,
                 half_lengths,
             } => Self::box_(from_array(centre), from_array(half_lengths)),
+            RawVolume::Tubs {
+                centre,
+                rmin,
+                rmax,
+                half_z,
+                start_phi,
+                delta_phi,
+            } => Self::tubs(from_array(centre), rmin, rmax, half_z, start_phi, delta_phi),
         }
     }
 }
@@ -200,6 +293,16 @@ impl From<Volume> for RawVolume {
             Volume::Box(b) => Self::Box {
                 centre: to_array(b.centre()),
                 half_lengths: to_array(b.half_lengths()),
+            },
+            // The requested angles, not the normalised ones, so that a round trip gives back
+            // the same solid.
+            Volume::Tubs(t) => Self::Tubs {
+                centre: to_array(t.centre()),
+                rmin: t.rmin(),
+                rmax: t.rmax(),
+                half_z: t.half_z(),
+                start_phi: t.requested_start_phi(),
+                delta_phi: t.requested_delta_phi(),
             },
         }
     }
@@ -318,6 +421,18 @@ mod tests {
         );
         assert_eq!(HALF_CAR_TOLERANCE, 5.0e-4);
         assert_eq!(MIN_HALF_LENGTH, 2.0e-3);
+    }
+
+    #[test]
+    fn rad_and_ang_tolerances_are_geant4_defaults() {
+        assert_relative_eq!(
+            RAD_TOLERANCE,
+            Length::from_mm(1.0e-9).nm(),
+            max_relative = 1e-15
+        );
+        assert_eq!(HALF_RAD_TOLERANCE, 5.0e-4);
+        assert_eq!(ANG_TOLERANCE, 1.0e-9);
+        assert_eq!(HALF_ANG_TOLERANCE, 5.0e-10);
     }
 
     #[test]
