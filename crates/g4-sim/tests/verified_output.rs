@@ -152,7 +152,7 @@ fn coupled_output_uses_actual_engine_identity_and_optional_source_claim() {
             engine.source_file_sha256()
         );
         let json = serde_json::to_value(&output).unwrap();
-        assert_eq!(json["schema"], "geant4-rs/dna-sim/run/v5");
+        assert_eq!(json["schema"], "geant4-rs/dna-sim/run/v6");
         assert_eq!(json["provenance"]["inputs"]["verification"], "verified");
         assert!(json.get("chemistry_data_sha256").is_none());
         if engine.source_file_sha256().is_some() {
@@ -172,7 +172,7 @@ fn coupled_output_uses_actual_engine_identity_and_optional_source_claim() {
     let unverified =
         run_unverified_with_physchem_for_testing(verified().table(), &changed, &config()).unwrap();
     let json = serde_json::to_value(&unverified).unwrap();
-    assert_eq!(json["schema"], "geant4-rs/dna-sim/run-unverified/v2");
+    assert_eq!(json["schema"], "geant4-rs/dna-sim/run-unverified/v3");
     assert_eq!(json["provenance"]["inputs"]["verification"], "unverified");
     assert_eq!(json["provenance"]["manifest_sha256"], "");
     assert_eq!(

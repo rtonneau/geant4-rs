@@ -59,7 +59,10 @@ pub fn run_physchem_summary_with_diagnostics(
     let streams = RngStreams::new(config.master_seed);
     let edges = Edges::new();
     let mut physics = scorer_for(config);
-    let mut physchem = PhysChemScorer::default();
+    let mut physchem = match &config.volume {
+        Some(volume) => PhysChemScorer::default().with_boundary_scoring(volume.clone()),
+        None => PhysChemScorer::default(),
+    };
     with_pool(config.threads, || -> Result<(), SimError> {
         let mut start = first;
         while start < end {
@@ -101,6 +104,10 @@ pub fn run_physchem_summary_with_diagnostics(
                     None => engine.convert_history(&result.physchem, &mut rng)?,
                 };
                 physics.add(&result);
+                physchem.add_solvation_placement(
+                    result.outcome.solvations_shortened,
+                    result.outcome.solvated_not_inside,
+                );
                 physchem.add(&chemistry, deposited);
                 if let (Some(sink), Some(observer)) = (sink.as_deref_mut(), observer) {
                     sink.write_history(&observer.finish()?)?;
@@ -155,7 +162,7 @@ pub fn run_with_physchem(
         engine,
         config,
         verified_provenance(table, config),
-        "geant4-rs/dna-sim/run/v5",
+        "geant4-rs/dna-sim/run/v6",
     )
 }
 
@@ -171,7 +178,7 @@ pub fn run_unverified_with_physchem_for_testing(
         engine,
         config,
         Provenance::unverified(config.master_seed),
-        "geant4-rs/dna-sim/run-unverified/v2",
+        "geant4-rs/dna-sim/run-unverified/v3",
     )
 }
 

@@ -7,9 +7,16 @@
 //! Radius instead uses the surviving species positions relative to the primary origin, which
 //! `RunConfig` fixes at (0, 0, 0). This reducer consumes the completed 1 ps stage; it does not
 //! advance species in time or select a snapshot from a time series.
+//!
+//! With a volume (`summary.physchem.boundary`, docs/04 D.6), the reducer also counts, per species,
+//! the placements shortened by the Geant4 `0.8 x safety` clamp and those not strictly Inside the
+//! volume (solvated electrons from the physical stage, dissociation products from the
+//! physicochemical stage), and the alive species at 1 ps that are Outside or not strictly Inside.
+//! These are diagnostics for docs/07 S3 and docs/09 G-B1; the chemical stage ignores the boundary.
 
 use g4_chemistry::HistoryChemistry;
 use g4_chemistry::Species;
+use g4_core::geometry::{Inside, Volume};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -129,6 +136,40 @@ pub struct PhysChemSummary {
     pub decay_energy_ev: f64,
     pub species: Vec<SpeciesYield>,
     pub pair_distances: Vec<PairDistance>,
+    /// Present only for a run in a volume (zeros included); omitted for infinite water.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub boundary: Option<BoundarySummary>,
+}
+
+/// Placement and 1 ps boundary counts for a run in a volume, one row per species in
+/// [`Species::ALL`] order.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct BoundarySummary {
+    pub species: Vec<SpeciesBoundary>,
+}
+
+/// Boundary counts of one species, summed over histories.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct SpeciesBoundary {
+    pub species: &'static str,
+    /// Placements whose displacement the `0.8 x safety` clamp shortened.
+    pub shortened: u64,
+    /// Placements not strictly Inside the volume (Geant4's `OUTSIDE_OF_MOTHER_VOLUME` test,
+    /// `Inside(p) != kInside`); these species are kept.
+    pub not_inside_after_placement: u64,
+    /// Alive species at 1 ps (after recombination) that are Outside the volume.
+    pub outside_at_1ps: u64,
+    /// Alive species at 1 ps that are not strictly Inside (Outside or on the tolerant surface).
+    pub not_inside_at_1ps: u64,
+}
+
+#[derive(Debug, Clone)]
+struct BoundaryAcc {
+    volume: Volume,
+    shortened: [u64; 15],
+    not_inside_after_placement: [u64; 15],
+    outside_at_1ps: [u64; 15],
+    not_inside_at_1ps: [u64; 15],
 }
 
 /// Fixed-order reducer for physicochemical histories.
@@ -152,6 +193,7 @@ pub struct PhysChemScorer {
     pair_count: [u64; 2],
     pair_sum: [f64; 2],
     pair_sum_sq: [f64; 2],
+    boundary: Option<BoundaryAcc>,
 }
 
 impl Default for PhysChemScorer {
@@ -175,11 +217,35 @@ impl Default for PhysChemScorer {
             pair_count: [0; 2],
             pair_sum: [0.0; 2],
             pair_sum_sq: [0.0; 2],
+            boundary: None,
         }
     }
 }
 
 impl PhysChemScorer {
+    /// Also score the boundary counts (`boundary`); call for a run in `volume`.
+    pub fn with_boundary_scoring(mut self, volume: Volume) -> Self {
+        self.boundary = Some(BoundaryAcc {
+            volume,
+            shortened: [0; 15],
+            not_inside_after_placement: [0; 15],
+            outside_at_1ps: [0; 15],
+            not_inside_at_1ps: [0; 15],
+        });
+        self
+    }
+
+    /// Add the solvated-electron placement counts of one history's physical stage
+    /// (`HistoryOutcome::solvations_shortened` / `solvated_not_inside`). Ignored without
+    /// boundary scoring.
+    pub fn add_solvation_placement(&mut self, shortened: u64, not_inside: u64) {
+        if let Some(b) = &mut self.boundary {
+            let i = Species::e_aq.index();
+            b.shortened[i] += shortened;
+            b.not_inside_after_placement[i] += not_inside;
+        }
+    }
+
     /// Add a completed physicochemical history at global time 1 ps, with the primary at zero.
     /// Alive counts and radius use the post-recombination population; event production and
     /// product displacement retain their distinct pre-consumption definitions.
@@ -220,6 +286,18 @@ impl PhysChemScorer {
             self.pair_count[i] += stats.pair_count[i];
             self.pair_sum[i] += stats.pair_sum_nm[i];
             self.pair_sum_sq[i] += stats.pair_sum_sq_nm2[i];
+        }
+        if let Some(b) = &mut self.boundary {
+            for i in 0..15 {
+                b.shortened[i] += stats.placement.shortened[i];
+                b.not_inside_after_placement[i] += stats.placement.not_inside[i];
+            }
+            for instance in &chemistry.species {
+                let i = instance.species.index();
+                let inside = b.volume.inside(instance.position);
+                b.outside_at_1ps[i] += u64::from(inside == Inside::Outside);
+                b.not_inside_at_1ps[i] += u64::from(inside != Inside::Inside);
+            }
         }
     }
 
@@ -266,6 +344,21 @@ impl PhysChemScorer {
             decay_energy_ev: self.decay_energy_ev,
             species,
             pair_distances,
+            boundary: self.boundary.map(|b| BoundarySummary {
+                species: Species::ALL
+                    .into_iter()
+                    .map(|s| {
+                        let i = s.index();
+                        SpeciesBoundary {
+                            species: s.chemistry_name(),
+                            shortened: b.shortened[i],
+                            not_inside_after_placement: b.not_inside_after_placement[i],
+                            outside_at_1ps: b.outside_at_1ps[i],
+                            not_inside_at_1ps: b.not_inside_at_1ps[i],
+                        }
+                    })
+                    .collect(),
+            }),
         }
     }
 }
