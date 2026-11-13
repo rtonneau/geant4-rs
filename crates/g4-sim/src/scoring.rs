@@ -193,6 +193,10 @@ pub struct EnergySummary {
     pub deposited_total_ev: MeanStat,
     pub untracked_secondaries_ev: MeanStat,
     pub remaining_untracked_ev: MeanStat,
+    /// Kinetic energy of tracks killed at the volume boundary (docs/04 D.6); present only when
+    /// a history had an escape, so unbounded runs serialise as before.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub escaped_ev: Option<MeanStat>,
     /// Largest `|E_in - sum(parts)| / E_in` over all histories (energy ledger, V7).
     pub max_abs_ledger_residual_relative: f64,
 }
@@ -212,6 +216,14 @@ pub struct TerminationCounts {
     pub completed: u64,
     pub interaction_limit: u64,
     pub tracking_cut: u64,
+    /// Primaries killed at the volume boundary; omitted from the output when zero, so
+    /// unbounded runs serialise as before.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub escaped: u64,
+}
+
+fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -307,7 +319,7 @@ impl SpectrumAcc {
 pub struct Scorer {
     e_in: f64,
     n: u64,
-    terminations: [u64; 3],
+    terminations: [u64; 4],
     interactions: [u64; ProcessKind::COUNT],
     per_history: [Welford; ProcessKind::COUNT],
     total_track_length_sum_nm: f64,
@@ -328,6 +340,8 @@ pub struct Scorer {
     dep_total: Welford,
     untracked_sec: Welford,
     remaining: Welford,
+    escaped: Welford,
+    any_escape: bool,
     max_residual: f64,
     levels: [u64; 5],
     shells: [u64; 5],
@@ -354,7 +368,7 @@ impl Scorer {
         Self {
             e_in: e_in_ev,
             n: 0,
-            terminations: [0; 3],
+            terminations: [0; 4],
             interactions: [0; ProcessKind::COUNT],
             per_history: [Welford::default(); ProcessKind::COUNT],
             total_track_length_sum_nm: 0.0,
@@ -375,6 +389,8 @@ impl Scorer {
             dep_total: Welford::default(),
             untracked_sec: Welford::default(),
             remaining: Welford::default(),
+            escaped: Welford::default(),
+            any_escape: false,
             max_residual: 0.0,
             levels: [0; 5],
             shells: [0; 5],
@@ -406,6 +422,7 @@ impl Scorer {
             Termination::Completed => 0,
             Termination::InteractionLimit => 1,
             Termination::TrackingCut => 2,
+            Termination::Escaped => 3,
         }] += 1;
         for p in ProcessKind::ALL {
             let c = o.counts.get(p);
@@ -435,6 +452,8 @@ impl Scorer {
         self.dep_total.add(l.deposited());
         self.untracked_sec.add(l.untracked_secondaries);
         self.remaining.add(l.remaining_untracked);
+        self.escaped.add(l.escaped);
+        self.any_escape |= o.n_escaped > 0;
         self.max_residual = self.max_residual.max(l.residual_relative().abs());
         for i in 0..5 {
             self.levels[i] += o.excitation_levels[i];
@@ -493,6 +512,7 @@ impl Scorer {
                 completed: self.terminations[0],
                 interaction_limit: self.terminations[1],
                 tracking_cut: self.terminations[2],
+                escaped: self.terminations[3],
             },
             processes,
             solvation: SolvationSummary {
@@ -529,6 +549,7 @@ impl Scorer {
                 deposited_total_ev: self.dep_total.stat(),
                 untracked_secondaries_ev: self.untracked_sec.stat(),
                 remaining_untracked_ev: self.remaining.stat(),
+                escaped_ev: self.any_escape.then(|| self.escaped.stat()),
                 max_abs_ledger_residual_relative: self.max_residual,
             },
             w_value: WSummary {

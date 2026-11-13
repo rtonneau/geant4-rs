@@ -46,6 +46,10 @@ The pre-R02 revision `baed05953d3cdf3612bd29025c63d5469993612f` was compared wit
 
 The permanent output regressions additionally cover relocation, edits after byte capture, rejection of changed bytes under the old manifest, a new identity after manifest updates, and custom chemistry without an embedded-source claim. The seven maintained Geant4 gates retain their original fixtures and acceptance criteria; `--tier required` checks their evidence inventory, while `--tier statistical` executes the scientific comparisons.
 
+## Boundary-limited transport regression evidence (2026-11-13)
+
+Before the volume boundary was added (docs/04 D.6), the unbounded path (`volume = None`) was compared with base commit `00b9855`. The workload was seed 11, history ids 0-199 at 1 and 10 keV, direction (0.3, -0.4, 0.866). The outcomes and the full interaction and solvation event streams matched at the bit level (FNV-1a digest `0xa352351e0df05129`, Windows, release profile). The digest is not pinned in a test: `meesungnoen_r_mean_nm` uses `powf`, whose last bits differ between platforms and between debug and release builds (CI found three digests), so only same-platform, same-profile comparisons are bitwise. `tests/boundary.rs` instead checks, in the same build, that a volume larger than every track gives results identical to `None`, and that the draw order is unchanged up to the first escape.
+
 ## Model domains and retained limitations
 
 Option2 accepts primary electrons in liquid water from 2 eV through 1 MeV. Solvation handles cascade electrons at or below 7.4 eV, including secondaries below the primary floor. Cross-section windows are Champion 7.4 eV to 1 MeV, Born excitation 9 eV to 1 MeV, Born1 ionisation 11 eV to 1 MeV, Sanche 2 to 100 eV and Melton 4 to 13 eV. The constructors require total and final-state tables to cover each source-backed window; they reject truncated coverage instead of changing a model limit. Invalid table domains, non-finite cross sections/positions and non-positive ledger tolerances are typed errors. This deliberately stricter input policy does not alter accepted inputs' interpolation, sampling or RNG draws.

@@ -1,7 +1,7 @@
 //! Run configuration.
 
 use crate::error::SimError;
-use g4_core::geometry::Volume;
+use g4_core::geometry::{Inside, Volume};
 use g4_core::units::Energy;
 use g4_core::vec3::Vec3;
 use g4_physics::transport::{Primary, TransportConfig};
@@ -37,10 +37,11 @@ pub struct RunConfig {
     pub batch_size: usize,
     /// Worker threads; `None` uses the global rayon pool. Does not affect results.
     pub threads: Option<usize>,
-    /// Optional primitive volume (nm, rad; `g4_core::geometry`, docs/04 D.5). Not used by the
-    /// transport yet, which still runs in infinite liquid water, so [`RunConfig::validate`]
-    /// rejects `Some(_)` rather than ignore it silently. Omitted from serialised output when
-    /// `None`, so existing run metadata is unchanged.
+    /// Optional liquid-water volume (nm, rad; `g4_core::geometry`, docs/04 D.5). Transport
+    /// kills tracks at its boundary and books their energy as escaped (docs/04 D.6); `None` is
+    /// infinite water. The primary starts at the origin, which must not be outside the volume.
+    /// The chemistry stage ignores the boundary (docs/04 D.6). Omitted from serialised output
+    /// when `None`, so existing run metadata is unchanged.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub geometry: Option<Volume>,
 }
@@ -86,10 +87,10 @@ impl RunConfig {
         {
             return bad("tracking_cut_ev must be finite and non-negative");
         }
-        if self.geometry.is_some() {
-            return bad(
-                "geometry is not supported yet: transport does not honour volume boundaries (infinite water); leave it unset",
-            );
+        if let Some(v) = &self.geometry
+            && v.inside(Vec3::ZERO) == Inside::Outside
+        {
+            return bad("geometry must contain the primary start position (the origin)");
         }
         Ok(())
     }
@@ -155,11 +156,14 @@ batch_size = 1024
     }
 
     #[test]
-    fn geometry_some_is_rejected_by_validate() {
+    fn geometry_must_contain_the_origin() {
         let mut c = RunConfig::new(1000.0, 4);
         c.geometry = Some(Volume::box_(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0)).unwrap());
+        assert!(c.validate().is_ok());
+        c.geometry =
+            Some(Volume::box_(Vec3::new(0.0, 0.0, 30.0), Vec3::new(10.0, 10.0, 10.0)).unwrap());
         let err = c.validate().unwrap_err().to_string();
-        assert!(err.contains("geometry"), "{err}");
+        assert!(err.contains("origin"), "{err}");
     }
 
     #[test]
@@ -200,7 +204,9 @@ start_theta = 0.0
             let json: RunConfig =
                 serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
             assert_eq!(json, c);
-            assert!(c.validate().is_err());
+            let contains_origin =
+                c.geometry.as_ref().unwrap().inside(Vec3::ZERO) != Inside::Outside;
+            assert_eq!(c.validate().is_ok(), contains_origin);
         }
     }
 
