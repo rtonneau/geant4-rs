@@ -86,6 +86,30 @@
         "ticket": "01-geometry-module-and-box",
         "commit": "747f847"
       }
+    },
+    {
+      "at": "2026-11-13T18:16:03.659Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-tubs.md",
+        "03-implement/02-tubs/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-tubs"
+      }
+    },
+    {
+      "at": "2026-11-13T18:41:04.133Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-tubs/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-tubs",
+        "commit": "510c6a0"
+      }
     }
   ],
   "current_phase": "ship",
