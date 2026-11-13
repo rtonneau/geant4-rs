@@ -124,6 +124,17 @@ impl PhiSegment {
     pub(super) fn end_trig(&self) -> (f64, f64) {
         (self.sin_end, self.cos_end)
     }
+    /// Safety to the phi planes, the phi block of `G4Tubs::DistanceToOut(p)`
+    /// (`G4Tubs.cc:1583-1596`) and `G4Sphere::DistanceToOut(p)` (`G4Sphere.cc:2646-2665`):
+    /// the distance to the nearer full plane, chosen by the side of the centre direction.
+    /// Not clamped (the caller clamps the overall minimum at 0). Only for a cut segment.
+    pub(super) fn safety(&self, x: f64, y: f64) -> f64 {
+        if y * self.cos_centre - x * self.sin_centre <= 0.0 {
+            -(x * self.sin_start - y * self.cos_start)
+        } else {
+            x * self.sin_end - y * self.cos_end
+        }
+    }
 
     /// `(sin, cos)` of the centre angle `start + delta/2` (Geant4 `sinCPhi`, `cosCPhi`).
     pub(super) fn centre_trig(&self) -> (f64, f64) {
