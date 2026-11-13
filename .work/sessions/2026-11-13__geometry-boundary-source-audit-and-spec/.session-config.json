@@ -61,6 +61,30 @@
       "detail": {
         "tickets": 3
       }
+    },
+    {
+      "at": "2026-11-13T16:25:58.011Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-reference-version-bump.md",
+        "03-implement/01-reference-version-bump/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-reference-version-bump"
+      }
+    },
+    {
+      "at": "2026-11-13T16:27:24.822Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-reference-version-bump/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-reference-version-bump",
+        "commit": "438dad0"
+      }
     }
   ],
   "current_phase": "ship",
@@ -69,5 +93,6 @@
     "base_branch": "test/rr008-scheduler-followup",
     "branch_created_at": "2026-11-13T16:25:50.933Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "inline"
 }
