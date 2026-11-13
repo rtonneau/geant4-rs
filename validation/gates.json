@@ -7,6 +7,46 @@
   },
   "gates": [
     {
+      "id": "SYN-2-ordinary-scheduler-trace",
+      "milestone": "IRT-syn",
+      "profile": "RR-008 executed ordinary-library first-reaction placement trace",
+      "target": "g4-chemistry/geant4_syn_scheduler",
+      "test": "syn_ordinary_scheduler_preserves_parent_sites",
+      "fixtures": ["syn_scheduler_1141_r1.csv", "provenance_syn_scheduler_1141_r1.toml", "syn_scheduler_1141_r2.csv", "provenance_syn_scheduler_1141_r2.toml"]
+    },
+    {
+      "id": "SYN-2-analytic-marginals",
+      "milestone": "IRT-syn",
+      "profile": "Independent analytic source marginals and free diffusion; common setting streams",
+      "target": "g4-chemistry/syn_analytic_moments",
+      "test": "syn_marginals_match_independent_analytic_moments",
+      "fixtures": []
+    },
+    {
+      "id": "SYN-2-paired-mapping",
+      "milestone": "IRT-syn",
+      "profile": "RR-007 finite common-input source mapping only; no stochastic moment claim",
+      "target": "g4-chemistry/geant4_syn_paired",
+      "test": "syn_paired_mapping_matches_geant4",
+      "fixtures": ["syn_paired_1141.csv", "provenance_syn_paired_1141.toml"]
+    },
+    {
+      "id": "SYN-1-analytic",
+      "milestone": "IRT-syn",
+      "profile": "Independent analytic pair law, second precision look PASS",
+      "target": "g4-chemistry/geant4_syn_pair",
+      "test": "syn_pair_matches_independent_analytic_law",
+      "fixtures": []
+    },
+    {
+      "id": "SYN-1-source-diagnostic",
+      "milestone": "IRT-syn",
+      "profile": "RR-006 isolated pair source diagnostics; not complete SYN-1 acceptance",
+      "target": "g4-chemistry/geant4_syn_pair",
+      "test": "syn_pair_source_diagnostics_match_geant4",
+      "fixtures": ["syn_pair_1141_r1_n100000.csv", "provenance_syn_pair_1141_r1_n100000.toml", "syn_pair_1141_r2_n100000.csv", "provenance_syn_pair_1141_r2_n100000.toml"]
+    },
+    {
       "id": "M2-xs",
       "milestone": "M2",
       "profile": "cross sections V2/V3",

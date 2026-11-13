@@ -36,6 +36,7 @@ pub mod sbs;
 pub(crate) mod special;
 pub mod species;
 mod species_types;
+pub mod syn;
 pub mod unary;
 
 pub use engine::{EventDecay, HistoryChemistry, PhysChemEngine, PhysChemStats};

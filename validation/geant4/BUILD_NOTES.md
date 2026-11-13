@@ -41,7 +41,6 @@ if ($LASTEXITCODE -ne 0) { throw "build failed" }
 Success = last line `Linking CXX executable g4rs_ref.exe`. `vswhere.exe is not recognized` printed by the
 bat file is harmless. "`CMAKE_TOOLCHAIN_FILE` unused" is harmless. Do not commit `build-msvc/`.
 ## 3. Run environment (needed in every new shell)
-
 ```powershell
 $env:G4LEDATA = "<dir ending in G4EMLOW8.8>"       # geant4.bat does NOT set it
 $env:PATH = "$env:G4_ROOT\bin;$env:QT5_PREFIX\bin;$env:DEV_DIR\vcpkg\installed\x64-windows\bin;$env:PATH"
@@ -49,12 +48,9 @@ $env:PATH = "$env:G4_ROOT\bin;$env:QT5_PREFIX\bin;$env:DEV_DIR\vcpkg\installed\x
 Geant4, Qt and vcpkg DLLs must all be on PATH, otherwise the exe exits immediately with a missing-DLL
 error (exit code `-1073741515`, 0xC0000135). Redirect output to a log file (`*> run.log`): Geant4 prints
 thousands of lines.
-
 ## 4. Commands and smoke tests
-
 Run from `validation/geant4/g4rs_ref`. Smoke tests first (outputs to a temp dir, not to
 `validation/reference`), check exit code 0 **and** non-empty data rows, then production.
-
 | Mode | Smoke test | Production (see `../README.md` for arguments and file names) |
 |---|---|---|
 | `xs` | `.\build-msvc\g4rs_ref.exe xs $env:TEMP\xs.csv` (624 rows) | same, output in `validation/reference/` |
@@ -62,19 +58,15 @@ Run from `validation/geant4/g4rs_ref`. Smoke tests first (outputs to a temp dir,
 | `track` | `... track $env:TEMP\t.csv 20 1 100` (~2.4 s) | `10000 20262 100` |
 | `xslow`, `slow` | `... slow $env:TEMP\s 1 1000:1` | spec in `../README.md` |
 | `physchem` | `... physchem $env:TEMP\p.csv 1 1000:200` (~10 s) | `20261019 1000:20000,10000:2000,100000:200,900000:20` |
-
 After a `physchem` or `slow` run check: all requested energies are present (stderr has one
 `physchem: <E> eV done` line per energy), `n_other_process` / `n_other_secondary` are 0 for `slow`.
 Files are flushed after each energy, so **a crash leaves a valid-looking partial CSV: never commit
 one**. Provenance values to record: compiler = `cl` banner (run `cl` inside the vcvars shell), OS
 version, `git rev-parse HEAD`, whether the generator had uncommitted changes, exact command line, seed.
-
 Timing (author's machine, serial, one core): `mfp` 1e6 events/energy ~10 min, `track` 1e4 ~20 min,
 `physchem` ~0.025 s per keV of primary energy (+~4 s start-up), production list ~17 min. Run long jobs in
 the background and poll the log, do not use a short tool timeout.
-
 ## 5. Symptom -> fix (all fixes already in the checked-in source unless marked BUILD)
-
 | # | Symptom | Cause | Fix |
 |---|---|---|---|
 | A | `cl`/`ninja` not found | no MSVC environment in the shell | BUILD: wrap configure+build in `vcvars64.bat` (section 2) |
@@ -292,3 +284,16 @@ The authorized 200k precision expansion rebuilt the unchanged binary (Ninja:
 no work), reused its successful smoke verification, and exited 0 with eight
 channels and 120 rows. `G1F_GEANT4_PAIRS=200000` selects the new complete
 fixture; the strict consumer passed all 120 endpoints. Preserve the 100k files.
+
+## 12. SYN pair diagnostics / RR-006
+Use a fresh build with the discovered 11.4.1 install, not current G4_ROOT if it names 11.4.3. Resolve Qt5 from a validated prior cache as in section 10. `syn_pair_matrix` is new; old modes are unchanged.
+2026-11-08: configured and linked with MSVC against 11.4.1; no producer run by implementer. New header `SynKernels.hh` is included by g4rs_ref.cc. Exact runs, schema and provenance are in RR-006 and README.
+The session authorizes a dedicated runner; partial/smoke data stay in scratch. The pair diagnostic does not establish ordinary scheduler placement or complete SYN acceptance.
+
+## 13. Paired source mapping / RR-007 (2026-11-09)
+Configure a new build using section2 prerequisites and add `-DG4RS_SYN_SOURCE_ROOT=<verified read-only 11.4.1 source root>`; build target `g4rs_syn_ref`. CMake pins the included source-body SHA-256 and rejects mismatches. No existing producer mode changes.
+The adapter renames the class and intercepts only source-line-labelled draws; record `G4RS_SYN_MAKE_SOURCE` plus local class/draw macros in provenance. It does not modify Geant4 or validate RNG distributions.
+First compile identified a missing physical-constants include in standalone geometry; adding `G4PhysicalConstants.hh` fixes the declarations without changing physics. Exact smoke/production commands, schema and consumers are in RR-007/README; implementer compile-checks only, dedicated runner executes.
+Recovery 2 (2026-11-09): populated delayed-list Clear() double-deleted the product track node (native stack: G4IT::~G4IT / G4FastList destructor). Adapter now erases each product through its owning list before Clear(), using the source detach path; no Geant4 source change.
+Configuration diagnostics now use UnFinalize/SetDiffusionCoefficient/Finalize only for the changed immobile reactant and restore it afterward; unchanged base configurations are not written. Scratch seed1/tapes1 smoke exited native 0: 75 rows, 9 expected errors, 504 finite coordinates, complete footer. Retain the process handle before waiting and reject null exit codes in PowerShell runners.
+RR-008: build g4rs_syn_scheduler_ref in the normative11.4.1 environment. Recovery3 fixes two initialization omissions: select IRT_syn after physics constructors reset defaults; use chemistry UseAsStandalone(true) to build molecular process tables without transport BeamOn. Actual model/stepper/process types are checked after scheduler initialization. Corrected scratch smoke: native0,9 rows/footer (3 reactions,6 censored). Independent review and fresh dedicated smoke precede production; README/RUN_REQUESTS retain the exact manifest and233 moment INCONCLUSIVE endpoints.

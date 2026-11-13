@@ -1399,8 +1399,11 @@ int RunPairMatrixG1F(int argc, char** argv)
 
 }  // namespace
 
+#include "SynKernels.hh"
+
 int main(int argc, char** argv)
 {
+  if (argc > 1 && std::string(argv[1]) == "syn_pair_matrix") return RunSynPairMatrix(argc, argv);
   if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt_g1f") return RunPairMatrixG1F(argc, argv);
   if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt") return RunPairMatrix(argc, argv);
   if (argc < 3) {

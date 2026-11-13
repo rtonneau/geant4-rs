@@ -48,6 +48,42 @@ Deterministic tiny runs (fixed seed, 10^3 histories) store summary scalars to 1e
 
 ## IRT-syn prospective gates (2026-11-08)
 
+### Approved paired-diagnostic amendment (2026-11-09)
+
+The user chose: "Keep the current cap; redesign the diagnostic using paired
+common random inputs and separately justify what it validates." The historical
+independent source/Rust SYN-2 moment comparison is **not passed**. Its budget
+calculation remains in `validation/geant4/SYN2_FEASIBILITY.md`.
+
+RR-007 prospectively replaces only the independent source-versus-Rust
+placement-moment comparison with an
+exhaustive finite-input mapping diagnostic: 16 labelled primitive tapes across
+75 scenarios (the 54 original placement settings, 12 one-immobile-parent
+settings, nine mobile-coincident error settings). The manifest and exact input
+recipe are in the Geant4 README. Compare 8064 parent/product coordinate outputs
+using `abs(delta) <= 1e-12 nm + 1e-12*abs(reference)`; branch draw masks,
+product count, parent-removal and expected error outcomes are exact identities.
+Zero-product centroids are undefined, never invented zero measurements.
+
+Both implementations receive the same explicit standard-normal x/y/z and
+azimuth/polar/product uniform primitives, with semantic labels and consumption
+checks. Equal seeds for different RNG algorithms do not meet this requirement.
+The C++ adapter compiles the SHA-pinned source body unchanged under a renamed
+class, intercepting only the named RNG call sites; Rust uses its independent
+transform. No transformed C++ output is supplied as Rust input. This deterministic
+finite-grid comparison has no stochastic confidence interval or multiplicity
+correction; every registered row and coordinate must pass. It validates only
+the mapping on the registered inputs, not RNG quality, a continuous-input
+distribution, whole-scheduler behavior or independent physical correctness.
+
+The 1% analytic marginal/free-diffusion criteria, physical invariants and
+ordinary-scheduler placement trace remain separate requirements. Their stochastic
+families retain alpha .001, three looks and the actual full endpoint count.
+The one-million-samples-per-setting, two-hour/eight-GiB invocation and 24-hour
+gate budgets remain unchanged. No historical source mode, fixture or tolerance
+is amended retroactively. A source-faithful dormant-branch anomaly remains
+labelled diagnostic and is not activated in ordinary Rust placement.
+
 These gates are preregistered requirements, all **OPEN**, for the approved
 IRT-syn production direction. They supplement rather than rescore V1-V13,
 G1/G1-F/G2 and RR-001 through RR-005. Source semantics, exclusions and the
@@ -154,6 +190,19 @@ requires a prospective amendment, not a hidden relaxation. Tests/consumers and
 exact gate commands enter `validation/gates.json` when introduced; no blanket
 ignored-test run or non-existent test command is prescribed by this document.
 
+SYN-2 analytic sampling allocation (2026-11-09, frozen before execution):
+the complete README manifest retains all6228 endpoints and1% bands, uses
+independent master-seed replicates20261109081/082, and couples per-history
+primitive RNG streams across settings. Each setting retains independent
+histories; setting-to-setting dependence is permitted by Bonferroni and
+reduces redundant variance fluctuations under exact diffusion scalings.
+Placement uses distinct source-formula expectations under shared inputs,
+not an assertion that differently parameterized distributions are equal.
+The three looks are300/1000/3000 history batches with333 draws each
+(max999000); each history is a batch, satisfying at least30 batches.
+Prospective precision/power reasoning and superseded independent-setting
+allocation are preserved in SYN2_FEASIBILITY.md. No full-family PASS was
+predicted, and final-look INCONCLUSIVE stays open under the existing policy.
 ## Finite-volume boundary acceptance criteria (fixed 2026-11-13, before any data)
 
 Source basis: docs/04 D.5 (Geant4 11.4.3 audit). Geometry: ADR 0005 (`Volume` enum). Reference: RR-009

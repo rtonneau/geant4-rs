@@ -1,5 +1,165 @@
 # Geant4 reference data for the M2 and M3 validation
 
+## RR-007 paired source mapping (approved 2026-11-09)
+
+This prospective finite-grid diagnostic does not pass the historical independent
+SYN-2 moment comparison. The one-million cap and resource budgets are unchanged.
+It validates only the numerical source mapping for supplied primitive inputs;
+it does not validate RNG/distribution quality, a whole scheduler, or physical
+correctness. Independent analytic and scheduler gates remain separate.
+
+Frozen grid: channels [1,2,11], r/a=[1,3], dt_ps=[0,1,1000], orientations
+[x,z,translated_x], with translated origin (10a,-7a,3a): 54 settings.
+Add channel2 parent-only edges: each fixed parent [0,1], dt_ps=[0,1,1000],
+coincident=[false,true] (12 settings). Add mobile-coincident errors for each
+channel/duration (nine settings). Each setting has 16 common-input tapes,
+**1200 ordered rows**, including 144 expected source coincidence errors.
+No centroid exists for channel11 or parent-only edge rows; write `NA`.
+
+For tape t=0..15, let j=(t+seed%16)%16. The independent implementations use
+normal primitives zx=(j%7-3)*0.75, zy=((3j+1)%7-3)*0.5,
+zz=((5j+2)%7-3)*1.25; and uniform primitives
+u_phi=(j%8+0.5)/8, u_theta=((3j+1)%8+0.5)/8,
+u_product=((5j+2)%8+0.5)/8. Production seed=20261109071.
+These are deterministic test inputs, not a claim of Gaussian/uniform sampling.
+The primitive tape id, all six values and the observed semantic consumption
+mask are exported. Mask bits are zx=1,zy=2,zz=4,phi=8,theta=16,product=32.
+Positive-duration mobile placement consumes31, plus32 iff products exist;
+zero-duration mobile placement consumes only the optional32; immobile
+parent-only and coincident error rows consume0. Unknown/repeated labels fail.
+
+The opt-in C++ adapter includes unmodified 11.4.1 G4DNAMakeReaction.cc,
+SHA-256 `8ae87604437c1f7d57f410961c01d51adf9215e5a35f6702247ad6592a1f0559`,
+under class name G4rsSynMakeReaction. Interception uses source-line semantic
+labels: normals188/189/190, phi192, theta195, product107. This avoids C++
+argument-evaluation-order dependence. Configure records the source root and
+hash, rejects mismatches, and records adapter compile definitions in provenance.
+The linked original library is not modified. Rust derives physical inputs from
+embedded data and this manifest; only the agreed raw primitives are shared.
+
+All8064 parent/product coordinates must satisfy
+`abs(delta)<=1e-12 nm+1e-12*abs(source)`; each base pair distance is also checked
+against the source formula (r at dt0, a at positive dt). All branch masks,
+products, parent-removal and expected source-error outcomes must match exactly.
+No stochastic interval, Bonferroni correction or1% moment PASS is inferred
+from this exhaustive grid. The independent1% analytic criteria remain in force.
+
+Build the optional `g4rs_syn_ref` target with
+`-DG4RS_SYN_SOURCE_ROOT=<verified read-only 11.4.1 source root>`, using the
+normative install and other prerequisites in BUILD_NOTES. Compile definition
+`G4RS_SYN_MAKE_SOURCE` names the pinned .cc; all renaming/draw macro definitions
+are local to SynPaired.cc and do not affect `g4rs_ref` or its existing modes.
+Run: `g4rs_syn_ref paired ../../reference/syn_paired_1141.csv 20261109071 16`.
+One-tape smoke runs use new scratch files and are not reference evidence.
+The producer and consumer enforce <1,000,000 bytes per fixture.
+
+Schema `syn_paired_v1` is the exact 35-column header in SynPaired.cc and its
+strict consumer: scenario identity (kind/channel/ratio/duration/orientation/
+fixed parent/tape), six raw primitives, consumption mask/status, radius and
+two diffusivities, six input parent coordinates, six output parent coordinates,
+product count, common centroid and parent-removal flag. Lengths are nm,
+diffusivities nm^2/ps and duration ps. Missing outputs use `NA`; coincidence
+is `coincident_error`, never a no-reaction observation. The two leading metadata
+lines and exact final marker `# complete: true; seed: 20261109071; tapes: 16; rows: 1200`
+are required, together with exact ordered coverage. Source product species/order
+and colocation are checked in the producer before writing a row.
+
+Consumer: `cargo test --release -p g4-chemistry --test geant4_syn_paired syn_paired_mapping_matches_geant4 -- --ignored --exact --nocapture`.
+The provenance filename is `provenance_syn_paired_1141.toml`. Required keys:
+`geant4_version="11.4.1"`, `physics_constructor="G4EmDNAPhysics_option2"`,
+`chemistry_constructor="G4EmDNAChemistry_option3"`, `timestep_model="IRT_syn"`,
+`mode="paired"`, `schema="syn_paired_v1"`, `claim="finite-input mapping only"`,
+`source_sha256` equal to the pinned hash above, `g4emlow_version="8.8"`,
+`seed=20261109071`, `tapes_per_setting=16`, `completion_rows=1200`, canonical-LF
+`csv_sha256`, `generator_commit`, `generator_dirty`, named
+`generator_source_sha256` for SynPaired.cc and CMakeLists.txt, `compiler`,
+`platform`, `date`, `actual_command`, `compile_definitions` (both the configured
+source macro and local class/draw macros), `g4emlow_md5`, and the registered
+`command` above. Record dirty state truthfully; never overwrite RR-006 data.
+
+## RR-006: isolated IRT-syn pair diagnostics
+
+Run result (2026-11-08): the dedicated authorized runner produced two complete
+11.4.1 replicates at each registered look. The 100000 and 200000 looks were
+precision-INCONCLUSIVE; both are preserved. At 1000000, all 448 stochastic
+comparisons and 16 deterministic diagnostic endpoints passed. This closes
+RR-006 source diagnostics only. It does not resolve source overlap clocks or
+pass full SYN-1/2. Data committed in 9607036827be6954fb5423f294275d36c383661c; provenance in f3c169f.
+
+The [SYN-2 precision feasibility decision](SYN2_FEASIBILITY.md) was resolved
+prospectively on 2026-11-09 by the paired mapping diagnostic above. The old
+independent-moment campaign was not run or passed. Existing source evidence
+is unchanged.
+
+New mode `g4rs_ref syn_pair_matrix OUTPUT SEED SAMPLES` exclusively creates
+OUTPUT and requires library version 1141. Physics is option2, chemistry option3,
+with IRT_syn selected before initialization. No existing mode or fixture changes.
+The mode calls the actual `G4DiffusionControlledReactionModel::GetTimeToEncounter`
+for r/a >= 1. At r/a=0.5 it evaluates only the stepper's initial probability
+branch: rejection is `unresolved_overlap`, not an invented no-event clock.
+Post-start overlap is a separate deterministic branch diagnostic; it does not
+claim to execute a scheduler or resolve the inherited-candidate anomaly.
+
+Frozen manifest: channels [1,2,8,9,11,17,42,51], effective-radius ratios
+[0.5,1,1.5,3], tau=D*t/a^2=[0.01,0.1,1,10,100]. Each initial setting has
+five CDF rows, eventual `no_reaction`, and `unresolved_overlap`; each channel
+adds one post-start ratio-0.5 unresolved-overlap row: **232 rows per replicate**.
+Geant4 seeds are 20261108061/20261108062; independent Rust seeds are
+20261108063/20261108064. Source coefficients come from the initialized table
+and are exported as a_nm, D_nm2_per_ps and contact_probability; the strict
+consumer checks them against the embedded data to 1e-12 relative before
+comparing any observations. No energy or scheduler horizon is used.
+
+Schema `syn_pair_v1`: `reaction_id,context,r_over_a,a_nm,D_nm2_per_ps,contact_probability,endpoint,tau,samples,count`.
+The two metadata lines, exact header, ordered 232 rows and final complete marker
+are mandatory. Tau=-1 labels non-CDF rows, not a negative time sample.
+Nonfinite or unexpected source returns abort; partial files are not evidence.
+Counts include every draw; CDFs are unconditional and never renormalized after
+an unresolved outcome. Exact post-start diagnostics are checked deterministically.
+
+Only source-diagnostic equivalence is assessed here. This does **not** close
+SYN-1's full independent analytic gate, SYN-2 placement/diffusion, the scheduler
+trace, or SYN-3 unary extension. L1 tests independently integrate the type-1
+first-passage/delay convolution but use a regression tolerance, not SYN acceptance.
+Acceptance follows docs/07: alpha=0.001, three looks, family m=464 (both
+replicates), each source/Rust Clopper-Pearson interval gets alpha/(3*m*2).
+Subtract bounds; PASS requires the entire difference interval strictly inside
+[-0.01,0.01], FAIL entirely outside, otherwise INCONCLUSIVE. Report all counts
+and intervals. Samples per setting are 100000, then 200000, then 1000000 only
+for insufficient precision; new filenames preserve all earlier evidence.
+
+Consumer: `cargo test --release -p g4-chemistry --test geant4_syn_pair syn_pair_source_diagnostics_match_geant4 -- --ignored --exact --nocapture`.
+`SYN_PAIR_SAMPLES` chooses a registered look (default 100000).
+Files are `syn_pair_1141_r{1,2}_n{SAMPLES}.csv` and corresponding
+`provenance_syn_pair_1141_r{1,2}_n{SAMPLES}.toml` in `validation/reference`.
+Provenance requires `geant4_version="11.4.1"`, `timestep_model="IRT_syn"`,
+the named physics/chemistry constructors, `mode="syn_pair_matrix"`,
+`schema="syn_pair_v1"`, `g4emlow_version="8.8"`, `seed`,
+`samples_per_setting`, `completion_rows=232`, canonical-LF `csv_sha256`,
+`generator_commit`, `generator_dirty`, `compiler`, `platform`, `date`,
+`g4emlow_md5`, `geant4_source_revision`, `source_sha256` (named hashes of
+the contract's reviewed source files), `generator_source_sha256` (named hashes
+of both g4rs_ref.cc and SynKernels.hh), `actual_command`, and `command`.
+The latter is the path-independent registered command from RUN_REQUESTS;
+actual_command records scratch execution if its executable/output paths differ.
+The existing 2-hour/8-GiB invocation and fixture-size limits apply.
+
+### Frozen independent analytic pair gate (PASS at second look)
+
+Exact test: `cargo test --release -p g4-chemistry --test geant4_syn_pair syn_pair_matches_independent_analytic_law -- --ignored --exact --nocapture`.
+Seeds 20261108065/20261108066; the same eight channels, four separations,
+five tau values, no-event and explicit unresolved-overlap endpoints as RR-006,
+plus each post-start overlap identity. Family m=464, alpha=0.001, three looks
+at 100000/200000/1000000 draws per setting, selected by `SYN_ANALYTIC_SAMPLES`.
+Single-sample Clopper-Pearson intervals use alpha/(3*m); analytic probability
+uncertainty expands each difference interval by 1e-8 before the same +/-0.01
+equivalence decision. All counts and bounds are reported. No source CSV is
+used. The numerical oracle integrates erfcx independently of the sampler and
+checks its closed-form type-1 CDF against independent first-passage/delay
+convolution quadrature at every separated type-1 grid point. Quadrature
+refinement is a unit test, not the statistical acceptance test. This gate is
+executed on 2026-11-09: 100000 look had 426 PASS and 22 INCONCLUSIVE endpoints, no FAIL; 200000 look passed all 448 stochastic comparisons and 16 post-start identities. Logs: session scratch 02-analytic-{100k,200k}.log. Inherited overlap clock state remains outside this isolated law acceptance.
+
 ## IRT-syn reference contract (2026-11-08)
 
 This prospective contract accompanies [ADR 0004](../../.work/adr/0004-irt-syn-production-contract.md)
@@ -802,3 +962,168 @@ set `G1F_GEANT4_PAIRS=N`, use new `pair_matrix_irt_g1f_n<N>.csv` and
 The Rust case/distance ordinals retain holes for excluded contacts.
 The consumer reports GEANT4 only; G1-F also requires the analytic and contact
 regressions. It does not close physical validity, R05/G2 or G(t) gates.
+
+RR-007 adapter recovery (2026-11-09): diagnostic product cleanup uses the owning track list's erase path before clearing empty holder lists. Only immobile cases temporarily unfinalize/set/refinalize the selected reactant diffusion coefficient, restoring it after the setting. Cached reaction radius and all registered inputs, transformations and tolerances are unchanged. Scratch smoke passed; subsequent dedicated production and strict consumer passed 1200 rows, 144 expected errors and 8064 coordinates. Data/provenance commits: 9607036827be6954fb5423f294275d36c383661c / f3c169f. This remains finite-grid mapping only.
+
+### SYN-2 independent analytic marginal manifest (2026-11-09; prospective)
+
+Exact ignored test: `cargo test --release -p g4-chemistry --test syn_analytic_moments syn_marginals_match_independent_analytic_moments -- --ignored --exact --nocapture`.
+`SYN_MOMENT_HISTORIES` selects 300, 1000, then 3000 histories, each with333 draws;
+maximum999000 draws per setting. Each history is one independent batch
+(df299/999/2999), exceeding the required30. Master seeds20261109081/20261109082
+are independent; each setting resets its history RNG to stream(history,
+Chemistry). This intentionally couples raw uniforms across settings before
+any outcomes are inspected. Free-diffusion normalized coordinates coincide
+across D/time scalings; placement transformations consume the same raw RNG
+stream but different source parameters. Translation-equivalent settings share
+exact primitives; other placement distributions remain distinct, correlated
+transforms. No source CSV or Geant4 RNG is used. Within each setting, history
+streams and consecutive draws remain independent in the model; correlations
+between settings do not invalidate Bonferroni's union bound.
+
+All15 embedded mobile species in SpeciesTable order plus D=0, at dt0/1/1000/
+1000000ps, contribute3 means and6 upper-triangular covariances each. Analytic
+mean0, covariance2Ddt*I; scales sqrt(2Ddt) for means and2Ddt for covariance.
+Both seeds give1152 endpoints. Placement uses channels1/2/11, r/a1/3,
+dt0/1/1000ps, x/z/translated-x orientations from SYN-2; parent coordinates
+plus shared product centroid (undefined and absent for channel11), each mean
+and upper-triangular covariance. Independent angular quadrature and Gaussian/
+uniform moment algebra in syn_support provide expectations and characteristic
+scales (coordinate SD, products of coordinate SDs).4860 moment endpoints plus
+108 distance identities and108 product-count identities give5076 placement
+endpoints. Full family m6228, alpha.001, three looks; one-sample t difference
+interval from independent batches at alpha/(3m), inside +/-1% scale. The
+separately refinement-checked oracle error expands stochastic intervals by
+1e-8 of scale. Zero-scale deterministic identities use the registered1e-12
+relative/nm floor; source product count is exact. Every draw also checks
+parent distance (initial separation for dt0, a for positive dt), product
+count and common product site. No statistical family endpoints are dropped.
+
+Power is finite: at1m and infinite df, a normal variance has expected interval
+half-width0.7692% and approximate individual equivalence power0.8973. With
+coupled diffusion settings there are six distinct coordinate-variance streams
+(three axes,two seeds), not270 independent variances: roughly0.52 joint power
+for those six alone. Placement transforms add dependent constraints; no full
+family PASS is promised. All three registered looks and final INCONCLUSIVE
+handling remain unchanged. This validates marginal sampling against analytic
+source distributions, not physical correctness of the anomalous dormant
+positive-duration source branch or ordinary scheduler applicability.
+
+SYN-2 analytic results (2026-11-09): all registered looks completed with no
+FAIL endpoints. Moment endpoints (6012) plus216 per-setting distance/product
+identities constitute the6228 family:
+
+| Histories | Draws/setting | Moment PASS | Moment INCONCLUSIVE | Identity PASS |
+|---:|---:|---:|---:|---:|
+|300|99900|1914|4098|216|
+|1000|333000|3272|2740|216|
+|3000|999000|5779|233|216|
+
+Final result is INCONCLUSIVE, not PASS. All1152 free-diffusion endpoints and
+all dt0 placement endpoints passed; the233 unresolved endpoints are dormant
+positive-duration placement diagnostics (195 at1ps,38 at1ns). This does not
+establish a failure of production physics or make that branch reachable.
+Example: seed20261109081,channel2,r/a1,dt1ps,x,endpoint26 has oracle/scale
+0.001165475962414208 nm^2 and difference interval
+[-0.00001423979691432,0.00001671727395930] nm^2, exceeding its frozen band
++/-0.00001165475962414 nm^2. No further precision look is authorized by this
+manifest. Logs: session scratch `02-marginal-{300,1000,3000}.log`; final run
+92.52s. Ordinary library scheduler trace is registered below as RR-008 and awaits execution;
+its zero-duration applicability statement is still static source inference.
+
+## RR-008 ordinary installed-library scheduler placement trace
+
+This new program calls the installed11.4.1 chemistry manager/scheduler with
+option2/option3 IRT_syn. It neither replaces the reaction process nor invokes
+MakeReaction/TestReactibility directly; no source-body inclusion or random-draw
+interception occurs. The trace tests whether actual positive selected event
+steps preserve parent sites, supporting the static inference that ordinary
+placement uses its default zero-duration branch. It does not directly observe
+the private fTimeStep field or establish all scheduler behaviors.
+
+Frozen settings per replica: channels1,2,11; r/a=3 only; orientations+x,+z,
+and translated+x origin(10a,-7a,3a). Birth1ps, end1000000ps, unbounded on this
+scale inside1m water world.32 independent trials per setting, channel then
+orientation then trial order,288rows. Master seeds20261109091/092. Per-row
+Ranecu seed integer=master+zero-based-row; the existing injective encoding is
+(seed%2147483562+1,seed/2147483562+1). Both parent tracks are pushed normally
+into the holder and the chemistry manager runs the ordinary installed model.
+The reaction callback captures only the first reaction, checks source product
+species/order/colocation and requests scheduler Stop; the following post-step
+callback checks both parent IDs have disappeared from the main list. Scheduler
+owns and cleans its tracks; no adapter cleanup of populated delayed lists.
+
+Commands (working directory validation/geant4/g4rs_ref):
+```text
+g4rs_syn_scheduler_ref trace ../../reference/syn_scheduler_1141_r1.csv 20261109091 32
+g4rs_syn_scheduler_ref trace ../../reference/syn_scheduler_1141_r2.csv 20261109092 32
+```
+Smoke uses a new scratch filename,seed1,trials1 (9rows); coverage acceptance
+is only applied to complete32-trial replicas. Cap32trials,2h/8GiB per invocation,
+<1MB per CSV; no rerolling seeds or adding trials to satisfy coverage.
+CSV is exactly:
+```text
+# schema: syn_scheduler_v1; Geant4: 1141; claim: ordinary-library first-reaction trace
+# seed: <seed>; trials: 32; birth_ps: 1; horizon_ps: 1000000
+channel,orientation,trial,outcome,a_nm,d1_nm2_ps,d2_nm2_ps,p1x,p1y,p1z,p2x,p2y,p2z,event_time_ps,event_step_ps,r1x,r1y,r1z,r2x,r2y,r2z,products,px,py,pz,parents_removed
+```
+Footer `# complete: true; seed: <seed>; trials: 32; rows: 288` is required.
+Outcome `reaction` records positive event step/time, canonical parent positions,
+product count/centroid and post-step removal bit1. Outcome `censored` records
+all thirteen columns after p2z asNA; it is not eventual nonreaction probability.
+Zero-product channel11 has products0 andNA centroid. Event times and steps are
+inps, coordinates/radius innm, diffusion innm^2/ps.
+
+Acceptance: exact ordered288rows per replica, source parameters to1e-12
+relative, input and reacting parent coordinates unchanged to1e-12relative+
+1e-12nm absolute. Every recorded event has time>1ps and<=horizon, step>0 and
+<=event time, correct product count and parent-removal bit1. Product positions
+must lie on the original pair segment with fractional coordinate
+[(1-q)/2,(2-q)/2],q=sqrt(D2)/(sqrt(D1)+sqrt(D2)), within1e-12 numerical floor;
+source producer separately verifies product identity/order/colocation. At
+least one positive-time event in every channel/orientation per replica is
+required for coverage; missing coverage is INCONCLUSIVE, not a physical FAIL.
+No event-count or reaction-time distribution inference is attached. Preserved
+3a parent separation with a positive event step distinguishes this path from
+the direct positive-duration source branch, which forces separation a.
+
+Exact consumer:
+`cargo test --release -p g4-chemistry --test geant4_syn_scheduler syn_ordinary_scheduler_preserves_parent_sites -- --ignored --exact --nocapture`.
+Each `provenance_syn_scheduler_1141_r{1,2}.toml` must record top-level strings
+geant4_version11.4.1,physics_constructorG4EmDNAPhysics_option2,
+chemistry_constructorG4EmDNAChemistry_option3,timestep_modelIRT_syn,mode trace,
+schema syn_scheduler_v1,claim "ordinary-library first-reaction trace",
+g4emlow_version8.8; integers seed,trials_per_setting32,completion_rows288;
+canonical-LF csv_sha256; exact registered command above; actual_command,
+generator_commit,generator_dirty(bool),generator_source_sha256(named hashes of
+SynScheduler.cc/CMakeLists.txt),compiler,platform,date,compile_definitions,
+g4emlow_md5,source_hashes(named normative G4DNAMakeReaction.cc,
+G4DNAIndependentReactionTimeStepper.cc,G4Scheduler.cc and linked Geant4 DLLs).
+Data-commit identity is filled after committing new validated evidence.
+No RR-006/RR-007 evidence or producer mode is changed.
+
+RR-008 recovery 3 (2026-11-09): native stacks identified two adapter initialization omissions. G4EmDNAPhysics construction resets the requested timestep model to Unknown; selecting IRT_syn after physics construction restores registration. With no transport BeamOn, Brownian transportation had no water-density table; the supported chemistry UseAsStandalone(true) initialization builds molecular process tables and closes geometry. Guards verify the enum before process construction/after initialization and the actual installed IRT model, stepper and reaction process in StartProcessing. Corrected scratch seed1/trials1 exited native 0 with nine ordered rows, three reactions and six censored histories; schema, footer, parent sites, product support/count and removal checks passed. This is recovery smoke only: independent review, fresh dedicated smoke and registered production/consumer remain pending. No reference-source, random stream, manifest, tolerance or statistical result changed; 233 positive-duration marginal endpoints remain INCONCLUSIVE.
+
+Interpretation of earlier RR-006/RR-007 evidence: those adapters selected the timestep enum before constructing electromagnetic physics, whose constructor resets it. Their direct diagnostic calls explicitly instantiate the pair sampler or renamed source reaction implementation; they do not execute scheduler model selection. Their IRT-syn labels identify the intended direct algorithm, not an observed registered scheduler model. The relevant direct reaction setup follows the same non-SBS branch for Unknown and IRT_syn. Existing source-diagnostic and finite-grid mapping results remain limited to those direct calls; no ordinary scheduler claim follows from them. Their producer modes, data and provenance are preserved unchanged. RR-008 adds explicit checks of actual registered model types.
+
+
+### RR-008 recovery and registered result (2026-11-09)
+
+The user-authorized recovery corrected trace-harness initialization order and
+standalone molecular physics-table initialization. Independent review found no
+actionable defect. A subsequent fresh smoke passed before production.
+Both registered production runs exited 0 with 288 ordered rows and complete
+footers. Replicate 1 has 80 reactions/208 censored trials; replicate 2 has
+79 reactions/209 censored trials. All observed parent-site/product/removal
+checks passed, but channel 11, +z had zero positive-time events in both runs.
+Verdict: **INCONCLUSIVE**, not PASS. The exact registered Rust consumer exited
+101 at the coverage gap in replicate 1, before examining replicate 2; a
+separate full-output validator checked both files. No additional samples or
+seed changes were made. The 233 analytic moment endpoints remain INCONCLUSIVE.
+
+Complete data commit: `2264b14ffe024b2f44accb2c53b29ae40ee93d37`.
+Provenance commit: `9b4aaf4`. Final comparison log is
+`.scratch/tests/2026-11-08__irt-syn-parallel-checkpoint-direction/02-rr008/production-consumer-complete.log`.
+RR-006/RR-007 were not rerun or replaced. Ticket 02 remains incomplete pending
+the registered coverage gate; no later production acceptance follows from
+these observed reactions alone.
