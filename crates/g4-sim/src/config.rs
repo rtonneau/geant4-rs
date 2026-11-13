@@ -208,8 +208,7 @@ start_theta = 0.0
             let json: RunConfig =
                 serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
             assert_eq!(json, c);
-            let contains_origin =
-                c.volume.as_ref().unwrap().inside(Vec3::ZERO) != Inside::Outside;
+            let contains_origin = c.volume.as_ref().unwrap().inside(Vec3::ZERO) != Inside::Outside;
             assert_eq!(c.validate().is_ok(), contains_origin);
         }
     }

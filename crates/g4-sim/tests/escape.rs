@@ -85,7 +85,10 @@ fn escape_block_is_consistent_with_histories_and_ledger() {
         .map(|r| r.outcome.ledger.escaped / r.outcome.ledger.e_in)
         .sum::<f64>()
         / n;
-    assert!(primary > 0 && tracks > primary, "needs both kinds of escape");
+    assert!(
+        primary > 0 && tracks > primary,
+        "needs both kinds of escape"
+    );
 
     let p = primary as f64 / n;
     assert_eq!(e.primary_escape_fraction.n, histories.len() as u64);
@@ -98,7 +101,10 @@ fn escape_block_is_consistent_with_histories_and_ledger() {
     assert_eq!(sp.edges_ev, g4_sim::history::spectrum_edges_ev());
     assert_eq!(sp.primary.n_tracks, primary);
     assert_eq!(sp.all.n_tracks, tracks);
-    assert_eq!(sp.primary.n_tracks + sp.secondaries.n_tracks, sp.all.n_tracks);
+    assert_eq!(
+        sp.primary.n_tracks + sp.secondaries.n_tracks,
+        sp.all.n_tracks
+    );
     for s in [&sp.primary, &sp.secondaries, &sp.all] {
         assert_eq!(total(s), s.n_tracks);
     }

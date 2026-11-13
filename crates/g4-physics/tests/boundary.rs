@@ -30,8 +30,8 @@ use g4_physics::error::PhysicsError;
 use g4_physics::models::ElasticRotation;
 use g4_physics::table::ProcessTable;
 use g4_physics::transport::{
-    ExitEvent, HistoryObserver, HistoryOutcome, NoObserver, Primary, SolvationEvent, StepEvent, Termination,
-    TransportConfig, transport_electron,
+    ExitEvent, HistoryObserver, HistoryOutcome, NoObserver, Primary, SolvationEvent, StepEvent,
+    Termination, TransportConfig, transport_electron,
 };
 use rand::Rng;
 
@@ -306,7 +306,10 @@ fn exit_events_lie_on_the_surface_and_match_the_ledger() {
             assert!(primaries <= 1);
             if out.termination == Termination::Escaped {
                 assert_eq!(primaries, 1);
-                assert_eq!(exits.0.iter().find(|e| e.generation == 0).unwrap().track_id, 0);
+                assert_eq!(
+                    exits.0.iter().find(|e| e.generation == 0).unwrap().track_id,
+                    0
+                );
             }
         }
     }
