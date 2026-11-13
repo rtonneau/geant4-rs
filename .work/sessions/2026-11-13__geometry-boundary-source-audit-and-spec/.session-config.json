@@ -109,9 +109,33 @@
         "ticket": "02-boundary-source-audit",
         "commit": "6970f50"
       }
+    },
+    {
+      "at": "2026-11-13T16:28:41.130Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-finite-volume-spec.md",
+        "03-implement/03-finite-volume-spec/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-finite-volume-spec"
+      }
+    },
+    {
+      "at": "2026-11-13T16:32:33.641Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/03-finite-volume-spec/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-finite-volume-spec",
+        "commit": "48bbb97"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "docs/geometry-boundary-spec",
     "base_branch": "test/rr008-scheduler-followup",
