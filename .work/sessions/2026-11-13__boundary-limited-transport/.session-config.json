@@ -84,6 +84,30 @@
         "ticket": "01-restore-geo0-spec",
         "commit": "accdac8"
       }
+    },
+    {
+      "at": "2026-11-13T20:34:45.458Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-boundary-limited-transport.md",
+        "03-implement/02-boundary-limited-transport/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-boundary-limited-transport"
+      }
+    },
+    {
+      "at": "2026-11-13T20:40:48.496Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-boundary-limited-transport/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-boundary-limited-transport",
+        "commit": "8b58cf0"
+      }
     }
   ],
   "current_phase": "ship",
