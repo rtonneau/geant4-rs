@@ -193,6 +193,10 @@ pub struct EnergySummary {
     pub deposited_total_ev: MeanStat,
     pub untracked_secondaries_ev: MeanStat,
     pub remaining_untracked_ev: MeanStat,
+    /// Kinetic energy of tracks killed at the volume boundary (docs/04 D.6); present only when
+    /// a history had an escape, so unbounded runs serialise as before.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub escaped_ev: Option<MeanStat>,
     /// Largest `|E_in - sum(parts)| / E_in` over all histories (energy ledger, V7).
     pub max_abs_ledger_residual_relative: f64,
 }
@@ -336,6 +340,8 @@ pub struct Scorer {
     dep_total: Welford,
     untracked_sec: Welford,
     remaining: Welford,
+    escaped: Welford,
+    any_escape: bool,
     max_residual: f64,
     levels: [u64; 5],
     shells: [u64; 5],
@@ -383,6 +389,8 @@ impl Scorer {
             dep_total: Welford::default(),
             untracked_sec: Welford::default(),
             remaining: Welford::default(),
+            escaped: Welford::default(),
+            any_escape: false,
             max_residual: 0.0,
             levels: [0; 5],
             shells: [0; 5],
@@ -444,6 +452,8 @@ impl Scorer {
         self.dep_total.add(l.deposited());
         self.untracked_sec.add(l.untracked_secondaries);
         self.remaining.add(l.remaining_untracked);
+        self.escaped.add(l.escaped);
+        self.any_escape |= o.n_escaped > 0;
         self.max_residual = self.max_residual.max(l.residual_relative().abs());
         for i in 0..5 {
             self.levels[i] += o.excitation_levels[i];
@@ -539,6 +549,7 @@ impl Scorer {
                 deposited_total_ev: self.dep_total.stat(),
                 untracked_secondaries_ev: self.untracked_sec.stat(),
                 remaining_untracked_ev: self.remaining.stat(),
+                escaped_ev: self.any_escape.then(|| self.escaped.stat()),
                 max_abs_ledger_residual_relative: self.max_residual,
             },
             w_value: WSummary {
