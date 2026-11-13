@@ -134,9 +134,33 @@
         "ticket": "03-sphere",
         "commit": "aec246d"
       }
+    },
+    {
+      "at": "2026-11-13T20:03:13.036Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-runconfig-geometry.md",
+        "03-implement/04-runconfig-geometry/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-runconfig-geometry"
+      }
+    },
+    {
+      "at": "2026-11-13T20:08:22.027Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/04-runconfig-geometry/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-runconfig-geometry",
+        "commit": "a903f27"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/geometry-primitives",
     "base_branch": "main",
