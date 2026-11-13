@@ -876,7 +876,7 @@ tau 0.01, 0.1, 1, 10, 100.
 Scope: a single homogeneous water world given by `Volume` (ADR 0005). Transport kills at the world
 surface and records escaped energy. Solvation and dissociation displacements use the Geant4 0.8 x safety
 clamp. Chemistry boundary behaviour follows the answers to G-B1/G-B2 (docs/09). Source audit:
-docs/04 D.5 (Geant4 11.4.3). Acceptance: docs/07 "Finite-volume boundary acceptance criteria",
+docs/04 D.7 (Geant4 11.4.3). Acceptance: docs/07 "Finite-volume boundary acceptance criteria",
 consuming RR-009.
 Order: (1) `Volume` type with `inside`, ray `distance_to_out` and `safety`, plus analytic unit tests;
 (2) physical-stage boundary kill and the escaped-energy ledger (D1, D3, D4); (3) physicochemical clamps;

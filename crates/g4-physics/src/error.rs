@@ -35,6 +35,10 @@ pub enum PhysicsError {
         component: &'static str,
         value_nm: f64,
     },
+    /// The primary starts outside the volume (Geant4: fatal `Tracking0010`,
+    /// `G4SteppingManager.cc:346-356`).
+    #[error("primary starts outside the volume at ({x_nm}, {y_nm}, {z_nm}) nm")]
+    PrimaryOutsideVolume { x_nm: f64, y_nm: f64, z_nm: f64 },
     /// The relative ledger tolerance must be finite and nonnegative.
     #[error("relative ledger limit must be finite and nonnegative, got {value}")]
     InvalidLedgerLimit { value: f64 },

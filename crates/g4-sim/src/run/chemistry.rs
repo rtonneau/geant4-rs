@@ -49,7 +49,7 @@ pub fn run_physchem_summary_with_diagnostics(
     let (first, end) = ids(config)?;
     let streams = RngStreams::new(config.master_seed);
     let edges = Edges::new();
-    let mut physics = Scorer::new(config.primary_energy_ev);
+    let mut physics = scorer_for(config);
     let mut physchem = PhysChemScorer::default();
     with_pool(config.threads, || -> Result<(), SimError> {
         let mut start = first;
@@ -146,7 +146,7 @@ pub fn run_with_physchem(
         engine,
         config,
         verified_provenance(table, config),
-        "geant4-rs/dna-sim/run/v4",
+        "geant4-rs/dna-sim/run/v5",
     )
 }
 
@@ -162,7 +162,7 @@ pub fn run_unverified_with_physchem_for_testing(
         engine,
         config,
         Provenance::unverified(config.master_seed),
-        "geant4-rs/dna-sim/run-unverified/v1",
+        "geant4-rs/dna-sim/run-unverified/v2",
     )
 }
 
@@ -177,7 +177,8 @@ fn physchem_output(
     Ok(PhysChemRunOutput {
         schema,
         provenance: provenance
-            .with_chemistry(engine.semantic_sha256(), engine.source_file_sha256()),
+            .with_chemistry(engine.semantic_sha256(), engine.source_file_sha256())
+            .with_volume(config.volume.clone()),
         models: table.describe(),
         elastic_rotation: elastic_rotation(table),
         config: config.clone(),

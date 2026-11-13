@@ -45,6 +45,7 @@ fn bits(r: &HistoryResult) -> Vec<u64> {
         o.solvations,
         o.n_secondaries,
         o.n_tracks,
+        o.n_escaped,
         o.track_length_nm.to_bits(),
         o.total_track_length_nm.to_bits(),
         o.first_step.map_or(0, |f| f.length_nm.to_bits()),
@@ -118,6 +119,46 @@ fn per_history_results_are_bitwise_identical_for_1_2_and_8_threads() {
             all_bits(&reference),
             all_bits(&run_detailed(&table, &config).unwrap())
         );
+    }
+}
+
+#[test]
+fn bounded_results_are_bitwise_identical_for_1_2_and_8_threads() {
+    let Some((table, _)) = setup() else { return };
+    let volume = g4_core::geometry::Volume::box_(
+        g4_core::vec3::Vec3::new(3.0, 0.0, 0.0),
+        g4_core::vec3::Vec3::new(40.0, 40.0, 15.0),
+    )
+    .unwrap();
+    for (energy, n) in [(1.0e3, 300u64), (1.0e4, 60)] {
+        let mut config = RunConfig::new(energy, n);
+        config.master_seed = 2027;
+        config.record_physchem = true;
+        config.volume = Some(volume.clone());
+        config.threads = Some(1);
+        let reference = run_detailed(&table, &config).unwrap();
+        assert!(reference.iter().any(|r| r.outcome.n_escaped > 0));
+        assert!(reference.iter().all(|r| {
+            let l = r.outcome.ledger;
+            l.residual().abs() <= 1e-9 * l.e_in
+        }));
+        for threads in [2, 8] {
+            config.threads = Some(threads);
+            assert_eq!(
+                all_bits(&reference),
+                all_bits(&run_detailed(&table, &config).unwrap()),
+                "E = {energy} eV, {threads} threads"
+            );
+        }
+        let summaries: Vec<String> = [1, 2, 8]
+            .into_iter()
+            .map(|threads| {
+                config.threads = Some(threads);
+                serde_json::to_string(&run_summary(&table, &config).unwrap()).unwrap()
+            })
+            .collect();
+        assert!(summaries.windows(2).all(|w| w[0] == w[1]));
+        assert!(summaries[0].contains("escaped_ev"));
     }
 }
 
@@ -270,7 +311,7 @@ fn json_output_carries_provenance_models_and_config() {
     let text = out.to_json_pretty().unwrap();
     let j: serde_json::Value = serde_json::from_str(&text).unwrap();
 
-    assert_eq!(j["schema"], "geant4-rs/dna-sim/run/v4");
+    assert_eq!(j["schema"], "geant4-rs/dna-sim/run/v5");
     assert_eq!(j["provenance"]["master_seed"], 4242);
     assert_eq!(j["provenance"]["inputs"]["verification"], "verified");
     assert_eq!(j["provenance"]["manifest_sha256"], manifest.hash());

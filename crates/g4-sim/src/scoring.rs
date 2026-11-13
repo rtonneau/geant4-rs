@@ -30,6 +30,12 @@
 //!   into excitations, vibrations, sub-ionisation electrons and attachment, as the physical W
 //!   does, but it is *not* the experimental W (which is defined for the gas phase and for
 //!   ion pairs collected in an electric field).
+//! * **Escape scoring** (only with a volume, docs/04 D.6): the *primary escape fraction* is the
+//!   fraction of histories whose primary left the volume, with binomial standard error
+//!   `sqrt(p(1-p)/n)`; *escaped tracks per history* counts every escaped track (primary and
+//!   secondaries); the *escaped energy fraction* is the mean of the per-history
+//!   `E_escaped / E_in`. The escaped-energy spectra bin the kinetic energy at exit on the
+//!   secondary-spectrum edges, for the primary, for the secondaries and for all tracks.
 
 use crate::history::{
     GENERATION_CLASSES, HistoryResult, RADIAL_BINS, SPECTRUM_BINS, SecondarySpectrum,
@@ -193,6 +199,10 @@ pub struct EnergySummary {
     pub deposited_total_ev: MeanStat,
     pub untracked_secondaries_ev: MeanStat,
     pub remaining_untracked_ev: MeanStat,
+    /// Kinetic energy of tracks killed at the volume boundary (docs/04 D.6); present only when
+    /// a history had an escape, so unbounded runs serialise as before.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub escaped_ev: Option<MeanStat>,
     /// Largest `|E_in - sum(parts)| / E_in` over all histories (energy ledger, V7).
     pub max_abs_ledger_residual_relative: f64,
 }
@@ -212,6 +222,14 @@ pub struct TerminationCounts {
     pub completed: u64,
     pub interaction_limit: u64,
     pub tracking_cut: u64,
+    /// Primaries killed at the volume boundary; omitted from the output when zero, so
+    /// unbounded runs serialise as before.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub escaped: u64,
+}
+
+fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -244,6 +262,44 @@ pub struct RadialSummary {
     pub mean_overflow_ev: f64,
 }
 
+/// A binomial fraction with its standard error `sqrt(p(1-p)/n)`.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct FractionStat {
+    pub n: u64,
+    pub fraction: f64,
+    pub std_err: f64,
+}
+
+/// Kinetic energies at exit of one class of escaped tracks (summed over all histories).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct EscapeSpectrum {
+    pub counts: Vec<u64>,
+    pub underflow: u64,
+    pub overflow: u64,
+    /// Escaped tracks recorded (bins + underflow + overflow).
+    pub n_tracks: u64,
+    pub mean_energy_ev: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct EscapeSpectraSummary {
+    /// Log-spaced bin edges, eV (same as `secondary_spectra.edges_ev`).
+    pub edges_ev: Vec<f64>,
+    pub primary: EscapeSpectrum,
+    pub secondaries: EscapeSpectrum,
+    pub all: EscapeSpectrum,
+}
+
+/// What left the volume (see the module docs for the definitions).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct EscapeSummary {
+    pub primary_escape_fraction: FractionStat,
+    pub escaped_tracks_per_history: MeanStat,
+    /// Mean of the per-history `E_escaped / E_in`.
+    pub escaped_energy_fraction: MeanStat,
+    pub spectra: EscapeSpectraSummary,
+}
+
 /// Everything scored in one run.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct RunSummary {
@@ -261,6 +317,10 @@ pub struct RunSummary {
     pub secondary_spectra: SecondarySpectraSummary,
     pub radial_deposit: RadialSummary,
     pub quirks: QuirkCounts,
+    /// Present only for a run in a volume (even with no escape); omitted for infinite water,
+    /// so unbounded summaries serialise as before.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub escape: Option<EscapeSummary>,
 }
 
 #[derive(Debug, Clone)]
@@ -272,7 +332,102 @@ struct SpectrumAcc {
     energy_sum: f64,
 }
 
+#[derive(Debug, Clone)]
+struct EscapeAcc {
+    edges: Vec<f64>,
+    primary_escapes: u64,
+    tracks: Welford,
+    energy_fraction: Welford,
+    /// Primary, secondaries.
+    spectra: [SpectrumAcc; 2],
+}
+
+impl EscapeAcc {
+    fn new() -> Self {
+        Self {
+            edges: spectrum_edges_ev(),
+            primary_escapes: 0,
+            tracks: Welford::default(),
+            energy_fraction: Welford::default(),
+            spectra: [SpectrumAcc::new(), SpectrumAcc::new()],
+        }
+    }
+
+    fn add(&mut self, r: &HistoryResult) {
+        let o = &r.outcome;
+        self.tracks.add(o.n_escaped as f64);
+        self.energy_fraction.add(o.ledger.escaped / o.ledger.e_in);
+        for e in &r.exits {
+            let class = usize::from(e.generation > 0);
+            if class == 0 {
+                self.primary_escapes += 1;
+            }
+            self.spectra[class].add_energy(&self.edges, e.energy.ev());
+        }
+    }
+
+    fn summary(&self, n: u64) -> EscapeSummary {
+        let p = if n > 0 {
+            self.primary_escapes as f64 / n as f64
+        } else {
+            0.0
+        };
+        let mut all = self.spectra[0].clone();
+        all.merge(&self.spectra[1]);
+        EscapeSummary {
+            primary_escape_fraction: FractionStat {
+                n,
+                fraction: p,
+                std_err: if n > 0 {
+                    (p * (1.0 - p) / n as f64).sqrt()
+                } else {
+                    0.0
+                },
+            },
+            escaped_tracks_per_history: self.tracks.stat(),
+            escaped_energy_fraction: self.energy_fraction.stat(),
+            spectra: EscapeSpectraSummary {
+                edges_ev: self.edges.clone(),
+                primary: self.spectra[0].escape_summary(),
+                secondaries: self.spectra[1].escape_summary(),
+                all: all.escape_summary(),
+            },
+        }
+    }
+}
+
 impl SpectrumAcc {
+    fn add_energy(&mut self, edges: &[f64], w: f64) {
+        let pos = edges.partition_point(|&e| e <= w);
+        if pos == 0 {
+            self.underflow += 1;
+        } else if pos > SPECTRUM_BINS {
+            self.overflow += 1;
+        } else {
+            self.counts[pos - 1] += 1;
+        }
+        self.n += 1;
+        self.energy_sum += w;
+    }
+    fn merge(&mut self, o: &SpectrumAcc) {
+        for (a, c) in self.counts.iter_mut().zip(&o.counts) {
+            *a += c;
+        }
+        self.underflow += o.underflow;
+        self.overflow += o.overflow;
+        self.n += o.n;
+        self.energy_sum += o.energy_sum;
+    }
+    fn escape_summary(&self) -> EscapeSpectrum {
+        EscapeSpectrum {
+            counts: self.counts.clone(),
+            underflow: self.underflow,
+            overflow: self.overflow,
+            n_tracks: self.n,
+            mean_energy_ev: (self.n > 0).then(|| self.energy_sum / self.n as f64),
+        }
+    }
+
     fn new() -> Self {
         Self {
             counts: vec![0; SPECTRUM_BINS],
@@ -307,7 +462,7 @@ impl SpectrumAcc {
 pub struct Scorer {
     e_in: f64,
     n: u64,
-    terminations: [u64; 3],
+    terminations: [u64; 4],
     interactions: [u64; ProcessKind::COUNT],
     per_history: [Welford; ProcessKind::COUNT],
     total_track_length_sum_nm: f64,
@@ -328,6 +483,8 @@ pub struct Scorer {
     dep_total: Welford,
     untracked_sec: Welford,
     remaining: Welford,
+    escaped: Welford,
+    any_escape: bool,
     max_residual: f64,
     levels: [u64; 5],
     shells: [u64; 5],
@@ -347,14 +504,21 @@ pub struct Scorer {
     radial_under: f64,
     radial_over: f64,
     quirks: QuirkCounts,
+    escape: Option<EscapeAcc>,
 }
 
 impl Scorer {
+    /// Also score what leaves the volume (`summary.escape`); call for a run in a volume.
+    pub fn with_escape_scoring(mut self) -> Self {
+        self.escape = Some(EscapeAcc::new());
+        self
+    }
+
     pub fn new(e_in_ev: f64) -> Self {
         Self {
             e_in: e_in_ev,
             n: 0,
-            terminations: [0; 3],
+            terminations: [0; 4],
             interactions: [0; ProcessKind::COUNT],
             per_history: [Welford::default(); ProcessKind::COUNT],
             total_track_length_sum_nm: 0.0,
@@ -375,6 +539,8 @@ impl Scorer {
             dep_total: Welford::default(),
             untracked_sec: Welford::default(),
             remaining: Welford::default(),
+            escaped: Welford::default(),
+            any_escape: false,
             max_residual: 0.0,
             levels: [0; 5],
             shells: [0; 5],
@@ -396,6 +562,7 @@ impl Scorer {
             radial_under: 0.0,
             radial_over: 0.0,
             quirks: QuirkCounts::default(),
+            escape: None,
         }
     }
 
@@ -406,6 +573,7 @@ impl Scorer {
             Termination::Completed => 0,
             Termination::InteractionLimit => 1,
             Termination::TrackingCut => 2,
+            Termination::Escaped => 3,
         }] += 1;
         for p in ProcessKind::ALL {
             let c = o.counts.get(p);
@@ -435,6 +603,8 @@ impl Scorer {
         self.dep_total.add(l.deposited());
         self.untracked_sec.add(l.untracked_secondaries);
         self.remaining.add(l.remaining_untracked);
+        self.escaped.add(l.escaped);
+        self.any_escape |= o.n_escaped > 0;
         self.max_residual = self.max_residual.max(l.residual_relative().abs());
         for i in 0..5 {
             self.levels[i] += o.excitation_levels[i];
@@ -472,6 +642,9 @@ impl Scorer {
         self.radial_under += r.radial.underflow_ev;
         self.radial_over += r.radial.overflow_ev;
         self.quirks.accumulate(&o.quirks);
+        if let Some(e) = &mut self.escape {
+            e.add(r);
+        }
     }
 
     pub fn finish(&self) -> RunSummary {
@@ -493,6 +666,7 @@ impl Scorer {
                 completed: self.terminations[0],
                 interaction_limit: self.terminations[1],
                 tracking_cut: self.terminations[2],
+                escaped: self.terminations[3],
             },
             processes,
             solvation: SolvationSummary {
@@ -529,6 +703,7 @@ impl Scorer {
                 deposited_total_ev: self.dep_total.stat(),
                 untracked_secondaries_ev: self.untracked_sec.stat(),
                 remaining_untracked_ev: self.remaining.stat(),
+                escaped_ev: self.any_escape.then(|| self.escaped.stat()),
                 max_abs_ledger_residual_relative: self.max_residual,
             },
             w_value: WSummary {
@@ -555,6 +730,7 @@ impl Scorer {
                 mean_overflow_ev: per_hist(self.radial_over),
             },
             quirks: self.quirks,
+            escape: self.escape.as_ref().map(|e| e.summary(self.n)),
         }
     }
 }

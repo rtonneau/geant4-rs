@@ -205,7 +205,7 @@ allocation are preserved in SYN2_FEASIBILITY.md. No full-family PASS was
 predicted, and final-look INCONCLUSIVE stays open under the existing policy.
 ## Finite-volume boundary acceptance criteria (fixed 2026-11-13, before any data)
 
-Source basis: docs/04 D.5 (Geant4 11.4.3 audit). Geometry: ADR 0005 (`Volume` enum). Reference: RR-009
+Source basis: docs/04 D.7 (Geant4 11.4.3 audit). Geometry: ADR 0005 (`Volume` enum). Reference: RR-009
 (awaiting generator and run). These criteria are fixed now. Changing them later needs a prospective,
 documented amendment, never a relaxation after seeing data.
 
@@ -216,7 +216,7 @@ the same DNA physics and chemistry constructors as the existing `g4rs_ref` modes
 
 **Deterministic checks (every history, both codes, must hold exactly up to 1e-9 relative).**
 - D1 energy closure: `E0 = E_dep_inside + E_escaped`, where `E_escaped` is the kinetic energy of tracks
-  killed at the world boundary (docs/04 D.5).
+  killed at the world boundary (docs/04 D.7).
 - D2 no deposit, species or interaction point outside the volume, except a dissociation product
   flagged as `OUTSIDE_OF_MOTHER_VOLUME` (counted, see S3).
 - D3 every boundary-limited step ends on the surface (`distance_to_out` <= 1e-9 x length scale).

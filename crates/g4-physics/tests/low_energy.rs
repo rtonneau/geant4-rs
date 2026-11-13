@@ -405,6 +405,7 @@ fn melton_absorption_fraction_at_7_5_ev_matches_the_cross_section_ratio() {
                 direction: Z,
                 history_id: id,
             },
+            None,
             &mut rng,
             &mut NoObserver,
         )
@@ -557,6 +558,7 @@ fn transport_solvation_event_keeps_the_sampled_displacement_and_local_deposit() 
                 direction: Z,
                 history_id: 42,
             },
+            None,
             &mut rng,
             &mut recorder,
         )

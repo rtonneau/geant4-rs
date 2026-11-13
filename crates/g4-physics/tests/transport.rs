@@ -45,7 +45,7 @@ fn run_one(
     e: f64,
 ) -> HistoryOutcome {
     let mut rng = streams.stream(id, Stage::Physics).unwrap();
-    transport_electron(table, cfg, primary(e, id), &mut rng, &mut NoObserver).unwrap()
+    transport_electron(table, cfg, primary(e, id), None, &mut rng, &mut NoObserver).unwrap()
 }
 
 fn primary(e: f64, id: u64) -> Primary {
@@ -73,6 +73,7 @@ fn invalid_primary_positions_are_rejected_without_sampling() {
             &table,
             &TransportConfig::default(),
             input,
+            None,
             &mut rng,
             &mut NoObserver,
         )
@@ -96,8 +97,15 @@ fn invalid_ledger_limits_are_rejected_without_sampling() {
             ledger_limit_relative: value,
             ..TransportConfig::default()
         };
-        let err = transport_electron(&table, &cfg, primary(100.0, 0), &mut rng, &mut NoObserver)
-            .unwrap_err();
+        let err = transport_electron(
+            &table,
+            &cfg,
+            primary(100.0, 0),
+            None,
+            &mut rng,
+            &mut NoObserver,
+        )
+        .unwrap_err();
         assert!(matches!(err, PhysicsError::InvalidLedgerLimit { .. }));
         let mut untouched = streams.stream(0, Stage::Physics).unwrap();
         assert_eq!(rng.next_u64(), untouched.next_u64());
@@ -146,7 +154,8 @@ fn check_cascade_ledger(cases: &[(f64, usize)]) {
                 let mut rng = streams.stream(hid, Stage::Physics).unwrap();
                 let mut rec = SecondaryRecorder::default();
                 let out =
-                    transport_electron(&table, &cfg, primary(e, hid), &mut rng, &mut rec).unwrap();
+                    transport_electron(&table, &cfg, primary(e, hid), None, &mut rng, &mut rec)
+                        .unwrap();
                 (out, rec)
             })
             .collect();
@@ -215,7 +224,8 @@ fn energy_ledger_is_conserved_when_secondaries_are_recorded_but_not_transported(
                 let mut rng = streams.stream(hid, Stage::Physics).unwrap();
                 let mut rec = SecondaryRecorder::default();
                 let out =
-                    transport_electron(&table, &cfg, primary(e, hid), &mut rng, &mut rec).unwrap();
+                    transport_electron(&table, &cfg, primary(e, hid), None, &mut rng, &mut rec)
+                        .unwrap();
                 let recorded = rec.secondaries.iter().map(|s| s.energy.ev()).sum();
                 (out, recorded)
             })

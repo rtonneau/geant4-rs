@@ -4,6 +4,7 @@
 //! struct records what is needed to say so. Bitwise reproducibility is claimed solely for an
 //! identical platform/toolchain/lockfile (docs/reproducibility.md).
 
+use crate::geometry::Volume;
 use crate::manifest::Manifest;
 use crate::sha256::{Sha256, hex};
 use serde::Serialize;
@@ -34,6 +35,10 @@ pub struct Provenance {
     pub model_policy: ModelPolicy,
     pub inputs: InputIdentity,
     pub chemistry: Option<ChemistryIdentity>,
+    /// Liquid-water volume the run was transported in (same tagged shape as the run config);
+    /// omitted for infinite water, so unbounded records are unchanged.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume: Option<Volume>,
 }
 
 /// Build-time source evidence. `None` means the corresponding Git query was unavailable;
@@ -185,7 +190,14 @@ impl Provenance {
                 reason: "synthetic test input; no verified dataset identity",
             },
             chemistry: None,
+            volume: None,
         }
+    }
+
+    /// Record the run's volume (`None` = infinite water).
+    pub fn with_volume(mut self, volume: Option<Volume>) -> Self {
+        self.volume = volume;
+        self
     }
 
     /// Attach identity from a completed verified byte snapshot. The caller must obtain
@@ -283,6 +295,17 @@ mod tests {
         assert_eq!(p.target.as_deref(), Some(env!("DNA_CORE_TARGET")));
         assert!(p.cargo_lock.sha256.as_ref().is_some_and(|h| h.len() == 64));
         assert!(matches!(p.inputs, InputIdentity::Unverified { .. }));
+    }
+
+    #[test]
+    fn volume_is_omitted_when_unbounded_and_round_trips_when_set() {
+        use crate::vec3::Vec3;
+        let p = Provenance::unverified(1);
+        assert!(serde_json::to_value(&p).unwrap().get("volume").is_none());
+        let v = Volume::box_(Vec3::ZERO, Vec3::new(5.0, 6.0, 7.0)).unwrap();
+        let json = serde_json::to_value(p.with_volume(Some(v.clone()))).unwrap();
+        let back: Volume = serde_json::from_value(json["volume"].clone()).unwrap();
+        assert_eq!(back, v);
     }
 
     #[test]

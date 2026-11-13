@@ -185,6 +185,7 @@ fn primaries_outside_2_ev_to_1_mev_are_rejected_with_unsupported_energy() {
                 direction: Vec3::new(0.0, 0.0, 1.0),
                 history_id: 0,
             },
+            None,
             &mut rng,
             &mut NoObserver,
         )
@@ -207,6 +208,7 @@ fn a_zero_direction_is_rejected() {
             direction: Vec3::ZERO,
             history_id: 0,
         },
+        None,
         &mut rng,
         &mut NoObserver,
     )
