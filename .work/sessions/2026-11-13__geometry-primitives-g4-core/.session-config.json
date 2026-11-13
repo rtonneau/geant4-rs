@@ -62,6 +62,30 @@
       "detail": {
         "tickets": 4
       }
+    },
+    {
+      "at": "2026-11-13T18:08:05.955Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-geometry-module-and-box.md",
+        "03-implement/01-geometry-module-and-box/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-geometry-module-and-box"
+      }
+    },
+    {
+      "at": "2026-11-13T18:15:58.873Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-geometry-module-and-box/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-geometry-module-and-box",
+        "commit": "747f847"
+      }
     }
   ],
   "current_phase": "ship",
@@ -70,5 +94,6 @@
     "base_branch": "main",
     "branch_created_at": "2026-11-13T18:08:02.047Z",
     "pr_url": null
-  }
+  },
+  "ship_mode": "delegate"
 }
