@@ -108,9 +108,33 @@
         "ticket": "02-boundary-limited-transport",
         "commit": "8b58cf0"
       }
+    },
+    {
+      "at": "2026-11-13T20:40:53.101Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-g4-sim-geometry-wiring.md",
+        "03-implement/03-g4-sim-geometry-wiring/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-g4-sim-geometry-wiring"
+      }
+    },
+    {
+      "at": "2026-11-13T20:44:52.626Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/03-g4-sim-geometry-wiring/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-g4-sim-geometry-wiring",
+        "commit": "1513e88"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/boundary-limited-transport",
     "base_branch": "main",
