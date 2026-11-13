@@ -1,5 +1,6 @@
 //! Foundations shared by every geant4-rs crate: units, vectors, reproducible
-//! random-number streams, typed errors, provenance metadata and the data manifest.
+//! random-number streams, typed errors, provenance metadata, the data manifest and the
+//! primitive solids of [`geometry`].
 //!
 //! Shared water-specific contracts also live here: [`physchem`] records the
 //! physical-to-physicochemical handoff, and [`penetration`] supplies the
@@ -7,6 +8,7 @@
 //! their serialization belong to `g4-chemistry`; core has no stage dependency.
 
 pub mod error;
+pub mod geometry;
 pub mod manifest;
 pub mod penetration;
 pub mod physchem;
