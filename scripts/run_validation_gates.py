@@ -17,6 +17,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 GATES_PATH = REPO_ROOT / "validation" / "gates.json"
 SCRATCH = REPO_ROOT / ".scratch" / "tests" / "2026-10-26__validation-evidence-and-ci"
 EXPECTED_GATES = (
+    ("SYN-2-ordinary-scheduler-trace", "IRT-syn", "RR-008 executed ordinary-library first-reaction placement trace", "g4-chemistry/geant4_syn_scheduler", "syn_ordinary_scheduler_preserves_parent_sites"),
+    ("SYN-2-analytic-marginals", "IRT-syn", "Independent analytic source marginals and free diffusion; common setting streams", "g4-chemistry/syn_analytic_moments", "syn_marginals_match_independent_analytic_moments"),
+    ("SYN-2-paired-mapping", "IRT-syn", "RR-007 finite common-input source mapping only; no stochastic moment claim", "g4-chemistry/geant4_syn_paired", "syn_paired_mapping_matches_geant4"),
+    ("SYN-1-analytic", "IRT-syn", "Independent analytic pair law, second precision look PASS", "g4-chemistry/geant4_syn_pair", "syn_pair_matches_independent_analytic_law"),
+    ("SYN-1-source-diagnostic", "IRT-syn", "RR-006 isolated pair source diagnostics; not complete SYN-1 acceptance", "g4-chemistry/geant4_syn_pair", "syn_pair_source_diagnostics_match_geant4"),
     ("M2-xs", "M2", "cross sections V2/V3", "g4-sim/geant4_reference", "v2_v3_cross_sections_per_volume_match_geant4"),
     ("M2-mfp", "M2", "mean free path V5, seed 1", "g4-sim/geant4_reference", "v5_first_interaction_mean_free_path_matches_geant4"),
     ("M2-track", "M2", "primary track with 100 eV cut V5, seed 1", "g4-sim/geant4_reference", "v5_primary_track_with_100_ev_cut_matches_geant4"),
@@ -26,6 +31,11 @@ EXPECTED_GATES = (
     ("M6-prechem", "M6", "RR-001 dissociation-only snapshot at 1 ps before IRT", "g4-sim/physchem_reference", "m6_prechem_counts_and_rms_match_geant4"),
 )
 EXPECTED_FIXTURES = {
+    "SYN-2-ordinary-scheduler-trace": ("syn_scheduler_1141_r1.csv", "provenance_syn_scheduler_1141_r1.toml", "syn_scheduler_1141_r2.csv", "provenance_syn_scheduler_1141_r2.toml"),
+    "SYN-2-analytic-marginals": (),
+    "SYN-2-paired-mapping": ("syn_paired_1141.csv", "provenance_syn_paired_1141.toml"),
+    "SYN-1-analytic": (),
+    "SYN-1-source-diagnostic": ("syn_pair_1141_r1_n100000.csv", "provenance_syn_pair_1141_r1_n100000.toml", "syn_pair_1141_r2_n100000.csv", "provenance_syn_pair_1141_r2_n100000.toml"),
     "M2-xs": ("xs_per_volume.csv", "provenance.toml"),
     "M2-mfp": ("mfp_first_interaction.csv", "provenance.toml"),
     "M2-track": ("track_cut100eV.csv", "provenance.toml"),
@@ -142,7 +152,7 @@ def validate_manifest(manifest: object, root: Path = REPO_ROOT) -> None:
 
     gates = manifest["gates"]
     if not isinstance(gates, list) or len(gates) != len(EXPECTED_GATES):
-        raise GateError("validation/gates.json: expected exactly the seven registered M2/M3/M6 gates")
+        raise GateError(f"validation/gates.json: expected exactly the {len(EXPECTED_GATES)} registered IRT-syn/M2/M3/M6 gates")
     fixtures = manifest["fixtures"]
     if not isinstance(fixtures, dict):
         raise GateError("validation/gates.json: fixtures must be an object")
@@ -152,7 +162,8 @@ def validate_manifest(manifest: object, root: Path = REPO_ROOT) -> None:
         actual = tuple(gate[key] for key in ("id", "milestone", "profile", "target", "test"))
         if actual != expected:
             raise GateError(f"validation/gates.json: invalid gate registration {actual!r}; expected {expected!r}")
-        if not isinstance(gate["fixtures"], list) or not gate["fixtures"] or len(set(gate["fixtures"])) != len(gate["fixtures"]):
+        # Analytic gates (no Geant4 data) register an empty fixture list explicitly.
+        if not isinstance(gate["fixtures"], list) or len(set(gate["fixtures"])) != len(gate["fixtures"]):
             raise GateError(f"validation/gates.json: invalid fixtures for {gate['id']}")
         if tuple(gate["fixtures"]) != EXPECTED_FIXTURES[gate["id"]]:
             raise GateError(f"validation/gates.json: wrong registered fixtures for {gate['id']}")
