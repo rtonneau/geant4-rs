@@ -1,4 +1,5 @@
-//! Transport of an electron and its whole secondary cascade in infinite liquid water.
+//! Transport of an electron and its whole secondary cascade in liquid water: infinite, or bounded
+//! by an optional [`Volume`] (docs/04 D.6).
 //!
 //! Algorithm (docs/04 D.1):
 //! 1. A history owns a LIFO stack of tracks. It starts with the primary. A track is followed until
@@ -22,7 +23,18 @@
 //!    recorded ([`TransportConfig::transport_secondaries`]`= false`, used for the Geant4 M2
 //!    comparison where secondaries are killed).
 //!
+//! # Boundary (docs/04 D.6)
+//! With a volume, every step is `min(s, d_out)`: `d_out` (distance to the boundary along the
+//! direction) is computed **before** the free-path draw. `d_out = 0` escapes the track without a
+//! draw; otherwise `s` is drawn as above and the track escapes at the surface when `d_out < s`
+//! (a tie is physics-limited), with no process draw. An escape kills the track, as Geant4 does at
+//! the world exit (`G4Transportation.cc:735-741`), and books its kinetic energy as `escaped`. A
+//! primary outside the volume is an error (`PrimaryOutsideVolume`, Geant4 `Tracking0010`). Without
+//! a volume, the code path and the random stream are those of the infinite medium. Not modelled:
+//! the Geant4 solvation clamp (`0.8 x safety`), so a solvated electron may lie outside the volume.
+//!
 //! # Termination
+//! * `Escaped`: the *primary* left the volume (escaping secondaries only add to the ledger).
 //! * `Completed`: every track ended by solvation or attachment.
 //! * `TrackingCut`: the *primary* fell below the optional `tracking_cut` (the cascade it already
 //!   produced is still followed when secondaries are transported).
@@ -42,6 +54,7 @@ use crate::models::{FinalState, ProcessKind, Quirks, SANCHE_LEVELS, Secondary};
 use crate::physchem::{PhysChemEvent, PhysChemKind};
 use crate::sampling::uniform;
 use crate::table::ProcessTable;
+use g4_core::geometry::{Direction, Inside, Volume};
 use g4_core::physchem::PhysChemSite;
 use g4_core::units::Energy;
 use g4_core::vec3::Vec3;
@@ -58,6 +71,8 @@ pub enum Termination {
     InteractionLimit,
     /// The primary fell below `tracking_cut`.
     TrackingCut,
+    /// The primary crossed the boundary of the volume (docs/04 D.6).
+    Escaped,
 }
 
 /// Transport options.
@@ -115,7 +130,7 @@ pub struct Ledger {
     pub deposited_attachment: f64,
     /// Kinetic energy of electrons solvated below 7.4 eV.
     pub deposited_solvation: f64,
-    /// Energy leaving the medium: zero in the infinite medium of M3.
+    /// Kinetic energy of tracks that crossed the volume boundary (zero without a volume).
     pub escaped: f64,
     /// Kinetic energy of secondaries that were recorded but not transported.
     pub untracked_secondaries: f64,
@@ -303,6 +318,8 @@ pub struct HistoryOutcome {
     pub n_secondaries: u64,
     /// Tracks followed (1 + transported secondaries).
     pub n_tracks: u64,
+    /// Tracks (primary included) killed at the volume boundary.
+    pub n_escaped: u64,
     /// Total path length of the primary track, nm.
     pub track_length_nm: f64,
     /// Total path length of all followed tracks, nm.
@@ -377,11 +394,13 @@ fn emit_physchem(
 }
 
 /// Transport one electron and its cascade until the stack is empty. `rng` is the history's
-/// physics stream.
+/// physics stream. `volume` bounds the water (`None`: infinite medium); a primary outside it is
+/// an error.
 pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
     table: &ProcessTable,
     config: &TransportConfig,
     primary: Primary,
+    volume: Option<&Volume>,
     rng: &mut R,
     observer: &mut O,
 ) -> Result<HistoryOutcome, PhysicsError> {
@@ -407,6 +426,15 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
         .direction
         .normalised()
         .ok_or(PhysicsError::InvalidDirection)?;
+    if let Some(v) = volume
+        && v.inside(primary.position) == Inside::Outside
+    {
+        return Err(PhysicsError::PrimaryOutsideVolume {
+            x_nm: primary.position.x,
+            y_nm: primary.position.y,
+            z_nm: primary.position.z,
+        });
+    }
 
     let e_in = primary.energy.ev();
     let mut dep_excitation = CompensatedSum::default();
@@ -416,6 +444,8 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
     let mut dep_solvation = CompensatedSum::default();
     let mut untracked_secondaries = CompensatedSum::default();
     let mut remaining_untracked = CompensatedSum::default();
+    let mut escaped = CompensatedSum::default();
+    let mut n_escaped = 0u64;
     let mut primary_length = CompensatedSum::default();
     let mut total_length = CompensatedSum::default();
 
@@ -510,7 +540,38 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                 });
             }
 
-            let free_path = -uniform(rng).ln() / total;
+            // Boundary: distance to exit before the draw, so an unbounded run draws as before.
+            let d_out = match volume {
+                None => None,
+                Some(v) => {
+                    let dir = Direction::new(track.direction)
+                        .map_err(|_| PhysicsError::InvalidDirection)?;
+                    // A point classified Outside (rounding at the surface) has left already.
+                    Some(v.distance_to_out(track.position, dir).unwrap_or(0.0))
+                }
+            };
+            let free_path = if d_out == Some(0.0) {
+                f64::INFINITY
+            } else {
+                -uniform(rng).ln() / total
+            };
+            if let Some(d) = d_out
+                && d < free_path
+            {
+                track.position = track.position + track.direction * d;
+                total_length.add(d);
+                escaped.add(track.energy.ev());
+                n_escaped += 1;
+                if track.generation == 0 {
+                    primary_length.add(d);
+                    end_position = track.position;
+                    if termination == Termination::Completed {
+                        termination = Termination::Escaped;
+                    }
+                }
+                break 'track;
+            }
+
             track.position = track.position + track.direction * free_path;
             total_length.add(free_path);
             if track.generation == 0 {
@@ -637,6 +698,7 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                 - dep_solvation.value()
                 - untracked_secondaries.value()
                 - remaining_untracked.value()
+                - escaped.value()
                 - in_flight;
             debug_assert!(
                 residual.abs() <= 1e-9 * e_in,
@@ -652,7 +714,7 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
         deposited_binding: dep_binding.value(),
         deposited_attachment: dep_attachment.value(),
         deposited_solvation: dep_solvation.value(),
-        escaped: 0.0,
+        escaped: escaped.value(),
         untracked_secondaries: untracked_secondaries.value(),
         remaining_untracked: remaining_untracked.value(),
     };
@@ -675,6 +737,7 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
         vibrational_levels,
         n_secondaries,
         n_tracks,
+        n_escaped,
         track_length_nm: primary_length.value(),
         total_track_length_nm: total_length.value(),
         start_position: primary.position,

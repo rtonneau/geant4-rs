@@ -1,0 +1,293 @@
+//! Boundary-limited transport (docs/04 D.6).
+//!
+//! Pre-registered criteria (fixed before the first run):
+//! * Unbounded (`None`) runs are bitwise identical to the infinite-medium code before the
+//!   boundary was added: a digest of the full outcome and event stream of 200 histories at 1 and
+//!   10 keV equals the value pinned from base commit 00b9855.
+//! * A volume much larger than every track (box of half-length 1e9 nm) gives outcomes and event
+//!   streams equal (`==`) to `None`.
+//! * A primary on the surface moving out escapes with no interaction and no random draw;
+//!   a tiny volume (box of half-length 0.01 nm) makes every primary escape.
+//! * With escapes, the ledger closes to 1e-9 relative for every history, escaped primaries end on
+//!   the surface, and `escaped > 0` occurs for secondaries too.
+//! * The event stream with a volume is a prefix of the unbounded one up to the first escape
+//!   (same random-draw order until a boundary limits a step).
+//! * A primary outside the volume is `PrimaryOutsideVolume`, with no draw.
+
+mod common;
+
+use common::{data, ev};
+use g4_core::geometry::{Inside, Volume};
+use g4_core::rng::{RngStreams, Stage};
+use g4_core::vec3::Vec3;
+use g4_physics::error::PhysicsError;
+use g4_physics::models::ElasticRotation;
+use g4_physics::table::ProcessTable;
+use g4_physics::transport::{
+    HistoryObserver, HistoryOutcome, NoObserver, Primary, SolvationEvent, StepEvent, Termination,
+    TransportConfig, transport_electron,
+};
+use rand::Rng;
+
+fn table() -> Option<ProcessTable> {
+    Some(ProcessTable::option2_electron(&data()?, ElasticRotation::Geant4).unwrap())
+}
+
+fn primary(e: f64, id: u64, position: Vec3, direction: Vec3) -> Primary {
+    Primary {
+        energy: ev(e),
+        position,
+        direction,
+        history_id: id,
+    }
+}
+
+/// Every interaction and solvation, in order, with all their fields.
+#[derive(Default)]
+struct Events(Vec<String>);
+
+impl HistoryObserver for Events {
+    fn on_interaction(&mut self, e: &StepEvent<'_>) {
+        self.0.push(format!(
+            "I {} {:?} {} {:?} {:?} {:?} {:?}",
+            e.index,
+            e.process,
+            e.generation,
+            e.free_path_nm.to_bits(),
+            e.position,
+            e.energy_before,
+            e.final_state
+        ));
+    }
+    fn on_solvation(&mut self, e: &SolvationEvent) {
+        self.0.push(format!(
+            "S {} {:?} {:?}",
+            e.generation, e.origin, e.displacement_nm
+        ));
+    }
+}
+
+fn run(
+    table: &ProcessTable,
+    volume: Option<&Volume>,
+    seed: u64,
+    id: u64,
+    e: f64,
+) -> (HistoryOutcome, Vec<String>) {
+    let mut rng = RngStreams::new(seed).stream(id, Stage::Physics).unwrap();
+    let mut events = Events::default();
+    let p = primary(e, id, Vec3::ZERO, Vec3::new(0.3, -0.4, 0.866));
+    let out = transport_electron(
+        table,
+        &TransportConfig::default(),
+        p,
+        volume,
+        &mut rng,
+        &mut events,
+    )
+    .unwrap();
+    (out, events.0)
+}
+
+/// FNV-1a 64 over a string.
+fn fnv(h: &mut u64, s: &str) {
+    for b in s.bytes() {
+        *h ^= u64::from(b);
+        *h = h.wrapping_mul(0x0100_0000_01b3);
+    }
+}
+
+#[test]
+fn unbounded_output_is_bitwise_unchanged() {
+    let Some(table) = table() else { return };
+    let mut h = 0xcbf2_9ce4_8422_2325u64;
+    for e in [1.0e3, 1.0e4] {
+        for id in 0..200 {
+            let (out, events) = run(&table, None, 11, id, e);
+            // `escaped` and `n_escaped` are new fields, always zero here: digest the fields that
+            // existed before, so the pinned value is comparable with the base commit.
+            assert_eq!(out.ledger.escaped.to_bits(), 0);
+            assert_eq!(out.n_escaped, 0);
+            fnv(&mut h, &format!("{:?}", out.ledger.residual().to_bits()));
+            fnv(
+                &mut h,
+                &format!(
+                    "{:?} {} {:?} {} {} {} {:?} {:?} {:?} {:?}",
+                    out.termination,
+                    out.steps,
+                    out.counts,
+                    out.solvations,
+                    out.n_secondaries,
+                    out.n_tracks,
+                    out.track_length_nm.to_bits(),
+                    out.total_track_length_nm.to_bits(),
+                    out.end_position,
+                    out.quirks
+                ),
+            );
+            for ev in &events {
+                fnv(&mut h, ev);
+            }
+        }
+    }
+    eprintln!("unbounded digest {h:#018x}");
+    assert_eq!(h, PINNED_UNBOUNDED_DIGEST);
+}
+
+/// Digest of `unbounded_output_is_bitwise_unchanged` computed at base commit 00b9855 (before the
+/// boundary existed), with the same test body.
+const PINNED_UNBOUNDED_DIGEST: u64 = 0xa352_351e_0df0_5129;
+
+#[test]
+fn a_huge_volume_equals_the_infinite_medium() {
+    let Some(table) = table() else { return };
+    let huge = Volume::box_(Vec3::ZERO, Vec3::new(1.0e9, 1.0e9, 1.0e9)).unwrap();
+    for e in [1.0e3, 1.0e4] {
+        for id in 0..100 {
+            let a = run(&table, None, 5, id, e);
+            let b = run(&table, Some(&huge), 5, id, e);
+            assert_eq!(a, b, "history {id} at {e} eV");
+        }
+    }
+}
+
+#[test]
+fn surface_start_moving_out_escapes_without_a_draw() {
+    let Some(table) = table() else { return };
+    let v = Volume::box_(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0)).unwrap();
+    let streams = RngStreams::new(3);
+    let mut rng = streams.stream(0, Stage::Physics).unwrap();
+    let p = primary(
+        1.0e4,
+        0,
+        Vec3::new(0.0, 0.0, 10.0),
+        Vec3::new(0.0, 0.0, 1.0),
+    );
+    let out = transport_electron(
+        &table,
+        &TransportConfig::default(),
+        p,
+        Some(&v),
+        &mut rng,
+        &mut NoObserver,
+    )
+    .unwrap();
+    assert_eq!(out.termination, Termination::Escaped);
+    assert_eq!(out.steps, 0);
+    assert_eq!(out.n_escaped, 1);
+    assert_eq!(out.ledger.escaped, 1.0e4);
+    assert_eq!(out.track_length_nm, 0.0);
+    let mut untouched = streams.stream(0, Stage::Physics).unwrap();
+    assert_eq!(rng.next_u64(), untouched.next_u64());
+}
+
+#[test]
+fn a_tiny_volume_lets_every_primary_escape() {
+    let Some(table) = table() else { return };
+    let tiny = Volume::box_(Vec3::ZERO, Vec3::new(0.01, 0.01, 0.01)).unwrap();
+    for id in 0..100 {
+        let (out, _) = run(&table, Some(&tiny), 9, id, 1.0e4);
+        assert_eq!(out.termination, Termination::Escaped, "history {id}");
+        assert_eq!(tiny.inside(out.end_position), Inside::Surface);
+        assert!(out.ledger.residual().abs() <= 1e-9 * out.ledger.e_in);
+        assert!(out.ledger.escaped > 0.0);
+    }
+}
+
+#[test]
+fn ledger_closes_with_escapes() {
+    let Some(table) = table() else { return };
+    let volumes = [
+        Volume::sphere(
+            Vec3::ZERO,
+            0.0,
+            20.0,
+            0.0,
+            std::f64::consts::TAU,
+            0.0,
+            std::f64::consts::PI,
+        )
+        .unwrap(),
+        Volume::box_(Vec3::new(5.0, 0.0, 0.0), Vec3::new(100.0, 100.0, 20.0)).unwrap(),
+        Volume::tubs(Vec3::ZERO, 0.0, 30.0, 200.0, 0.0, std::f64::consts::TAU).unwrap(),
+    ];
+    let mut secondary_escapes = 0u64;
+    let mut primary_escapes = 0u64;
+    for v in &volumes {
+        for e in [1.0e3, 1.0e4] {
+            for id in 0..200 {
+                let (out, _) = run(&table, Some(v), 21, id, e);
+                let l = out.ledger;
+                assert!(
+                    l.residual().abs() <= 1e-9 * l.e_in,
+                    "residual {} at {e} eV, history {id}",
+                    l.residual()
+                );
+                if out.termination == Termination::Escaped {
+                    primary_escapes += 1;
+                    assert_eq!(v.inside(out.end_position), Inside::Surface);
+                    secondary_escapes += out.n_escaped - 1;
+                } else {
+                    secondary_escapes += out.n_escaped;
+                }
+            }
+        }
+    }
+    assert!(primary_escapes > 0 && secondary_escapes > 0);
+}
+
+#[test]
+fn draw_order_is_unchanged_until_the_first_escape() {
+    let Some(table) = table() else { return };
+    let v = Volume::box_(Vec3::ZERO, Vec3::new(30.0, 30.0, 30.0)).unwrap();
+    let mut checked = 0;
+    for id in 0..100 {
+        let (_, free) = run(&table, None, 17, id, 1.0e4);
+        let (out, bounded) = run(&table, Some(&v), 17, id, 1.0e4);
+        if out.n_escaped == 0 {
+            assert_eq!(free, bounded);
+            continue;
+        }
+        if out.termination == Termination::Escaped {
+            // The primary is followed first and its escape is the first boundary-limited step:
+            // its interactions (the leading generation-0 events) must match the free run.
+            let k = bounded
+                .iter()
+                .take_while(|s| s.starts_with('I') && s.split(' ').nth(3) == Some("0"))
+                .count();
+            assert_eq!(bounded[..k], free[..k], "history {id}");
+            assert!(
+                free.len() > k,
+                "the free primary goes on after the escape point"
+            );
+            checked += 1;
+        }
+    }
+    assert!(checked > 0);
+}
+
+#[test]
+fn a_primary_outside_the_volume_is_rejected_without_a_draw() {
+    let Some(table) = table() else { return };
+    let v = Volume::box_(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0)).unwrap();
+    let streams = RngStreams::new(1);
+    let mut rng = streams.stream(0, Stage::Physics).unwrap();
+    let p = primary(
+        1.0e3,
+        0,
+        Vec3::new(0.0, 0.0, 11.0),
+        Vec3::new(0.0, 0.0, -1.0),
+    );
+    let err = transport_electron(
+        &table,
+        &TransportConfig::default(),
+        p,
+        Some(&v),
+        &mut rng,
+        &mut NoObserver,
+    )
+    .unwrap_err();
+    assert!(matches!(err, PhysicsError::PrimaryOutsideVolume { .. }));
+    let mut untouched = streams.stream(0, Stage::Physics).unwrap();
+    assert_eq!(rng.next_u64(), untouched.next_u64());
+}

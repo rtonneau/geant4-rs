@@ -66,6 +66,7 @@ fn spatial_diagnostic_preserves_transport_chemistry_rng_and_lineage() {
             &table,
             &TransportConfig::default(),
             primary,
+            None,
             &mut plain_rng,
             &mut events,
         )
@@ -74,6 +75,7 @@ fn spatial_diagnostic_preserves_transport_chemistry_rng_and_lineage() {
             &table,
             &TransportConfig::default(),
             primary,
+            None,
             &mut observed_rng,
             &mut observed,
         )

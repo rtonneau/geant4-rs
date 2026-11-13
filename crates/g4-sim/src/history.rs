@@ -264,6 +264,7 @@ pub fn run_history_with_observer(
         table,
         &config.transport(),
         primary,
+        None,
         &mut rng,
         &mut Observers(&mut obs, observer),
     )?;

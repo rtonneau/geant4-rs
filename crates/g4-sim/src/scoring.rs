@@ -212,6 +212,14 @@ pub struct TerminationCounts {
     pub completed: u64,
     pub interaction_limit: u64,
     pub tracking_cut: u64,
+    /// Primaries killed at the volume boundary; omitted from the output when zero, so
+    /// unbounded runs serialise as before.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub escaped: u64,
+}
+
+fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -307,7 +315,7 @@ impl SpectrumAcc {
 pub struct Scorer {
     e_in: f64,
     n: u64,
-    terminations: [u64; 3],
+    terminations: [u64; 4],
     interactions: [u64; ProcessKind::COUNT],
     per_history: [Welford; ProcessKind::COUNT],
     total_track_length_sum_nm: f64,
@@ -354,7 +362,7 @@ impl Scorer {
         Self {
             e_in: e_in_ev,
             n: 0,
-            terminations: [0; 3],
+            terminations: [0; 4],
             interactions: [0; ProcessKind::COUNT],
             per_history: [Welford::default(); ProcessKind::COUNT],
             total_track_length_sum_nm: 0.0,
@@ -406,6 +414,7 @@ impl Scorer {
             Termination::Completed => 0,
             Termination::InteractionLimit => 1,
             Termination::TrackingCut => 2,
+            Termination::Escaped => 3,
         }] += 1;
         for p in ProcessKind::ALL {
             let c = o.counts.get(p);
@@ -493,6 +502,7 @@ impl Scorer {
                 completed: self.terminations[0],
                 interaction_limit: self.terminations[1],
                 tracking_cut: self.terminations[2],
+                escaped: self.terminations[3],
             },
             processes,
             solvation: SolvationSummary {
