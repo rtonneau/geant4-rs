@@ -12,7 +12,11 @@ use serde::{Deserialize, Serialize};
 /// Energies are eV, positions nm (field names carry the unit, docs/units.md). History `i`
 /// (`first_history_id <= i < first_history_id + n_histories`) uses the stream
 /// `(master_seed, i, Stage::Physics)`.
+///
+/// Unknown keys are rejected, so a misspelt or removed key (such as the pre-v5 `geometry`)
+/// cannot silently fall back to a default such as infinite water.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RunConfig {
     pub master_seed: u64,
     pub first_history_id: u64,
@@ -43,7 +47,7 @@ pub struct RunConfig {
     /// The chemistry stage ignores the boundary (docs/04 D.6). Omitted from serialised output
     /// when `None`, so existing run metadata is unchanged.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub geometry: Option<Volume>,
+    pub volume: Option<Volume>,
 }
 
 impl RunConfig {
@@ -61,7 +65,7 @@ impl RunConfig {
             record_physchem: false,
             batch_size: 1024,
             threads: None,
-            geometry: None,
+            volume: None,
         }
     }
 
@@ -87,10 +91,10 @@ impl RunConfig {
         {
             return bad("tracking_cut_ev must be finite and non-negative");
         }
-        if let Some(v) = &self.geometry
+        if let Some(v) = &self.volume
             && v.inside(Vec3::ZERO) == Inside::Outside
         {
-            return bad("geometry must contain the primary start position (the origin)");
+            return bad("volume must contain the primary start position (the origin)");
         }
         Ok(())
     }
@@ -146,28 +150,28 @@ batch_size = 1024
 ";
 
     #[test]
-    fn geometry_defaults_to_none_and_is_not_serialised() {
+    fn volume_defaults_to_none_and_is_not_serialised() {
         let c = RunConfig::new(1000.0, 4);
-        assert!(c.geometry.is_none());
-        assert!(!serde_json::to_string(&c).unwrap().contains("geometry"));
-        assert!(!toml::to_string(&c).unwrap().contains("geometry"));
+        assert!(c.volume.is_none());
+        assert!(!serde_json::to_string(&c).unwrap().contains("volume"));
+        assert!(!toml::to_string(&c).unwrap().contains("volume"));
         let back: RunConfig = toml::from_str(BASE).unwrap();
         assert_eq!(back, c);
     }
 
     #[test]
-    fn geometry_must_contain_the_origin() {
+    fn volume_must_contain_the_origin() {
         let mut c = RunConfig::new(1000.0, 4);
-        c.geometry = Some(Volume::box_(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0)).unwrap());
+        c.volume = Some(Volume::box_(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0)).unwrap());
         assert!(c.validate().is_ok());
-        c.geometry =
+        c.volume =
             Some(Volume::box_(Vec3::new(0.0, 0.0, 30.0), Vec3::new(10.0, 10.0, 10.0)).unwrap());
         let err = c.validate().unwrap_err().to_string();
         assert!(err.contains("origin"), "{err}");
     }
 
     #[test]
-    fn geometry_round_trips_for_each_shape() {
+    fn volume_round_trips_for_each_shape() {
         let shapes = [
             "shape = \"box\"
 centre = [1.0, 2.0, 3.0]
@@ -194,24 +198,23 @@ start_theta = 0.0
         for shape in shapes {
             let text = format!(
                 "{BASE}
-[geometry]
+[volume]
 {shape}"
             );
             let c: RunConfig = toml::from_str(&text).unwrap();
-            assert!(c.geometry.is_some());
+            assert!(c.volume.is_some());
             let back: RunConfig = toml::from_str(&toml::to_string(&c).unwrap()).unwrap();
             assert_eq!(back, c);
             let json: RunConfig =
                 serde_json::from_str(&serde_json::to_string(&c).unwrap()).unwrap();
             assert_eq!(json, c);
-            let contains_origin =
-                c.geometry.as_ref().unwrap().inside(Vec3::ZERO) != Inside::Outside;
+            let contains_origin = c.volume.as_ref().unwrap().inside(Vec3::ZERO) != Inside::Outside;
             assert_eq!(c.validate().is_ok(), contains_origin);
         }
     }
 
     #[test]
-    fn invalid_geometry_is_rejected_at_deserialisation() {
+    fn invalid_volume_is_rejected_at_deserialisation() {
         for shape in [
             "shape = \"box\"
 centre = [0.0, 0.0, 0.0]
@@ -232,10 +235,23 @@ delta_theta = 1.0
         ] {
             let text = format!(
                 "{BASE}
-[geometry]
+[volume]
 {shape}"
             );
             assert!(toml::from_str::<RunConfig>(&text).is_err(), "{shape}");
         }
+    }
+
+    #[test]
+    fn legacy_geometry_key_is_rejected() {
+        let text = format!(
+            "{BASE}
+[geometry]
+shape = \"box\"
+centre = [0.0, 0.0, 0.0]
+half_lengths = [1.0, 1.0, 1.0]
+"
+        );
+        assert!(toml::from_str::<RunConfig>(&text).is_err());
     }
 }

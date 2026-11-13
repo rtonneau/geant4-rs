@@ -62,6 +62,33 @@ the simulation manifest has no chemistry dev-dependency and separate
 package-scoped `--all-targets` checks/tests/Clippy exercise that build surface.
 Workspace feature unification is not evidence for the no-default profile.
 
+## Volume, provenance and escape output (schema run/v5)
+
+The run JSON schema IDs are now `geant4-rs/dna-sim/run/v5` (verified physics and
+chemistry runs) and `geant4-rs/dna-sim/run-unverified/v2`. Migration from v4/v1:
+
+| Before | Now |
+|---|---|
+| `RunConfig.geometry`, TOML `[geometry]` | `RunConfig.volume`, TOML `[volume]` (same tagged `shape` layout) |
+| unknown config keys ignored | `RunConfig` rejects unknown keys (`deny_unknown_fields`), so `[geometry]` is an error, not infinite water |
+| volume only in `config` | also in `provenance.volume` (`g4_core::provenance::Provenance::with_volume`), omitted for infinite water |
+| `energy.escaped_ev`, `terminations.escaped` | unchanged, plus `summary.escape` (only with a volume): `primary_escape_fraction`, `escaped_tracks_per_history`, `escaped_energy_fraction`, `spectra.{edges_ev, primary, secondaries, all}` |
+
+An infinite-water run serialises as before apart from the schema string.
+
+New public items, all in both simulation profiles:
+
+- `g4_physics::transport::ExitEvent` and the default method
+  `HistoryObserver::on_escape`. Observers that do not implement it are unaffected.
+- `g4_sim::history::HistoryResult::exits`.
+- `g4_sim::scoring::{EscapeSummary, EscapeSpectraSummary, EscapeSpectrum, FractionStat}`,
+  and `Scorer::with_escape_scoring`, which the run layer turns on when a volume is set.
+- `g4_sim::run::{EscapeSink, CsvEscapeWriter, EXIT_CSV_HEADER, exit_csv_row, RunSinks,
+  run_summary_with_sinks, run_with_sinks}`. `run_summary_with_sink` and `run_with_sink` keep
+  their signatures and now delegate to the `*_with_sinks` forms.
+
+Definitions and limitations: docs/04 D.6.
+
 ## Species ownership
 
 The public species interface is now

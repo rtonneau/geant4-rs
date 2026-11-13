@@ -257,6 +257,21 @@ pub struct SolvationEvent {
     pub r_mean_nm: f64,
 }
 
+/// One escape: a track killed at the volume boundary (docs/04 D.6), as seen by an observer.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ExitEvent {
+    /// 0 for the primary, 1 for its secondaries, and so on.
+    pub generation: u32,
+    /// History-local track identity (0 for the primary).
+    pub track_id: u64,
+    /// Exit point, on the tolerant surface of the volume, nm.
+    pub position: Vec3,
+    /// Unit direction of flight at the exit.
+    pub direction: Vec3,
+    /// Kinetic energy carried out of the volume (booked as `escaped` in the ledger), eV.
+    pub energy: Energy,
+}
+
 /// Receiver of the physics events of a history (scorers, secondary recorders, tests).
 pub trait HistoryObserver {
     fn on_interaction(&mut self, _event: &StepEvent<'_>) {}
@@ -265,6 +280,8 @@ pub trait HistoryObserver {
     fn on_physchem(&mut self, _event: &PhysChemEvent) {}
     /// Same handoff, with stable physical lineage and the undisplaced physical site.
     fn on_physchem_site(&mut self, _site: &PhysChemSite) {}
+    /// A track left the volume (never called in an infinite medium).
+    fn on_escape(&mut self, _event: &ExitEvent) {}
 }
 
 /// Observer that ignores everything.
@@ -562,6 +579,13 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                 total_length.add(d);
                 escaped.add(track.energy.ev());
                 n_escaped += 1;
+                observer.on_escape(&ExitEvent {
+                    generation: track.generation,
+                    track_id: track.id,
+                    position: track.position,
+                    direction: track.direction,
+                    energy: track.energy,
+                });
                 if track.generation == 0 {
                     primary_length.add(d);
                     end_position = track.position;

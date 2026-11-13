@@ -62,3 +62,11 @@ _Avoid_: using species equality as molecule identity
 **Volume**:
 A finite, translated, axis-aligned Geant4 CSG solid (box, full G4Tubs or full G4Sphere) of liquid water, classified with Geant4's three-state tolerant surface (inside, surface, outside). The absence of a volume means infinite water, which is not a Volume variant.
 _Avoid_: geometry, world, solid (for the Rust type)
+
+**Escape**:
+The kill of a track at the Volume boundary when the boundary limits its step (Geant4 world exit). Its kinetic energy is booked as escaped energy, not deposited. It exists only when a Volume is set.
+_Avoid_: leakage, loss, exit (for the event as a whole)
+
+**Exit event**:
+The record of one Escape: history, generation, the exit point on the Volume surface, the direction and the kinetic energy at exit.
+_Avoid_: exit position (for the full record), escape point

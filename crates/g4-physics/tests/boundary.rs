@@ -15,6 +15,10 @@
 //! * The event stream with a volume is a prefix of the unbounded one up to the first escape
 //!   (same random-draw order until a boundary limits a step).
 //! * A primary outside the volume is `PrimaryOutsideVolume`, with no draw.
+//! * `on_escape` fires once per escaped track: on the volume Surface, with a unit direction;
+//!   the summed exit energies equal `ledger.escaped` to 1e-12 relative, and at most one event is
+//!   the primary's (exactly one when it terminates `Escaped`). Recording exits leaves the outcome
+//!   unchanged.
 
 mod common;
 
@@ -26,8 +30,8 @@ use g4_physics::error::PhysicsError;
 use g4_physics::models::ElasticRotation;
 use g4_physics::table::ProcessTable;
 use g4_physics::transport::{
-    HistoryObserver, HistoryOutcome, NoObserver, Primary, SolvationEvent, StepEvent, Termination,
-    TransportConfig, transport_electron,
+    ExitEvent, HistoryObserver, HistoryOutcome, NoObserver, Primary, SolvationEvent, StepEvent,
+    Termination, TransportConfig, transport_electron,
 };
 use rand::Rng;
 
@@ -243,4 +247,71 @@ fn a_primary_outside_the_volume_is_rejected_without_a_draw() {
     assert!(matches!(err, PhysicsError::PrimaryOutsideVolume { .. }));
     let mut untouched = streams.stream(0, Stage::Physics).unwrap();
     assert_eq!(rng.next_u64(), untouched.next_u64());
+}
+
+#[derive(Default)]
+struct Exits(Vec<ExitEvent>);
+
+impl HistoryObserver for Exits {
+    fn on_escape(&mut self, e: &ExitEvent) {
+        self.0.push(*e);
+    }
+}
+
+#[test]
+fn exit_events_lie_on_the_surface_and_match_the_ledger() {
+    let Some(table) = table() else { return };
+    let volumes = [
+        Volume::sphere(
+            Vec3::ZERO,
+            0.0,
+            20.0,
+            0.0,
+            std::f64::consts::TAU,
+            0.0,
+            std::f64::consts::PI,
+        )
+        .unwrap(),
+        Volume::box_(Vec3::new(5.0, 0.0, 0.0), Vec3::new(100.0, 100.0, 20.0)).unwrap(),
+        Volume::tubs(Vec3::ZERO, 0.0, 30.0, 200.0, 0.0, std::f64::consts::TAU).unwrap(),
+    ];
+    let mut n_events = 0u64;
+    for v in &volumes {
+        for id in 0..200 {
+            let mut rng = RngStreams::new(21).stream(id, Stage::Physics).unwrap();
+            let mut exits = Exits::default();
+            let p = primary(1.0e4, id, Vec3::ZERO, Vec3::new(0.3, -0.4, 0.866));
+            let out = transport_electron(
+                &table,
+                &TransportConfig::default(),
+                p,
+                Some(v),
+                &mut rng,
+                &mut exits,
+            )
+            .unwrap();
+            assert_eq!(out, run(&table, Some(v), 21, id, 1.0e4).0, "history {id}");
+            assert_eq!(exits.0.len() as u64, out.n_escaped);
+            n_events += out.n_escaped;
+            let mut sum = 0.0;
+            for e in &exits.0 {
+                assert_eq!(v.inside(e.position), Inside::Surface, "{e:?}");
+                assert!((e.direction.norm() - 1.0).abs() < 1e-12);
+                assert!(e.energy.ev() > 0.0);
+                sum += e.energy.ev();
+            }
+            let tol = 1e-12 * out.ledger.e_in;
+            assert!((sum - out.ledger.escaped).abs() <= tol, "history {id}");
+            let primaries = exits.0.iter().filter(|e| e.generation == 0).count();
+            assert!(primaries <= 1);
+            if out.termination == Termination::Escaped {
+                assert_eq!(primaries, 1);
+                assert_eq!(
+                    exits.0.iter().find(|e| e.generation == 0).unwrap().track_id,
+                    0
+                );
+            }
+        }
+    }
+    assert!(n_events > 0);
 }
