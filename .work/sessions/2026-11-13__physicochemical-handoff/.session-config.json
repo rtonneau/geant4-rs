@@ -1,0 +1,18 @@
+{
+  "session_id": "2026-11-13__physicochemical-handoff",
+  "feature_name": "physicochemical handoff",
+  "scratch_dir": ".scratch/tests/2026-11-13__physicochemical-handoff",
+  "created_at": "2026-11-13T21:58:33.069Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-11-13T21:58:33.069Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    }
+  ],
+  "current_phase": "grill"
+}
