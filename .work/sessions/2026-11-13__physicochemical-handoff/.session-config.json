@@ -133,9 +133,33 @@
         "ticket": "03-boundary-summary",
         "commit": "0d3cb0e"
       }
+    },
+    {
+      "at": "2026-11-13T22:30:13.473Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-rr009-generator-docs.md",
+        "03-implement/04-rr009-generator-docs/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-rr009-generator-docs"
+      }
+    },
+    {
+      "at": "2026-11-13T22:40:20.350Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/04-rr009-generator-docs/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-rr009-generator-docs",
+        "commit": "8ca8673"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/physicochemical-boundary-clamp",
     "base_branch": "test/rr008-scheduler-followup",
