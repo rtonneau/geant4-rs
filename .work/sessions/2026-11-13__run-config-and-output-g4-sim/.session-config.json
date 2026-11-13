@@ -86,6 +86,30 @@
         "ticket": "01-volume-config-provenance-schema",
         "commit": "e20563c"
       }
+    },
+    {
+      "at": "2026-11-13T21:27:06.912Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-escape-observer-hook.md",
+        "03-implement/02-escape-observer-hook/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-escape-observer-hook"
+      }
+    },
+    {
+      "at": "2026-11-13T21:28:41.775Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-escape-observer-hook/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-escape-observer-hook",
+        "commit": "f029574"
+      }
     }
   ],
   "current_phase": "ship",
