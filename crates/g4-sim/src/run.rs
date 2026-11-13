@@ -14,6 +14,7 @@ use g4_core::provenance::Provenance;
 use g4_core::rng::RngStreams;
 use g4_physics::physchem::{PHYSCHEM_CSV_HEADER, PhysChemEvent};
 use g4_physics::table::{ModelInfo, ProcessTable, VerifiedProcessTable};
+use g4_physics::transport::ExitEvent;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::io::Write;
@@ -66,6 +67,88 @@ impl<W: Write + Send> PhysChemSink for CsvPhysChemWriter<W> {
         self.rows += events.len() as u64;
         Ok(())
     }
+}
+
+/// Header of the exit-event CSV written by [`CsvEscapeWriter`]: one row per escape
+/// (docs/04 D.6). Positions in nm on the volume surface, `u*` the unit direction at exit,
+/// energy the kinetic energy carried out, eV.
+pub const EXIT_CSV_HEADER: &str =
+    "history_id,generation,track_id,x_nm,y_nm,z_nm,ux,uy,uz,energy_eV";
+
+/// One exit-event CSV row (no newline); floats with the shortest round-trip representation.
+pub fn exit_csv_row(history_id: u64, e: &ExitEvent) -> String {
+    format!(
+        "{},{},{},{:?},{:?},{:?},{:?},{:?},{:?},{:?}",
+        history_id,
+        e.generation,
+        e.track_id,
+        e.position.x,
+        e.position.y,
+        e.position.z,
+        e.direction.x,
+        e.direction.y,
+        e.direction.z,
+        e.energy.ev()
+    )
+}
+
+/// Receiver of the exit events of a run, called once per history **in history order** (so the
+/// output is identical for any thread count). Never called with events in infinite water.
+pub trait EscapeSink: Send {
+    fn write_history(&mut self, history_id: u64, exits: &[ExitEvent]) -> Result<(), SimError>;
+}
+
+/// Writes the exit events as CSV (`EXIT_CSV_HEADER`, one row per escape).
+pub struct CsvEscapeWriter<W: Write> {
+    out: W,
+    path: String,
+    rows: u64,
+}
+
+impl<W: Write> CsvEscapeWriter<W> {
+    /// `path` only appears in error messages. Writes the header immediately.
+    pub fn new(mut out: W, path: &str) -> Result<Self, SimError> {
+        writeln!(out, "{EXIT_CSV_HEADER}").map_err(|e| SimError::Io {
+            path: path.to_owned(),
+            message: e.to_string(),
+        })?;
+        Ok(Self {
+            out,
+            path: path.to_owned(),
+            rows: 0,
+        })
+    }
+
+    /// Number of exit rows written so far.
+    pub fn rows(&self) -> u64 {
+        self.rows
+    }
+
+    pub fn into_inner(self) -> W {
+        self.out
+    }
+}
+
+impl<W: Write + Send> EscapeSink for CsvEscapeWriter<W> {
+    fn write_history(&mut self, id: u64, exits: &[ExitEvent]) -> Result<(), SimError> {
+        for e in exits {
+            writeln!(self.out, "{}", exit_csv_row(id, e)).map_err(|err| SimError::Io {
+                path: self.path.clone(),
+                message: err.to_string(),
+            })?;
+        }
+        self.rows += exits.len() as u64;
+        Ok(())
+    }
+}
+
+/// Optional ordered receivers of a run's raw events.
+#[derive(Default)]
+pub struct RunSinks<'a> {
+    /// Physicochemical events (switches event recording on).
+    pub physchem: Option<&'a mut dyn PhysChemSink>,
+    /// Exit events (meaningful only with a volume).
+    pub escape: Option<&'a mut dyn EscapeSink>,
 }
 
 /// Bin edges shared by every history of a run.
@@ -154,8 +237,28 @@ pub fn run_summary(table: &ProcessTable, config: &RunConfig) -> Result<RunSummar
 pub fn run_summary_with_sink(
     table: &ProcessTable,
     config: &RunConfig,
-    mut sink: Option<&mut dyn PhysChemSink>,
+    sink: Option<&mut dyn PhysChemSink>,
 ) -> Result<RunSummary, SimError> {
+    run_summary_with_sinks(
+        table,
+        config,
+        RunSinks {
+            physchem: sink,
+            escape: None,
+        },
+    )
+}
+
+/// Run and score, passing the raw events of every history to the given sinks in history order.
+pub fn run_summary_with_sinks(
+    table: &ProcessTable,
+    config: &RunConfig,
+    sinks: RunSinks<'_>,
+) -> Result<RunSummary, SimError> {
+    let RunSinks {
+        physchem: mut sink,
+        escape: mut escape_sink,
+    } = sinks;
     config.validate()?;
     let mut config = config.clone();
     config.record_physchem = sink.is_some();
@@ -172,6 +275,9 @@ pub fn run_summary_with_sink(
                 scorer.add(&r);
                 if let Some(sink) = sink.as_deref_mut() {
                     sink.write_history(r.id, &r.physchem)?;
+                }
+                if let Some(sink) = escape_sink.as_deref_mut() {
+                    sink.write_history(r.id, &r.exits)?;
                 }
             }
             start = stop;
@@ -235,12 +341,28 @@ pub fn run_with_sink(
     config: &RunConfig,
     sink: Option<&mut dyn PhysChemSink>,
 ) -> Result<RunOutput, SimError> {
-    output_with_sink(
+    run_with_sinks(
+        table,
+        config,
+        RunSinks {
+            physchem: sink,
+            escape: None,
+        },
+    )
+}
+
+/// As [`run`], with raw events streamed to `sinks` in history order.
+pub fn run_with_sinks(
+    table: &VerifiedProcessTable,
+    config: &RunConfig,
+    sinks: RunSinks<'_>,
+) -> Result<RunOutput, SimError> {
+    output_with_sinks(
         table.table(),
         config,
         verified_provenance(table, config),
         "geant4-rs/dna-sim/run/v5",
-        sink,
+        sinks,
     )
 }
 
@@ -259,12 +381,15 @@ pub fn run_unverified_with_sink_for_testing(
     config: &RunConfig,
     sink: Option<&mut dyn PhysChemSink>,
 ) -> Result<RunOutput, SimError> {
-    output_with_sink(
+    output_with_sinks(
         table,
         config,
         Provenance::unverified(config.master_seed),
         "geant4-rs/dna-sim/run-unverified/v2",
-        sink,
+        RunSinks {
+            physchem: sink,
+            escape: None,
+        },
     )
 }
 
@@ -295,14 +420,14 @@ fn elastic_rotation(table: &ProcessTable) -> String {
         .unwrap_or_else(|| "n/a".to_owned())
 }
 
-fn output_with_sink(
+fn output_with_sinks(
     table: &ProcessTable,
     config: &RunConfig,
     provenance: Provenance,
     schema: &'static str,
-    sink: Option<&mut dyn PhysChemSink>,
+    sinks: RunSinks<'_>,
 ) -> Result<RunOutput, SimError> {
-    let summary = run_summary_with_sink(table, config, sink)?;
+    let summary = run_summary_with_sinks(table, config, sinks)?;
     Ok(RunOutput {
         schema,
         provenance: provenance.with_volume(config.volume.clone()),

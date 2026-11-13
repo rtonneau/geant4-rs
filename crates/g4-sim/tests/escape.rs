@@ -8,6 +8,9 @@
 //!   tracks = sum `n_escaped` / n, energy fraction mean = mean `escaped / E_in` (1e-12
 //!   relative), spectrum totals add up (bins + under + overflow, primary + secondaries = all),
 //!   and both primary and secondary escapes occur.
+//! * Exit-event CSV: header plus one row per escape in history order, equal to the exits of
+//!   `run_detailed`, byte-identical for 1, 2 and 8 threads; the summary is unchanged by the
+//!   sink; infinite water writes the header only.
 
 use g4_core::geometry::Volume;
 use g4_core::vec3::Vec3;
@@ -15,7 +18,10 @@ use g4_data::datadir::{DataDir, repo_data_dir};
 use g4_physics::models::ElasticRotation;
 use g4_physics::table::ProcessTable;
 use g4_sim::config::RunConfig;
-use g4_sim::run::{run_detailed, run_summary};
+use g4_sim::run::{
+    CsvEscapeWriter, EXIT_CSV_HEADER, RunSinks, exit_csv_row, run_detailed, run_summary,
+    run_summary_with_sinks,
+};
 use g4_sim::scoring::EscapeSpectrum;
 
 fn table() -> Option<ProcessTable> {
@@ -96,4 +102,49 @@ fn escape_block_is_consistent_with_histories_and_ledger() {
     for s in [&sp.primary, &sp.secondaries, &sp.all] {
         assert_eq!(total(s), s.n_tracks);
     }
+}
+
+fn exit_csv(table: &ProcessTable, c: &RunConfig) -> (String, g4_sim::scoring::RunSummary) {
+    let mut w = CsvEscapeWriter::new(Vec::new(), "mem").unwrap();
+    let s = run_summary_with_sinks(
+        table,
+        c,
+        RunSinks {
+            physchem: None,
+            escape: Some(&mut w),
+        },
+    )
+    .unwrap();
+    (String::from_utf8(w.into_inner()).unwrap(), s)
+}
+
+#[test]
+fn exit_csv_is_ordered_complete_and_thread_independent() {
+    let Some(table) = table() else { return };
+    let v = Volume::box_(Vec3::ZERO, Vec3::new(60.0, 60.0, 40.0)).unwrap();
+    let mut c = config(Some(v));
+    c.batch_size = 64;
+    c.threads = Some(1);
+    let (reference, summary) = exit_csv(&table, &c);
+    assert_eq!(summary, run_summary(&table, &c).unwrap());
+
+    let mut expected = format!("{EXIT_CSV_HEADER}\n");
+    for r in run_detailed(&table, &c).unwrap() {
+        for e in &r.exits {
+            expected.push_str(&exit_csv_row(r.id, e));
+            expected.push('\n');
+        }
+    }
+    assert_eq!(reference, expected);
+    assert!(reference.lines().count() > 2);
+    let columns = EXIT_CSV_HEADER.split(',').count();
+    assert!(reference.lines().all(|l| l.split(',').count() == columns));
+
+    for threads in [2, 8] {
+        c.threads = Some(threads);
+        assert_eq!(exit_csv(&table, &c).0, reference, "{threads} threads");
+    }
+
+    let (unbounded, _) = exit_csv(&table, &config(None));
+    assert_eq!(unbounded, format!("{EXIT_CSV_HEADER}\n"));
 }
