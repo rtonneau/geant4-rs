@@ -258,7 +258,7 @@ pub struct SolvationEvent {
 }
 
 /// One escape: a track killed at the volume boundary (docs/04 D.6), as seen by an observer.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ExitEvent {
     /// 0 for the primary, 1 for its secondaries, and so on.
     pub generation: u32,

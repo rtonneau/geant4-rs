@@ -49,7 +49,7 @@ pub fn run_physchem_summary_with_diagnostics(
     let (first, end) = ids(config)?;
     let streams = RngStreams::new(config.master_seed);
     let edges = Edges::new();
-    let mut physics = Scorer::new(config.primary_energy_ev);
+    let mut physics = scorer_for(config);
     let mut physchem = PhysChemScorer::default();
     with_pool(config.threads, || -> Result<(), SimError> {
         let mut start = first;

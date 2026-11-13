@@ -10,7 +10,8 @@ use g4_physics::models::ProcessKind;
 use g4_physics::physchem::PhysChemEvent;
 use g4_physics::table::ProcessTable;
 use g4_physics::transport::{
-    HistoryObserver, HistoryOutcome, NoObserver, SolvationEvent, StepEvent, transport_electron,
+    ExitEvent, HistoryObserver, HistoryOutcome, NoObserver, SolvationEvent, StepEvent,
+    transport_electron,
 };
 
 /// Lower edge of the secondary-energy histogram, eV.
@@ -102,6 +103,7 @@ pub struct HistoryObserverSet {
     radial: RadialProfile,
     solvation: SolvationStats,
     physchem: Option<Vec<PhysChemEvent>>,
+    exits: Vec<ExitEvent>,
     origin: Vec3,
 }
 
@@ -127,6 +129,7 @@ impl HistoryObserverSet {
             },
             solvation: SolvationStats::default(),
             physchem: record_physchem.then(Vec::new),
+            exits: Vec::new(),
             origin,
         }
     }
@@ -179,6 +182,10 @@ impl HistoryObserver for HistoryObserverSet {
             v.push(*event);
         }
     }
+
+    fn on_escape(&mut self, event: &ExitEvent) {
+        self.exits.push(*event);
+    }
 }
 
 /// Result of one history.
@@ -193,6 +200,9 @@ pub struct HistoryResult {
     /// Physicochemical events in order of occurrence; empty unless
     /// [`RunConfig::record_physchem`].
     pub physchem: Vec<PhysChemEvent>,
+    /// Exit events in order of occurrence (docs/04 D.6); empty in infinite water. At most one
+    /// per track, so the list is bounded by the number of tracks.
+    pub exits: Vec<ExitEvent>,
 }
 
 impl HistoryResult {
@@ -259,6 +269,10 @@ pub fn run_history_with_observer(
             self.0.on_physchem_site(site);
             self.1.on_physchem_site(site);
         }
+        fn on_escape(&mut self, event: &ExitEvent) {
+            self.0.on_escape(event);
+            self.1.on_escape(event);
+        }
     }
     let outcome = transport_electron(
         table,
@@ -275,6 +289,7 @@ pub fn run_history_with_observer(
         radial: obs.radial,
         solvation: obs.solvation,
         physchem: obs.physchem.unwrap_or_default(),
+        exits: obs.exits,
     })
 }
 

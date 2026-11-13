@@ -163,7 +163,7 @@ pub fn run_summary_with_sink(
     let (first, end) = ids(config)?;
     let streams = RngStreams::new(config.master_seed);
     let edges = Edges::new();
-    let mut scorer = Scorer::new(config.primary_energy_ev);
+    let mut scorer = scorer_for(config);
     with_pool(config.threads, || -> Result<(), SimError> {
         let mut start = first;
         while start < end {
@@ -266,6 +266,16 @@ pub fn run_unverified_with_sink_for_testing(
         "geant4-rs/dna-sim/run-unverified/v2",
         sink,
     )
+}
+
+/// Scorer for `config`; escape scoring is on exactly when the run has a volume.
+fn scorer_for(config: &RunConfig) -> Scorer {
+    let scorer = Scorer::new(config.primary_energy_ev);
+    if config.volume.is_some() {
+        scorer.with_escape_scoring()
+    } else {
+        scorer
+    }
 }
 
 fn verified_provenance(table: &VerifiedProcessTable, config: &RunConfig) -> Provenance {
