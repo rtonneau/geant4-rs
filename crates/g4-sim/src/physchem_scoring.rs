@@ -305,6 +305,7 @@ mod tests {
                 pair_count: [0; 2],
                 pair_sum_nm: [0.0; 2],
                 pair_sum_sq_nm2: [0.0; 2],
+                placement: Default::default(),
             },
         }
     }

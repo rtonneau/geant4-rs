@@ -46,6 +46,15 @@ pub fn run_physchem_summary_with_diagnostics(
     let mut config = config.clone();
     config.record_physchem = true;
     let config = &config;
+    // The dissociation clamp uses the run's volume (docs/04 D.6); an engine built without one
+    // is bounded here, so callers need not repeat the geometry.
+    let bounded;
+    let engine = if engine.volume() == config.volume.as_ref() {
+        engine
+    } else {
+        bounded = engine.clone().with_volume(config.volume.clone());
+        &bounded
+    };
     let (first, end) = ids(config)?;
     let streams = RngStreams::new(config.master_seed);
     let edges = Edges::new();
