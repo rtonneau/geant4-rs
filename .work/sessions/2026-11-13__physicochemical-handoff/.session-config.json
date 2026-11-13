@@ -85,6 +85,30 @@
         "ticket": "01-volume-safety",
         "commit": "ab82b54"
       }
+    },
+    {
+      "at": "2026-11-13T22:14:47.314Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-physchem-clamp.md",
+        "03-implement/02-physchem-clamp/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-physchem-clamp"
+      }
+    },
+    {
+      "at": "2026-11-13T22:25:44.513Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-physchem-clamp/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-physchem-clamp",
+        "commit": "1835553"
+      }
     }
   ],
   "current_phase": "ship",
