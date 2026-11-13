@@ -158,9 +158,33 @@
         "ticket": "04-exit-event-csv",
         "commit": "da8878a"
       }
+    },
+    {
+      "at": "2026-11-13T21:33:56.926Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/05-docs.md",
+        "03-implement/05-docs/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-docs"
+      }
+    },
+    {
+      "at": "2026-11-13T21:37:07.879Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/05-docs/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "05-docs",
+        "commit": "667ee12"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/escape-scoring-and-volume-provenance",
     "base_branch": "main",
