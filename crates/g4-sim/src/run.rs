@@ -239,7 +239,7 @@ pub fn run_with_sink(
         table.table(),
         config,
         verified_provenance(table, config),
-        "geant4-rs/dna-sim/run/v4",
+        "geant4-rs/dna-sim/run/v5",
         sink,
     )
 }
@@ -263,7 +263,7 @@ pub fn run_unverified_with_sink_for_testing(
         table,
         config,
         Provenance::unverified(config.master_seed),
-        "geant4-rs/dna-sim/run-unverified/v1",
+        "geant4-rs/dna-sim/run-unverified/v2",
         sink,
     )
 }
@@ -295,7 +295,7 @@ fn output_with_sink(
     let summary = run_summary_with_sink(table, config, sink)?;
     Ok(RunOutput {
         schema,
-        provenance,
+        provenance: provenance.with_volume(config.volume.clone()),
         models: table.describe(),
         elastic_rotation: elastic_rotation(table),
         config: config.clone(),

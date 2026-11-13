@@ -264,7 +264,7 @@ pub fn run_history_with_observer(
         table,
         &config.transport(),
         primary,
-        config.geometry.as_ref(),
+        config.volume.as_ref(),
         &mut rng,
         &mut Observers(&mut obs, observer),
     )?;
