@@ -284,12 +284,10 @@ The authorized 200k precision expansion rebuilt the unchanged binary (Ninja:
 no work), reused its successful smoke verification, and exited 0 with eight
 channels and 120 rows. `G1F_GEANT4_PAIRS=200000` selects the new complete
 fixture; the strict consumer passed all 120 endpoints. Preserve the 100k files.
-
 ## 12. SYN pair diagnostics / RR-006
 Use a fresh build with the discovered 11.4.1 install, not current G4_ROOT if it names 11.4.3. Resolve Qt5 from a validated prior cache as in section 10. `syn_pair_matrix` is new; old modes are unchanged.
 2026-11-08: configured and linked with MSVC against 11.4.1; no producer run by implementer. New header `SynKernels.hh` is included by g4rs_ref.cc. Exact runs, schema and provenance are in RR-006 and README.
 The session authorizes a dedicated runner; partial/smoke data stay in scratch. The pair diagnostic does not establish ordinary scheduler placement or complete SYN acceptance.
-
 ## 13. Paired source mapping / RR-007 (2026-11-09)
 Configure a new build using section2 prerequisites and add `-DG4RS_SYN_SOURCE_ROOT=<verified read-only 11.4.1 source root>`; build target `g4rs_syn_ref`. CMake pins the included source-body SHA-256 and rejects mismatches. No existing producer mode changes.
 The adapter renames the class and intercepts only source-line-labelled draws; record `G4RS_SYN_MAKE_SOURCE` plus local class/draw macros in provenance. It does not modify Geant4 or validate RNG distributions.
@@ -297,3 +295,5 @@ First compile identified a missing physical-constants include in standalone geom
 Recovery 2 (2026-11-09): populated delayed-list Clear() double-deleted the product track node (native stack: G4IT::~G4IT / G4FastList destructor). Adapter now erases each product through its owning list before Clear(), using the source detach path; no Geant4 source change.
 Configuration diagnostics now use UnFinalize/SetDiffusionCoefficient/Finalize only for the changed immobile reactant and restore it afterward; unchanged base configurations are not written. Scratch seed1/tapes1 smoke exited native 0: 75 rows, 9 expected errors, 504 finite coordinates, complete footer. Retain the process handle before waiting and reject null exit codes in PowerShell runners.
 RR-008: build g4rs_syn_scheduler_ref in the normative11.4.1 environment. Recovery3 fixes two initialization omissions: select IRT_syn after physics constructors reset defaults; use chemistry UseAsStandalone(true) to build molecular process tables without transport BeamOn. Actual model/stepper/process types are checked after scheduler initialization. Corrected scratch smoke: native0,9 rows/footer (3 reactions,6 censored). Independent review and fresh dedicated smoke precede production; README/RUN_REQUESTS retain the exact manifest and233 moment INCONCLUSIVE endpoints.
+## 14. finite_volume / RR-009 (2026-11-13)
+Section 2 recipe, target `g4rs_ref`; linked with MSVC against 11.4.1 (Qt5 from a prior cache, section 10) and 11.4.3 (current G4_ROOT). Missing forward declaration of `WriteProvenance` was the only compile error. Agents compile only; commands in RUN_REQUESTS RR-009.

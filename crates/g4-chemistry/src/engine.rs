@@ -51,7 +51,9 @@ use crate::error::ChemistryError;
 use crate::params::PhysChemParams;
 use crate::species::{SpeciesTable, atoms};
 use crate::{Species, SpeciesInstance};
+use g4_core::geometry::{Inside, Volume};
 use g4_core::physchem::{PhysChemEvent, PhysChemKind};
+use g4_core::placement::{ClampRule, clamp_displacement};
 use g4_core::sampling::uniform;
 use g4_core::sha256::{Sha256, hex};
 use g4_core::units::Energy;
@@ -86,6 +88,29 @@ pub struct PhysChemStats {
     pub pair_count: [u64; 2],
     pub pair_sum_nm: [f64; 2],
     pub pair_sum_sq_nm2: [f64; 2],
+    /// Dissociation products placed with the Geant4 `0.8 x safety` clamp, when the engine has a
+    /// volume (all zero otherwise).
+    pub placement: PlacementCounts,
+}
+
+/// Per-species counts of dissociation products placed in a finite volume
+/// ([`g4_core::placement`], rule [`ClampRule::Dissociation`]), indexed by [`Species::index`].
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct PlacementCounts {
+    /// Products whose displacement the clamp shortened.
+    pub shortened: [u64; 15],
+    /// Products whose final position is not strictly Inside the volume, Geant4's
+    /// `OUTSIDE_OF_MOTHER_VOLUME` test (`Inside(p) != kInside`). Such products are kept.
+    pub not_inside: [u64; 15],
+}
+
+impl PlacementCounts {
+    fn add(&mut self, other: &PlacementCounts) {
+        for i in 0..15 {
+            self.shortened[i] += other.shortened[i];
+            self.not_inside[i] += other.not_inside[i];
+        }
+    }
 }
 
 impl PhysChemStats {
@@ -107,6 +132,7 @@ impl PhysChemStats {
             pair_count: [0; 2],
             pair_sum_nm: [0.0; 2],
             pair_sum_sq_nm2: [0.0; 2],
+            placement: PlacementCounts::default(),
         }
     }
 
@@ -143,6 +169,7 @@ impl PhysChemStats {
             self.pair_sum_nm[i] += other.pair_sum_nm[i];
             self.pair_sum_sq_nm2[i] += other.pair_sum_sq_nm2[i];
         }
+        self.placement.add(&other.placement);
     }
 }
 
@@ -445,6 +472,8 @@ pub struct PhysChemEngine {
     electron_r_mean_nm: f64,
     semantic_sha256: String,
     source_file_sha256: Option<String>,
+    /// Finite water volume for the dissociation clamp; `None` is the infinite medium.
+    volume: Option<Volume>,
 }
 
 impl PhysChemEngine {
@@ -481,6 +510,7 @@ impl PhysChemEngine {
             electron_r_mean_nm,
             semantic_sha256,
             source_file_sha256: None,
+            volume: None,
         })
     }
 
@@ -517,6 +547,19 @@ impl PhysChemEngine {
         &self.params
     }
 
+    /// Bound the water by `volume` (`None`: infinite medium). With a volume every dissociation
+    /// product is placed with the Geant4 `0.8 x safety` clamp ([`g4_core::placement`],
+    /// `G4DNAMolecularDissociation.cc:203-222`). It draws no random number, and the volume is not
+    /// part of [`Self::semantic_sha256`] (it is recorded in the run provenance).
+    pub fn with_volume(mut self, volume: Option<Volume>) -> Self {
+        self.volume = volume;
+        self
+    }
+
+    pub fn volume(&self) -> Option<&Volume> {
+        self.volume.as_ref()
+    }
+
     /// Replace the recombination switch (ablation studies and tests).
     pub fn with_recombination_enabled(mut self, enabled: bool) -> Self {
         self.params.recombination.enabled = enabled;
@@ -530,6 +573,7 @@ impl PhysChemEngine {
         position: Vec3,
         rng: &mut R,
         out: &mut Vec<SpeciesInstance>,
+        placement: &mut PlacementCounts,
     ) -> (usize, Energy) {
         let u = uniform(rng);
         let ci = state.select(u);
@@ -541,9 +585,18 @@ impl PhysChemEngine {
             rng,
         );
         for (&species, &offset) in channel.products.iter().zip(&offsets) {
+            let position = match &self.volume {
+                Some(volume) => {
+                    let p = clamp_displacement(volume, position, offset, ClampRule::Dissociation);
+                    placement.shortened[species.index()] += u64::from(p.shortened);
+                    placement.not_inside[species.index()] += u64::from(p.inside != Inside::Inside);
+                    p.position
+                }
+                None => position + offset,
+            };
             out.push(SpeciesInstance {
                 species,
-                position: position + offset,
+                position,
                 time: self.params.birth_time,
             });
         }
@@ -572,8 +625,13 @@ impl PhysChemEngine {
         rng: &mut R,
     ) -> EventDecay {
         let mut species = Vec::new();
-        let (channel, decay_energy) =
-            self.decay(&self.channels.states()[state], position, rng, &mut species);
+        let (channel, decay_energy) = self.decay(
+            &self.channels.states()[state],
+            position,
+            rng,
+            &mut species,
+            &mut PlacementCounts::default(),
+        );
         EventDecay {
             state,
             channel,
@@ -685,7 +743,8 @@ impl PhysChemEngine {
 
                 scratch.clear();
                 let state = &self.channels.states()[si];
-                let (ci, decay_energy) = self.decay(state, ev.position, rng, &mut scratch);
+                let (ci, decay_energy) =
+                    self.decay(state, ev.position, rng, &mut scratch, &mut stats.placement);
                 for (offset, inst) in scratch.iter().enumerate() {
                     observer.on_dissociation_product(
                         DissociationBirth {

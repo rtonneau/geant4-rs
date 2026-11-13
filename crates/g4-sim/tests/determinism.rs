@@ -311,7 +311,7 @@ fn json_output_carries_provenance_models_and_config() {
     let text = out.to_json_pretty().unwrap();
     let j: serde_json::Value = serde_json::from_str(&text).unwrap();
 
-    assert_eq!(j["schema"], "geant4-rs/dna-sim/run/v5");
+    assert_eq!(j["schema"], "geant4-rs/dna-sim/run/v6");
     assert_eq!(j["provenance"]["master_seed"], 4242);
     assert_eq!(j["provenance"]["inputs"]["verification"], "verified");
     assert_eq!(j["provenance"]["manifest_sha256"], manifest.hash());

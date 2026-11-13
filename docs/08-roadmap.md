@@ -883,3 +883,8 @@ Order: (1) `Volume` type with `inside`, ray `distance_to_out` and `safety`, plus
 (4) the RR-009 generator mode (written and compile-checked, logged, never run by agents); (5) chemistry
 boundary rule once G-B1/G-B2 are answered; (6) close gate. Supersedes the "finite boxes/boundaries"
 item in M11. UHDR and multi-material geometry stay in M11.
+Progress (2026-11-13): steps (1)-(2) done (PR #32, #33). Step (3) done: `Volume::safety`, the
+thermalisation and dissociation clamps (`g4_core::placement`) and `physchem.boundary` (schema run/v6).
+Step (4) done: `g4rs_ref finite_volume` compile-checked, RR-009 logged, consumer
+`g4-sim/tests/rr009_finite_volume.rs` (ignored). Open: run RR-009; an isotropic Rust source for the box
+endpoints; IRT in the run layer for end-of-chemistry counts; step (5) after G-B1/G-B2.

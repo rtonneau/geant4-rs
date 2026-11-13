@@ -1127,3 +1127,34 @@ Provenance commit: `9b4aaf4`. Final comparison log is
 RR-006/RR-007 were not rerun or replaced. Ticket 02 remains incomplete pending
 the registered coverage gate; no later production acceptance follows from
 these observed reactions alone.
+
+## RR-009 finite-volume boundary (awaiting run)
+
+Mode `finite_volume` of `g4rs_ref` (2026-11-13). The world is the finite water solid itself
+(`G4Sphere` of radius r, or `G4Box` of half-lengths hx, hy, hz, in nm, centred at the origin), so a
+track leaving it is killed by `G4Transportation` (docs/04 D.7). Physics `G4EmDNAPhysics_option2`,
+chemistry `G4EmDNAChemistry_option3` with IRT, fluo/Auger off as in the other modes. Each event draws
+one isotropic direction (`G4RandomDirection`) for the electron primary at the origin. Existing modes
+are unchanged.
+
+Arguments: `finite_volume <out_prefix> <seed> <sphere|box> <r | hx,hy,hz> <E_eV:events,...>
+[end_time_ps]`; energies in `[2 eV, 1 MeV)`, end time > 1 ps (default 1e6 ps). Outputs are created
+exclusively (`wx`): an existing file is never replaced. Exit 2 with `finite_volume: <reason>` on bad
+arguments or an event without the end-of-chemistry snapshot.
+
+`<out_prefix>_histories.csv`, one row per history:
+`shape,d0_nm,d1_nm,d2_nm,event,energy_eV,edep_eV,escaped_eV,primary_escaped,escaped_tracks`.
+`edep_eV` sums `GetTotalEnergyDeposit` over all steps; `escaped_eV` sums the post-step kinetic energy
+of steps with status `fWorldBoundary`; `primary_escaped` is 1 if track 1 had such a step.
+
+`<out_prefix>_species.csv`, one row per history, snapshot and species:
+`shape,d0_nm,d1_nm,d2_nm,event,energy_eV,snapshot,species,count,outside,not_inside`. `snapshot` is
+`1ps` (first non-zero chemistry time step, as `physchem`) or `end` (`EndProcessing` at the end time).
+`outside` counts `Inside(p) == kOutside`, `not_inside` counts `Inside(p) != kInside` of the world
+solid. Geant4's `OUTSIDE_OF_MOTHER_VOLUME` warning cannot fire here (the world has no mother logical
+volume), and the 0.8 x safety shortening is not observable without instrumenting Geant4, so S3 is
+reported from Geant4 as outside counts only.
+
+Acceptance: docs/07 "Finite-volume boundary acceptance criteria" (D1 per history, S1/S2 Bonferroni
+family of 24, z = 4.098038123646298). Commands, seeds and consumer: RUN_REQUESTS.md RR-009.
+

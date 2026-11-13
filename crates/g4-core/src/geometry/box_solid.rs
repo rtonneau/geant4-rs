@@ -51,6 +51,13 @@ impl BoxSolid {
             Inside::Inside
         }
     }
+    /// `G4Box::DistanceToOut(p)` (`G4Box.cc:433-456`): the isotropic safety distance, the
+    /// smallest distance from `q` (relative to the centre) to a face, clamped at 0.
+    pub(super) fn safety_local(&self, q: Vec3) -> f64 {
+        let h = self.half_lengths;
+        let dist = (h.x - q.x.abs()).min(h.y - q.y.abs()).min(h.z - q.z.abs());
+        if dist > 0.0 { dist } else { 0.0 }
+    }
 
     /// `G4Box::DistanceToOut(p, v)` without normal (`G4Box.cc:381-391`) for a point `q`
     /// relative to the centre, which is not outside.
@@ -443,6 +450,37 @@ mod tests {
             let text = toml::to_string(&volume).unwrap();
             let back: Volume = toml::from_str(&text).unwrap();
             prop_assert_eq!(back, volume);
+        }
+    }
+
+    // --- safety (`G4Box::DistanceToOut(p)`) ---
+
+    #[test]
+    fn safety_is_the_distance_to_the_nearest_face() {
+        let b = Volume::box_(v3(1.0, 1.0, 1.0), v3(10.0, 20.0, 30.0)).unwrap();
+        assert_relative_eq!(b.safety(v3(4.0, 2.0, 3.0)).unwrap(), 7.0);
+        assert_relative_eq!(b.safety(v3(1.0, 1.0, 1.0)).unwrap(), 10.0);
+        assert_eq!(b.safety(v3(11.0, 1.0, 1.0)), Some(0.0));
+        assert_eq!(b.safety(v3(12.0, 1.0, 1.0)), None);
+    }
+
+    proptest! {
+        #[test]
+        fn safety_never_exceeds_the_exit_distance(
+            volume in box_strategy(),
+            f in fractions(),
+            v in unit_direction(),
+        ) {
+            #[allow(irrefutable_let_patterns)]
+            let Volume::Box(solid) = &volume else {
+                unreachable!("box strategy yields boxes")
+            };
+            let h = solid.half_lengths();
+            let p = volume.centre() + v3(f.x * h.x, f.y * h.y, f.z * h.z);
+            let safety = volume.safety(p).unwrap();
+            let d = volume.distance_to_out(p, v).unwrap();
+            prop_assert!(safety >= 0.0);
+            prop_assert!(safety <= d + CAR_TOLERANCE, "safety {} > exit {}", safety, d);
         }
     }
 }

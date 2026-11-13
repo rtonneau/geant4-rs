@@ -172,6 +172,21 @@ impl TubsSolid {
             Inside::Inside | Inside::Surface => Inside::Surface,
         }
     }
+    /// `G4Tubs::DistanceToOut(p)` (`G4Tubs.cc:1549-1601`): the smallest of the distances to
+    /// the cylinders, the z planes and (for a cut segment) the nearer phi plane, clamped at 0.
+    pub(super) fn safety_local(&self, p: Vec3) -> f64 {
+        let rho = (p.x * p.x + p.y * p.y).sqrt();
+        let mut safe = if self.rmin != 0.0 {
+            (rho - self.rmin).min(self.rmax - rho)
+        } else {
+            self.rmax - rho
+        };
+        safe = safe.min(self.half_z - p.z.abs());
+        if !self.phi.is_full() {
+            safe = safe.min(self.phi.safety(p.x, p.y));
+        }
+        if safe < 0.0 { 0.0 } else { safe }
+    }
 
     /// `G4Tubs::DistanceToOut(p, v)` without normal (`G4Tubs.cc:1127-1543`) for a point `p`
     /// relative to the centre, which is not outside.
@@ -1122,6 +1137,44 @@ mod tests {
             let text = toml::to_string(&volume).unwrap();
             let back: Volume = toml::from_str(&text).unwrap();
             prop_assert_eq!(back, volume);
+        }
+    }
+
+    // --- safety (`G4Tubs::DistanceToOut(p)`) ---
+
+    #[test]
+    fn safety_takes_the_nearest_cylinder_plane_or_phi_plane() {
+        let full = Volume::tubs(Vec3::ZERO, 2.0, 10.0, 5.0, 0.0, TAU).unwrap();
+        assert_relative_eq!(full.safety(v3(4.0, 0.0, 1.0)).unwrap(), 2.0);
+        assert_relative_eq!(full.safety(v3(8.0, 0.0, 0.0)).unwrap(), 2.0);
+        assert_relative_eq!(full.safety(v3(6.0, 0.0, 4.5)).unwrap(), 0.5);
+        let quarter = Volume::tubs(Vec3::ZERO, 0.0, 10.0, 5.0, 0.0, FRAC_PI_2).unwrap();
+        // Nearer the start plane (y = 0): distance y.
+        assert_relative_eq!(quarter.safety(v3(3.0, 1.0, 0.0)).unwrap(), 1.0);
+        // Nearer the end plane (x = 0): distance x.
+        assert_relative_eq!(
+            quarter.safety(v3(0.5, 3.0, 0.0)).unwrap(),
+            0.5,
+            epsilon = 1e-12
+        );
+        assert_eq!(quarter.safety(v3(-1.0, 3.0, 0.0)), None);
+    }
+
+    proptest! {
+        #[test]
+        fn safety_never_exceeds_the_exit_distance(
+            volume in tubs_strategy(),
+            fr in 0.05..0.95f64,
+            fphi in 0.02..0.98f64,
+            fz in FRACTION,
+            v in unit_direction(),
+        ) {
+            let p = point(&volume, fr, fphi, fz);
+            prop_assume!(volume.inside(p) == Inside::Inside);
+            let safety = volume.safety(p).unwrap();
+            let d = volume.distance_to_out(p, v).unwrap();
+            prop_assert!(safety >= 0.0);
+            prop_assert!(safety <= d + CAR_TOLERANCE, "safety {} > exit {}", safety, d);
         }
     }
 }

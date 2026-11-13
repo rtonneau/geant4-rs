@@ -3,8 +3,9 @@
 //! reachable from the option2 events.
 //!
 //! The position of product `j` is `event position + mother displacement + product displacement j`
-//! (`G4DNAMolecularDissociation::DecayIt`, processes/src/G4DNAMolecularDissociation.cc:218-258; the
-//! navigator clipping of the displacement, `0.8 x safety`, does not exist in an infinite medium). In the C++
+//! (`G4DNAMolecularDissociation::DecayIt`, processes/src/G4DNAMolecularDissociation.cc:218-258). In a finite
+//! volume the engine then clips the displacement to `0.8 x safety` (`g4_core::placement`); in the infinite
+//! medium there is no clip. In the C++
 //! the product displacements are drawn first (`GetProductsDisplacement`), then the mother displacement
 //! (`GetMotherMoleculeDisplacement`); the same order is kept here.
 //!

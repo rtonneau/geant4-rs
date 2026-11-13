@@ -319,9 +319,30 @@ the registered coverage gate; no later production acceptance follows from
 these observed reactions alone.
 ### RR-009: finite-volume boundary reference (requested 2026-11-13)
 
-Status: **awaiting generator**. The `g4rs_ref` mode (working name `finite_volume_boundary`) is written in
-M12 step 4, then compile-checked. Agents never run it. Purpose and acceptance: docs/07
-"Finite-volume boundary acceptance criteria". Questions G-B1/G-B2: docs/09. Planned command shape
-(fixed in M12): `g4rs_ref finite_volume_boundary <out.csv> <seed> <histories>`, with output to a **new**
-file in `validation/reference/` and new `provenance_finite_volume*.toml`. Geant4 version: 11.4.3.
-The consumer is an `#[ignore]`d Rust test written alongside the generator.
+Status: **awaiting run** (generator written 2026-11-13, session
+`2026-11-13__physicochemical-handoff`; compile-checked and linked with MSVC against the 11.4.1 and
+11.4.3 installs; never run by an agent). Program: `g4rs_ref finite_volume`, source
+`validation/geant4/g4rs_ref/g4rs_ref.cc`. The working name and shape above (`finite_volume_boundary
+<out.csv> <seed> <histories>`) are replaced, before any run, by one invocation per geometry, because the
+world solid is fixed at initialisation: `finite_volume <out_prefix> <seed> <sphere|box> <r | hx,hy,hz>
+<E_eV:events,...> [end_time_ps]` (dims in nm, end time default 1e6 ps). Purpose and acceptance: docs/07
+"Finite-volume boundary acceptance criteria"; G-B1/G-B2: docs/09. Geant4 version: 11.4.3 as
+registered (state the install used in the provenance).
+
+Commands (working directory `validation/geant4/g4rs_ref`, executable on PATH), seeds 2026111301..04,
+10,000 histories per energy (1, 10, 100 keV), 12 settings:
+```text
+g4rs_ref finite_volume ../../reference/rr009_sphere_100nm 2026111301 sphere 100 1000:10000,10000:10000,100000:10000
+g4rs_ref finite_volume ../../reference/rr009_sphere_1000nm 2026111302 sphere 1000 1000:10000,10000:10000,100000:10000
+g4rs_ref finite_volume ../../reference/rr009_sphere_10000nm 2026111303 sphere 10000 1000:10000,10000:10000,100000:10000
+g4rs_ref finite_volume ../../reference/rr009_box_1000x1000x100nm 2026111304 box 1000,1000,100 1000:10000,10000:10000,100000:10000
+```
+
+Outputs (new, exclusive creation): `validation/reference/rr009_<label>_histories.csv` and
+`rr009_<label>_species.csv` for the four labels; provenance `validation/reference/provenance_rr009.toml`
+(README fields, all four commands). Schemas: README "RR-009 finite-volume boundary". Consumer:
+`crates/g4-sim/tests/rr009_finite_volume.rs::rr009_escape_observables_match_geant4`;
+`cargo test --release -p g4-sim --test rr009_finite_volume -- --ignored --exact rr009_escape_observables_match_geant4 --nocapture`.
+The species file answers G-B1/G-B2 (outside counts at 1 ps and at the end of chemistry); no Rust
+consumer reads it yet. Known open item: the Rust source is not isotropic, so the box endpoints stay
+`NOT RUN` in the consumer.

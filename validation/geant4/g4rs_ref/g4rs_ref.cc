@@ -72,6 +72,8 @@
 #include "G4PhysicalConstants.hh"
 #include "G4ProductionCutsTable.hh"
 #include "G4RunManagerFactory.hh"
+#include "G4Box.hh"
+#include "G4RandomDirection.hh"
 #include "G4Sphere.hh"
 #include "G4Step.hh"
 #include "G4StepPoint.hh"
@@ -107,10 +109,32 @@ namespace {
 
 // ------------------------------------------------------------------ shared state ---------
 
-enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem, SpatialDiagnostic, TwoBodyHH };
+enum class Mode { Xs, Mfp, Track, Slow, PhysChem, PreChem, SpatialDiagnostic, TwoBodyHH, FiniteVolume };
 Mode gMode = Mode::Xs;
 bool IsChemistryMode() { return gMode == Mode::PhysChem || gMode == Mode::PreChem ||
-                                gMode == Mode::SpatialDiagnostic || gMode == Mode::TwoBodyHH; }
+                                gMode == Mode::SpatialDiagnostic || gMode == Mode::TwoBodyHH ||
+                                gMode == Mode::FiniteVolume; }
+
+// finite_volume mode (RR-009, docs/07 "Finite-volume boundary acceptance criteria"): the world is
+// the finite water volume itself, so a track leaving it is killed by G4Transportation.
+struct FiniteVolumeSetup {
+  std::string shape;          // "sphere" (radius) or "box" (half-lengths)
+  double dims_nm[3] = {0., 0., 0.};
+  double end_time_ps = 1.e6;  // end of the chemical stage
+};
+FiniteVolumeSetup gFv;
+struct FvHistory {
+  double edep_eV = 0., escaped_eV = 0.;
+  long escaped_tracks = 0;
+  int primary_escaped = 0;
+};
+FvHistory gFvHist;
+struct FvSpecies {
+  long count = 0, outside = 0, not_inside = 0;
+};
+std::map<std::string, FvSpecies> gFvAt1ps, gFvAtEnd;
+bool gFvSnapshot1ps = false, gFvSnapshotEnd = false;
+const G4VSolid* gFvSolid = nullptr;
 G4double gCut = 0.;  // tracking cut (track mode)
 G4double gEnergy = 0.;  // current primary energy
 
@@ -700,6 +724,98 @@ void SlowFinishEvent()
   gSlow.n_other_secondary += gEv.n_other_secondary;
 }
 
+// ------------------------------------------------------------------ finite volume --------
+
+void WriteProvenance(FILE* f, const char* mode, long events, long seed);
+
+FILE* gFvHistories = nullptr;
+FILE* gFvSpecies = nullptr;
+
+[[noreturn]] void FvFailure(const char* message)
+{
+  fprintf(stderr, "finite_volume: %s\n", message);
+  exit(2);
+}
+
+// Count the alive molecules of the main list against the world solid.
+void FvCount(std::map<std::string, FvSpecies>& into)
+{
+  G4TrackManyList* tracks = G4ITTrackHolder::Instance()->GetMainList();
+  if (tracks == nullptr) return;
+  for (const G4Track* track : *tracks) {
+    const auto* molecule = GetMolecule(track);
+    if (molecule == nullptr || molecule->GetName() == "H2O") continue;
+    if (track->GetTrackStatus() == fStopAndKill) continue;
+    auto& row = into[molecule->GetName()];
+    ++row.count;
+    const EInside where = gFvSolid->Inside(track->GetPosition());
+    if (where == kOutside) ++row.outside;
+    if (where != kInside) ++row.not_inside;
+  }
+}
+
+// 1 ps snapshot as InitialSpeciesAction (first non-zero time step: after the zero-time
+// dissociation steps, before diffusion or reactions); the stage then runs to the end time.
+class FiniteVolumeSpeciesAction : public G4UserTimeStepAction {
+ public:
+  void UserPreTimeStepAction() override
+  {
+    if (gFvSnapshot1ps || G4Scheduler::Instance()->GetTimeStep() <= 0.) return;
+    gFvSnapshot1ps = true;
+    FvCount(gFvAt1ps);
+  }
+  void EndProcessing() override
+  {
+    if (!gFvSnapshot1ps) {  // no non-zero time step was taken: both snapshots are this list
+      gFvSnapshot1ps = true;
+      FvCount(gFvAt1ps);
+    }
+    gFvSnapshotEnd = true;
+    FvCount(gFvAtEnd);
+  }
+};
+
+void FvFinishEvent(int eventId)
+{
+  if (!gFvSnapshotEnd) FvFailure("event ended without the end-of-chemistry snapshot");
+  fprintf(gFvHistories, "%s,%.17g,%.17g,%.17g,%d,%.17g,%.17g,%.17g,%d,%ld\n", gFv.shape.c_str(),
+          gFv.dims_nm[0], gFv.dims_nm[1], gFv.dims_nm[2], eventId, gEnergy / eV, gFvHist.edep_eV,
+          gFvHist.escaped_eV, gFvHist.primary_escaped, gFvHist.escaped_tracks);
+  for (const auto* snap : {&gFvAt1ps, &gFvAtEnd}) {
+    const char* label = snap == &gFvAt1ps ? "1ps" : "end";
+    for (const auto& item : *snap)
+      fprintf(gFvSpecies, "%s,%.17g,%.17g,%.17g,%d,%.17g,%s,%s,%ld,%ld,%ld\n", gFv.shape.c_str(),
+              gFv.dims_nm[0], gFv.dims_nm[1], gFv.dims_nm[2], eventId, gEnergy / eV, label,
+              item.first.c_str(), item.second.count, item.second.outside, item.second.not_inside);
+  }
+}
+
+void RunFiniteVolume(const std::string& prefix, long seed,
+                     const std::vector<std::pair<double, long>>& cases)
+{
+  // Exclusive creation: never replace existing evidence.
+  gFvHistories = fopen((prefix + "_histories.csv").c_str(), "wx");
+  gFvSpecies = fopen((prefix + "_species.csv").c_str(), "wx");
+  if (!gFvHistories || !gFvSpecies) FvFailure("cannot create outputs (they may already exist)");
+  for (FILE* f : {gFvHistories, gFvSpecies}) {
+    WriteProvenance(f, "finite_volume", 0, seed);
+    fprintf(f, "# G4EmDNAChemistry_option3; IRT; world = finite water %s (dims nm %.17g,%.17g,%.17g); "
+               "isotropic primaries at the origin; chemistry end time %.17g ps\n",
+            gFv.shape.c_str(), gFv.dims_nm[0], gFv.dims_nm[1], gFv.dims_nm[2], gFv.end_time_ps);
+  }
+  fprintf(gFvHistories, "# one row per history; E0 = edep_eV + escaped_eV (docs/07 D1)\n");
+  fprintf(gFvHistories, "shape,d0_nm,d1_nm,d2_nm,event,energy_eV,edep_eV,escaped_eV,primary_escaped,escaped_tracks\n");
+  fprintf(gFvSpecies, "# one row per history, snapshot and species; outside = Inside()==kOutside, not_inside = Inside()!=kInside of the world solid\n");
+  fprintf(gFvSpecies, "shape,d0_nm,d1_nm,d2_nm,event,energy_eV,snapshot,species,count,outside,not_inside\n");
+  for (const auto& c : cases) {
+    gEnergy = c.first * eV;
+    G4RunManager::GetRunManager()->BeamOn((G4int)c.second);
+    if (fflush(gFvHistories) != 0 || fflush(gFvSpecies) != 0) FvFailure("failed to flush output");
+    fprintf(stderr, "finite_volume: %.17g eV done (%ld events)\n", c.first, c.second);
+  }
+  if (fclose(gFvHistories) != 0 || fclose(gFvSpecies) != 0) FvFailure("failed to close output");
+}
+
 // ------------------------------------------------------------------ geometry -------------
 
 class Detector : public G4VUserDetectorConstruction {
@@ -707,6 +823,14 @@ class Detector : public G4VUserDetectorConstruction {
   G4VPhysicalVolume* Construct() override
   {
     auto* water = G4NistManager::Instance()->FindOrBuildMaterial("G4_WATER");
+    if (gMode == Mode::FiniteVolume) {
+      G4VSolid* fv = nullptr;
+      if (gFv.shape == "sphere") fv = new G4Sphere("World", 0., gFv.dims_nm[0] * nm, 0., twopi, 0., pi);
+      else fv = new G4Box("World", gFv.dims_nm[0] * nm, gFv.dims_nm[1] * nm, gFv.dims_nm[2] * nm);
+      gFvSolid = fv;
+      auto* fvLogic = new G4LogicalVolume(fv, water, "World");
+      return new G4PVPlacement(nullptr, G4ThreeVector(), fvLogic, "World", nullptr, false, 0);
+    }
     // The sphere is the world (as in the mfp example): 1 m is far beyond any range used here.
     auto* solid = new G4Sphere("World", 0., 1. * m, 0., twopi, 0., pi);
     auto* logic = new G4LogicalVolume(solid, water, "World");
@@ -756,6 +880,8 @@ class Gun : public G4VUserPrimaryGeneratorAction {
   void GeneratePrimaries(G4Event* ev) override
   {
     fGun->SetParticleEnergy(gMode == Mode::TwoBodyHH ? 1. * eV : gEnergy);
+    // finite_volume: isotropic primaries at the origin (docs/07); one direction draw per event
+    if (gMode == Mode::FiniteVolume) fGun->SetParticleMomentumDirection(G4RandomDirection());
     fGun->GeneratePrimaryVertex(ev);
   }
 
@@ -774,6 +900,18 @@ class Stepping : public G4UserSteppingAction {
       return;
     }
     G4Track* track = step->GetTrack();
+    if (gMode == Mode::FiniteVolume) {
+      // Every track: deposit inside, and the kinetic energy carried out when a step ends on the
+      // world boundary (G4Transportation then kills the track, docs/04 D.7).
+      gFvHist.edep_eV += step->GetTotalEnergyDeposit() / eV;
+      const G4StepPoint* post = step->GetPostStepPoint();
+      if (post->GetStepStatus() == fWorldBoundary) {
+        gFvHist.escaped_eV += post->GetKineticEnergy() / eV;
+        ++gFvHist.escaped_tracks;
+        if (track->GetTrackID() == 1) gFvHist.primary_escaped = 1;
+      }
+      return;
+    }
     if (gMode == Mode::SpatialDiagnostic) {
       const G4StepPoint* post = step->GetPostStepPoint();
       const G4VProcess* defining = post->GetProcessDefinedStep();
@@ -849,6 +987,12 @@ class EventAct : public G4UserEventAction {
     gL = gEdep = gRem = gNsec = gEsec = 0.;
     gEnd = G4ThreeVector();
     if (gMode == Mode::Slow) SlowBeginEvent();
+    if (gMode == Mode::FiniteVolume) {
+      gFvHist = FvHistory();
+      gFvAt1ps.clear();
+      gFvAtEnd.clear();
+      gFvSnapshot1ps = gFvSnapshotEnd = false;
+    }
     if (IsChemistryMode()) {
       gChemistryRun = false;
       gPreChemCaptured = false;
@@ -865,8 +1009,9 @@ class EventAct : public G4UserEventAction {
       gSpatialPopulated.clear();
     }
   }
-  void EndOfEventAction(const G4Event*) override
+  void EndOfEventAction(const G4Event* event) override
   {
+    if (gMode == Mode::FiniteVolume) FvFinishEvent(event->GetEventID());
     if (gMode == Mode::Track) FinishEvent();  // mfp mode finishes inside the stepping action
     if (gMode == Mode::Slow) SlowFinishEvent();
     if (IsChemistryMode()) {
@@ -1407,7 +1552,7 @@ int main(int argc, char** argv)
   if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt_g1f") return RunPairMatrixG1F(argc, argv);
   if (argc > 1 && std::string(argv[1]) == "pair_matrix_irt") return RunPairMatrix(argc, argv);
   if (argc < 3) {
-    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...> | two_body_h_h <out.csv> <seed> <pairs>\n", argv[0]);
+    fprintf(stderr, "usage: %s xs <out.csv> | mfp <out.csv> <events> <seed> | track <out.csv> <events> <seed> <cut_eV> | slow <out_prefix> <seed> [E_eV:events,...] | physchem <out.csv> <seed> [E_eV:events,...] | physchem_prechem <out.csv> <seed> <E_eV:events,...> | physchem_spatial_diagnostic <out.csv> <histories_per_seed> <seed,...> | two_body_h_h <out.csv> <seed> <pairs> | finite_volume <out_prefix> <seed> <sphere|box> <dims_nm> <E_eV:events,...> [end_time_ps]\n", argv[0]);
     return 1;
   }
   const std::string mode = argv[1];
@@ -1466,6 +1611,31 @@ int main(int argc, char** argv)
       TwoBodyFailure("pair count must be a positive G4int");
     gMode = Mode::TwoBodyHH;
   }
+  else if (mode == "finite_volume") {
+    // finite_volume <out_prefix> <seed> <sphere|box> <r | hx,hy,hz> <E_eV:events,...> [end_time_ps]
+    if (argc != 7 && argc != 8) FvFailure("expected out prefix, seed, shape, dims, energy:events [, end time ps]");
+    seed = atol(argv[3]);
+    gFv.shape = argv[4];
+    const std::string dims = argv[5];
+    int n = 0;
+    if (gFv.shape == "sphere")
+      n = sscanf(dims.c_str(), "%lf", &gFv.dims_nm[0]) == 1 ? 1 : 0;
+    else if (gFv.shape == "box")
+      n = sscanf(dims.c_str(), "%lf,%lf,%lf", &gFv.dims_nm[0], &gFv.dims_nm[1], &gFv.dims_nm[2]) == 3 ? 3 : 0;
+    else FvFailure("shape must be sphere or box");
+    if (n == 0) FvFailure("bad dims");
+    for (int i = 0; i < n; ++i)
+      if (!std::isfinite(gFv.dims_nm[i]) || gFv.dims_nm[i] <= 0.) FvFailure("dims must be positive");
+    slowSpec = argv[6];
+    if (argc == 8) gFv.end_time_ps = atof(argv[7]);
+    if (seed <= 0) FvFailure("seed must be positive");
+    if (!std::isfinite(gFv.end_time_ps) || gFv.end_time_ps <= 1.) FvFailure("end time must exceed 1 ps");
+    for (const auto& c : ParseSpec(slowSpec))
+      if (!std::isfinite(c.first) || c.first < 2. || c.first >= 1e6 || c.second <= 0 ||
+          c.second > std::numeric_limits<G4int>::max())
+        FvFailure("requires 2 <= energy_eV < 1e6 and positive G4int event counts");
+    gMode = Mode::FiniteVolume;
+  }
   else if (mode == "mfp") gMode = Mode::Mfp;
   else if (mode == "track") {
     gMode = Mode::Track;
@@ -1499,10 +1669,13 @@ int main(int argc, char** argv)
     G4Scheduler::Instance()->SetEndTime(gMode == Mode::TwoBodyHH
                                             ? kTwoBodyTau[kTwoBodyPoints - 1] *
                                                   kTwoBodyTimeScalePs * ps
-                                            : 2. * ps);
+                                            : gMode == Mode::FiniteVolume ? gFv.end_time_ps * ps
+                                                                          : 2. * ps);
     if (gMode == Mode::PreChem) G4Scheduler::Instance()->SetUserAction(new PreChemSpeciesAction());
     else if (gMode == Mode::SpatialDiagnostic)
       G4Scheduler::Instance()->SetUserAction(new SpatialSpeciesAction());
+    else if (gMode == Mode::FiniteVolume)
+      G4Scheduler::Instance()->SetUserAction(new FiniteVolumeSpeciesAction());
     else if (gMode == Mode::TwoBodyHH) {
       G4Scheduler::Instance()->SetUserAction(new TwoBodyAction());
       for (G4double tau : kTwoBodyTau)
@@ -1544,6 +1717,9 @@ int main(int argc, char** argv)
   }
   else if (gMode == Mode::TwoBodyHH) {
     RunTwoBodyHH(out, seed, events);
+  }
+  else if (gMode == Mode::FiniteVolume) {
+    RunFiniteVolume(out, seed, ParseSpec(slowSpec));
   }
   else {
     RunEvents(out, "track", {200., 1e3, 1e4, 1e5, 9e5}, events, seed);

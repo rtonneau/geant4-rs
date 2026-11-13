@@ -62,6 +62,19 @@ the simulation manifest has no chemistry dev-dependency and separate
 package-scoped `--all-targets` checks/tests/Clippy exercise that build surface.
 Workspace feature unification is not evidence for the no-default profile.
 
+## Physicochemical boundary output (schema run/v6)
+
+The run JSON schema IDs are now `geant4-rs/dna-sim/run/v6` and
+`geant4-rs/dna-sim/run-unverified/v3`. Migration from v5/v2: chemistry runs in a volume add
+`physchem.boundary.species[]` (`species`, `shortened`, `not_inside_after_placement`,
+`outside_at_1ps`, `not_inside_at_1ps`; docs/04 D.6). Physics-only output and infinite-water
+output are unchanged apart from the schema string. New public items: `Volume::safety`,
+`g4_core::placement` (`ClampRule`, `Placement`, `clamp_displacement`),
+`PhysChemEngine::with_volume` / `volume`, `PhysChemStats.placement` (`PlacementCounts`),
+`HistoryOutcome.solvations_shortened` / `solvated_not_inside`,
+`PhysChemScorer::with_boundary_scoring` / `add_solvation_placement`, `BoundarySummary`,
+`SpeciesBoundary`.
+
 ## Volume, provenance and escape output (schema run/v5)
 
 The run JSON schema IDs are now `geant4-rs/dna-sim/run/v5` (verified physics and

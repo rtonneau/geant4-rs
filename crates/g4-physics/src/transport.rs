@@ -30,8 +30,9 @@
 //! (a tie is physics-limited), with no process draw. An escape kills the track, as Geant4 does at
 //! the world exit (`G4Transportation.cc:735-741`), and books its kinetic energy as `escaped`. A
 //! primary outside the volume is an error (`PrimaryOutsideVolume`, Geant4 `Tracking0010`). Without
-//! a volume, the code path and the random stream are those of the infinite medium. Not modelled:
-//! the Geant4 solvation clamp (`0.8 x safety`), so a solvated electron may lie outside the volume.
+//! a volume, the code path and the random stream are those of the infinite medium. With a volume,
+//! the solvated electron is placed with the Geant4 thermalisation clamp (`0.8 x safety`,
+//! [`g4_core::placement`]); the clamp draws no random number.
 //!
 //! # Termination
 //! * `Escaped`: the *primary* left the volume (escaping secondaries only add to the ledger).
@@ -56,6 +57,7 @@ use crate::sampling::uniform;
 use crate::table::ProcessTable;
 use g4_core::geometry::{Direction, Inside, Volume};
 use g4_core::physchem::PhysChemSite;
+use g4_core::placement::{ClampRule, clamp_displacement};
 use g4_core::units::Energy;
 use g4_core::vec3::Vec3;
 use rand::Rng;
@@ -327,6 +329,12 @@ pub struct HistoryOutcome {
     pub counts: ProcessCounts,
     /// Solvation events (one per electron that reached 7.4 eV).
     pub solvations: u64,
+    /// Solvated electrons whose displacement the Geant4 `0.8 x safety` clamp shortened (zero
+    /// without a volume).
+    pub solvations_shortened: u64,
+    /// Solvated electrons placed at a point that is not strictly Inside the volume (on the
+    /// tolerant surface, after a clamp from an origin on it). Zero without a volume.
+    pub solvated_not_inside: u64,
     /// Per excitation level / ionisation shell / vibrational level.
     pub excitation_levels: [u64; 5],
     pub ionisation_shells: [u64; 5],
@@ -468,6 +476,8 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
 
     let mut counts = ProcessCounts::default();
     let mut solvations = 0u64;
+    let mut solvations_shortened = 0u64;
+    let mut solvated_not_inside = 0u64;
     let mut excitation_levels = [0u64; 5];
     let mut ionisation_shells = [0u64; 5];
     let mut vibrational_levels = [0u64; SANCHE_LEVELS];
@@ -519,6 +529,22 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                 let s = solvation.sample(track.energy, rng)?;
                 dep_solvation.add(s.deposit.ev());
                 solvations += 1;
+                // Geant4 0.8 x safety clamp (docs/04 D.6); no clamp and no change in the
+                // infinite medium.
+                let solvated_position = match volume {
+                    Some(v) => {
+                        let p = clamp_displacement(
+                            v,
+                            track.position,
+                            s.displacement_nm,
+                            ClampRule::Thermalisation,
+                        );
+                        solvations_shortened += u64::from(p.shortened);
+                        solvated_not_inside += u64::from(p.inside != Inside::Inside);
+                        p.position
+                    }
+                    None => track.position + s.displacement_nm,
+                };
                 if s.zero_rmean_branch {
                     quirks.solvation_zero_rmean += 1;
                 }
@@ -534,7 +560,7 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
                     PhysChemEvent {
                         kind: PhysChemKind::Solvation,
                         level_or_shell: 0,
-                        position: track.position + s.displacement_nm,
+                        position: solvated_position,
                         deposited_energy: s.deposit,
                         parent_history: primary.history_id,
                     },
@@ -756,6 +782,8 @@ pub fn transport_electron<R: Rng + ?Sized, O: HistoryObserver + ?Sized>(
         steps,
         counts,
         solvations,
+        solvations_shortened,
+        solvated_not_inside,
         excitation_levels,
         ionisation_shells,
         vibrational_levels,
