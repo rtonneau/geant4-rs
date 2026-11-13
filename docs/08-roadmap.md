@@ -585,7 +585,7 @@ Profile, benchmark, optimise within scientific equivalence; scaling study thread
 Guides: adding particle / process / reaction; example configs; mapping table C++ -> Rust.
 
 ## M11 Extensions (separate plans)
-1-10 MeV electrons (Q1, deferred by decision), finite boxes/boundaries (UHDR), scavengers/oxygen, IRT-syn and parallel chemistry (E.4), additional particles.
+1-10 MeV electrons (Q1, deferred by decision), UHDR and multi-material geometry (single-volume boundaries: M12), scavengers/oxygen, IRT-syn and parallel chemistry (E.4), additional particles.
 
 ## RR-005 result: Geant4 11.4.3 (2026-11-05)
 
@@ -870,3 +870,16 @@ tau 0.01, 0.1, 1, 10, 100.
 | 51 | 3 | Cdf(3) | 713 | 649 | Pass |
 | 51 | 3 | Cdf(4) | 1004 | 960 | Pass |
 | 51 | 3 | NoReaction | 198847 | 198888 | Pass |
+
+## M12 Finite water volume (specified 2026-11-13)
+
+Scope: a single homogeneous water world given by `Volume` (ADR 0005). Transport kills at the world
+surface and records escaped energy. Solvation and dissociation displacements use the Geant4 0.8 x safety
+clamp. Chemistry boundary behaviour follows the answers to G-B1/G-B2 (docs/09). Source audit:
+docs/04 D.5 (Geant4 11.4.3). Acceptance: docs/07 "Finite-volume boundary acceptance criteria",
+consuming RR-009.
+Order: (1) `Volume` type with `inside`, ray `distance_to_out` and `safety`, plus analytic unit tests;
+(2) physical-stage boundary kill and the escaped-energy ledger (D1, D3, D4); (3) physicochemical clamps;
+(4) the RR-009 generator mode (written and compile-checked, logged, never run by agents); (5) chemistry
+boundary rule once G-B1/G-B2 are answered; (6) close gate. Supersedes the "finite boxes/boundaries"
+item in M11. UHDR and multi-material geometry stay in M11.
