@@ -134,6 +134,30 @@
         "ticket": "03-escape-summary",
         "commit": "0c30a79"
       }
+    },
+    {
+      "at": "2026-11-13T21:31:44.327Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/04-exit-event-csv.md",
+        "03-implement/04-exit-event-csv/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-exit-event-csv"
+      }
+    },
+    {
+      "at": "2026-11-13T21:33:51.486Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/04-exit-event-csv/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "04-exit-event-csv",
+        "commit": "da8878a"
+      }
     }
   ],
   "current_phase": "ship",
