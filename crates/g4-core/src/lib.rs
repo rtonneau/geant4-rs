@@ -12,6 +12,7 @@ pub mod geometry;
 pub mod manifest;
 pub mod penetration;
 pub mod physchem;
+pub mod placement;
 pub mod provenance;
 pub mod rng;
 pub mod sampling;

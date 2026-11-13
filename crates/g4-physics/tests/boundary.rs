@@ -315,3 +315,78 @@ fn exit_events_lie_on_the_surface_and_match_the_ledger() {
     }
     assert!(n_events > 0);
 }
+
+/// Solvated-electron positions, from the physicochemical events.
+#[derive(Default)]
+struct Solvated(Vec<(Vec3, Vec3)>, Vec<Vec3>);
+
+impl HistoryObserver for Solvated {
+    fn on_solvation(&mut self, e: &SolvationEvent) {
+        self.0.push((e.origin, e.displacement_nm));
+    }
+    fn on_physchem(&mut self, e: &g4_physics::physchem::PhysChemEvent) {
+        if e.kind == g4_physics::physchem::PhysChemKind::Solvation {
+            self.1.push(e.position);
+        }
+    }
+}
+
+/// Geant4 thermalisation clamp (docs/04 D.6, `G4DNAOneStepThermalizationModel.hpp:224-239`):
+/// with a small sphere many solvated electrons start near the surface. Pre-registered:
+/// no solvated electron is Outside (D2); a shortened one lies on its displacement ray at
+/// `0.8 x safety`; an unshortened one is `origin + d` bit for bit; the outcome counters equal
+/// the counts recomputed from the events. That the clamp draws no random number is covered by
+/// `a_huge_volume_equals_the_infinite_medium`.
+#[test]
+fn solvated_electrons_are_clamped_inside_the_volume() {
+    let Some(table) = table() else { return };
+    let sphere = Volume::sphere(
+        Vec3::ZERO,
+        0.0,
+        15.0,
+        0.0,
+        std::f64::consts::TAU,
+        0.0,
+        std::f64::consts::PI,
+    )
+    .unwrap();
+    let (mut shortened, mut total) = (0u64, 0u64);
+    for id in 0..200 {
+        let mut rng = RngStreams::new(11).stream(id, Stage::Physics).unwrap();
+        let mut obs = Solvated::default();
+        let p = primary(300.0, id, Vec3::ZERO, Vec3::new(0.0, 0.0, 1.0));
+        let out = transport_electron(
+            &table,
+            &TransportConfig::default(),
+            p,
+            Some(&sphere),
+            &mut rng,
+            &mut obs,
+        )
+        .unwrap();
+        assert_eq!(obs.0.len(), obs.1.len());
+        let (mut s, mut n) = (0u64, 0u64);
+        for (&(origin, d), &placed) in obs.0.iter().zip(&obs.1) {
+            assert_ne!(sphere.inside(placed), Inside::Outside, "history {id}");
+            if placed == origin + d {
+                assert!(sphere.safety(origin).unwrap() > d.norm());
+            } else {
+                s += 1;
+                let safety = sphere.safety(origin).unwrap();
+                assert!(safety <= d.norm());
+                let moved = placed - origin;
+                assert!((moved.norm() - 0.8 * safety).abs() <= 1e-12 * (1.0 + safety));
+                assert!(moved.dot(d) >= 0.0);
+                assert!((moved.cross(d)).norm() <= 1e-9 * (1.0 + d.norm()) * (1.0 + safety));
+            }
+            n += u64::from(sphere.inside(placed) != Inside::Inside);
+        }
+        assert_eq!(out.solvations_shortened, s, "history {id}");
+        assert_eq!(out.solvated_not_inside, n, "history {id}");
+        assert_eq!(out.solvations, obs.0.len() as u64);
+        shortened += s;
+        total += obs.0.len() as u64;
+    }
+    assert!(shortened > 0, "the test geometry must exercise the clamp");
+    assert!(shortened < total);
+}

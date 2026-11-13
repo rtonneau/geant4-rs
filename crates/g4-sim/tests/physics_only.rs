@@ -55,7 +55,7 @@ fn eight_ordered_physical_histories_preserve_ledgers_and_raw_handoff() {
         .join("\n")
         + "\n";
     assert_eq!(String::from_utf8(csv.into_inner()).unwrap(), expected);
-    assert_eq!(output.schema, "geant4-rs/dna-sim/run/v5");
+    assert_eq!(output.schema, "geant4-rs/dna-sim/run/v6");
     assert_eq!(output.summary.n_histories, 8);
     let plain = run(&table, &config).unwrap();
     assert_eq!(

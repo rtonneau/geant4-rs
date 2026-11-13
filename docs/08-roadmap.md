@@ -1,5 +1,11 @@
 # H. Implementation roadmap
 
+> **Approved production direction (2026-11-08):** [ADR 0004](../.work/adr/0004-irt-syn-production-contract.md) selects IRT-syn for the first production release, with interacting electron tracks, timed irradiation, synchronized restart and shared-memory spatial workers. The [reference contract](../validation/geant4/README.md#irt-syn-reference-contract-2026-11-08) retains Geant4 11.4.1 as normative and records the 11.4.3 source comparison. This prospectively promotes IRT-syn and parallel chemistry from M11; historical milestones and option3 evidence below are preserved, not reclassified as IRT-syn validation.
+
+Delivery order is reference contract, kernels, serial synchronization, timed injection, scoring, checkpoint/restart, transparent regions, spatial workers, CLI defaults, then integrated validation. Each stage must satisfy the [SYN gates](07-validation-strategy.md#irt-syn-prospective-gates-2026-11-08) relevant to it. G1-F's option3 pass is not a SYN gate; G2 and source anomalies remain separate unresolved evidence. One worker is the reference execution mode; parallel defaults are enabled only after serial and boundary/conflict gates pass. No speedup or physical-validity claim follows from a source comparison.
+
+Prospective applicability is electron primaries within the existing transport model window (7.4 eV to 1 MeV, with model-boundary policies retained), homogeneous unbounded liquid water, fixed source chemistry parameters, and chemistry through 1 microsecond. Protons, mesoscopic chemistry, physical walls, periodic boundaries, oxygen/scavenger environments and temperature scans remain deferred. All arrivals and observations must lie within the registered calculation interval; no model is extrapolated beyond its validated range. Production remains unavailable until the source-contract exclusions and all release gates are resolved; this documentation ticket establishes requirements, not validation results.
+
 > **Current result (2026-11-05): G1-F PASS.** RR-005 at 200k passed all 120 included Geant4 11.4.3 endpoints; 24 PDC contact endpoints remain excluded. Analytic, biased-sampler and contact regressions passed. Real chemical model integration into R05 is now permitted; R05/G2, physical validity and G(t) gates remain unpassed. Earlier OPEN statements below are historical.
 
 > **Approved update (2026-11-05):** [G1-F source-fidelity decision](validation/g1-f-source-fidelity.md) prospectively replaces the original combined G1 as the R05 real-model integration prerequisite. G1-F remains OPEN; the original G1 was not passed. Historical criteria and evidence below remain unchanged. R05 infrastructure and deterministic synthetic tests may proceed before G1-F; real chemical model integration may not.
@@ -579,7 +585,7 @@ Profile, benchmark, optimise within scientific equivalence; scaling study thread
 Guides: adding particle / process / reaction; example configs; mapping table C++ -> Rust.
 
 ## M11 Extensions (separate plans)
-1-10 MeV electrons (Q1, deferred by decision), finite boxes/boundaries (UHDR), scavengers/oxygen, IRT-syn and parallel chemistry (E.4), additional particles.
+1-10 MeV electrons (Q1, deferred by decision), UHDR and multi-material geometry (single-volume boundaries: M12), scavengers/oxygen, IRT-syn and parallel chemistry (E.4), additional particles.
 
 ## RR-005 result: Geant4 11.4.3 (2026-11-05)
 
@@ -864,3 +870,21 @@ tau 0.01, 0.1, 1, 10, 100.
 | 51 | 3 | Cdf(3) | 713 | 649 | Pass |
 | 51 | 3 | Cdf(4) | 1004 | 960 | Pass |
 | 51 | 3 | NoReaction | 198847 | 198888 | Pass |
+
+## M12 Finite water volume (specified 2026-11-13)
+
+Scope: a single homogeneous water world given by `Volume` (ADR 0005). Transport kills at the world
+surface and records escaped energy. Solvation and dissociation displacements use the Geant4 0.8 x safety
+clamp. Chemistry boundary behaviour follows the answers to G-B1/G-B2 (docs/09). Source audit:
+docs/04 D.7 (Geant4 11.4.3). Acceptance: docs/07 "Finite-volume boundary acceptance criteria",
+consuming RR-009.
+Order: (1) `Volume` type with `inside`, ray `distance_to_out` and `safety`, plus analytic unit tests;
+(2) physical-stage boundary kill and the escaped-energy ledger (D1, D3, D4); (3) physicochemical clamps;
+(4) the RR-009 generator mode (written and compile-checked, logged, never run by agents); (5) chemistry
+boundary rule once G-B1/G-B2 are answered; (6) close gate. Supersedes the "finite boxes/boundaries"
+item in M11. UHDR and multi-material geometry stay in M11.
+Progress (2026-11-13): steps (1)-(2) done (PR #32, #33). Step (3) done: `Volume::safety`, the
+thermalisation and dissociation clamps (`g4_core::placement`) and `physchem.boundary` (schema run/v6).
+Step (4) done: `g4rs_ref finite_volume` compile-checked, RR-009 logged, consumer
+`g4-sim/tests/rr009_finite_volume.rs` (ignored). Open: run RR-009; an isotropic Rust source for the box
+endpoints; IRT in the run layer for end-of-chemistry counts; step (5) after G-B1/G-B2.

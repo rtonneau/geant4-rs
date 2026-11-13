@@ -1,0 +1,35 @@
+geant4_version = "11.4.1"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+timestep_model = "IRT_syn"
+mode = "trace"
+schema = "syn_scheduler_v1"
+claim = "ordinary-library first-reaction trace"
+g4emlow_version = "8.8"
+seed = 20261109092
+trials_per_setting = 32
+completion_rows = 288
+csv_sha256 = "d433e77cfb077a8b5997be2233e8536f60cdaf3ca2f2ea8e7470b566c206a2dd"
+command = "g4rs_syn_scheduler_ref trace ../../reference/syn_scheduler_1141_r2.csv 20261109092 32"
+actual_command = "\"D:\\DEV\\RUST\\geant4-rs\\.scratch\\tests\\2026-11-08__irt-syn-parallel-checkpoint-direction/02-paired-build/g4rs_syn_scheduler_ref.exe\" trace \"D:\\DEV\\RUST\\geant4-rs\\.scratch\\tests\\2026-11-08__irt-syn-parallel-checkpoint-direction/02-rr008/production-r2.csv\" 20261109092 32"
+generator_commit = "f3c169f42cef3ba94349e120df27ebab3d71834c"
+generator_dirty = true
+generator_source_sha256 = "SynScheduler.cc=962c80ad29982629e6d7e41c85e6d54a99e74b6d7e390d743f77b47ff261f126; CMakeLists.txt=2a50920d018a8c14a8934c109eb18e63c1ea4f67ac029e5d4b31199ecce8c918"
+compiler = "MSVC 19.50.35729 x64"
+platform = "Windows NT 10.0.26100.0 x64"
+date = "2026-11-09"
+compile_definitions = "-DG4LIB_BUILD_DLL -DG4UI_USE_QT -DG4UI_USE_WIN32 -DG4VIS_USE_RAYTRACER_QT -DG4VIS_USE_TOOLSSG_QT_GLES -DG4VIS_USE_TOOLSSG_QT_ZB -DG4VIS_USE_TOOLSSG_WINDOWS_ZB -DH5_BUILT_AS_DYNAMIC_LIB -DPTL_BUILD_DLL -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DTOOLS_USE_HDF5; ordinary installed library, no source/draw interception"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+g4emlow_md5_note = "Archive checksum declared by installed Geant4Config.cmake; archive unavailable for local rehash."
+source_hashes = "source/processes/electromagnetic/dna/models/src/G4DNAMakeReaction.cc=8ae87604437c1f7d57f410961c01d51adf9215e5a35f6702247ad6592a1f0559; source/processes/electromagnetic/dna/models/src/G4DNAIndependentReactionTimeStepper.cc=abb9670a93d21ac656d489f63a29c000e8d44e9c6516cfc1e0b1e56e9ee5dbcc; source/processes/electromagnetic/dna/management/src/G4Scheduler.cc=4279b4129817870efd92818f3448bb0a1bd870fd90f13b48cf80a85fc4112c05; installed/bin/G4analysis.dll=1d1f2206ef4f4cbc96a13892a25afead66043b0fc757c3a69b36348be9516ebb; installed/bin/G4clhep.dll=44d39a3103d78c9f739c324c68016c4b822b5a6b7924b419267ce34226934fd4; installed/bin/G4digits_hits.dll=2549305fd7f0ad750addb9f81a35c8948876c5ffa2d9d0a050f2dc7016d6518c; installed/bin/G4error_propagation.dll=0d500279d207528a03e47adb54d6c9fbdd91d4c316481cfaafad204828b10048; installed/bin/G4event.dll=d460895188ca18359e222ec7044ab7a91f3c182a84e345bb2b4681111d6153b7; installed/bin/G4expat.dll=26bec646cf97c652d85e1080afb71ccc27563b2a69bc58b1563a80f543e00c86; installed/bin/G4FR.dll=2ca52cbb54b451055738e744b54ca6169c22f8a2079424d47828afa35ecaa7c0; installed/bin/G4geometry.dll=73672d3cf9f36c15a84be83222c49b02a1589ef4b12a154d1817bf932fdb87ef; installed/bin/G4geomtext.dll=3c6e2760adb133c2de772ef44e0540accc8d20ef28b281ffc92a40843e06bae1; installed/bin/G4global.dll=d5d25c9228be0e1f10f5e287c0796a2459d9000f77f1b1ae63fad8ce03d998a6; installed/bin/G4GMocren.dll=d54056d2dc9cd5be910cc9ad94a1aafc2d8133f86af2606117ac773fde6141b3; installed/bin/G4graphics_reps.dll=d84da12610a736af6f0733e9cfbc8f2c22d2a83671c86f51198e54ea893773db; installed/bin/G4intercoms.dll=b02f1ab106a5ccbd748538afd7d195f783bb450e5b116c22477b21045e9cf9d7; installed/bin/G4interfaces.dll=6c71ca3b3ab1ace67891770324a63c8af3b178d3c64a4e6263a694107d750a4b; installed/bin/G4materials.dll=153639dcef3e86c08b3281664486106486b12dd0e656010e4df52f8efa430522; installed/bin/G4mctruth.dll=95e9b2f75179038d37b7dfd9fd2378fe635a6f5b89dfc3c1083565b63451ecfa; installed/bin/G4modeling.dll=bd5014a55f4fc9340e342a850970ec561457b5c01b4624cc6c48e52060534d0b; installed/bin/G4OpenGL.dll=f84c012c89ae3c06593707ef0b1c79c9e448f396da04e13b78b08e486f551ff8; installed/bin/G4parmodels.dll=495f60e9f5909b479e8ca823ec6c476407959467391cf9cec90f2fd4c8a3bfde; installed/bin/G4particles.dll=bcbc7c3217f145384650f4632cc0b55228100e587371c20165dde28a46b2c397; installed/bin/G4physicslists.dll=e305ed352a9cd412781bb474dc5b6954fa2cda0c81d64106e74a75bcc9dfb9b1; installed/bin/G4processes_core.dll=94e38900eccff718c29d12829d75b3027effc75928dfc25ce391b7a8f7f44a48; installed/bin/G4processes_hadronic.dll=bec8cd4de0fd8af1332d3fb2b2a70c2b2a0948ddb4e8161241bfec68dd4be030; installed/bin/G4ptl.dll=32ad91dd7ac46869a49cd192baa6168ddc6b8c8b13f4e08ae89d7365942eda0c; installed/bin/G4RayTracer.dll=fad310c95dd44646cadd0883f2700db781d1c781e08e5f8cc10949322fce3d22; installed/bin/G4readout.dll=c44953747f08930eb23dc9759f1bd60fef5d8a0f62b6a226beec55ed8ea4b019; installed/bin/G4run.dll=532b62b47fba7c9bcbfcb2f8fcb39567091f8b9105e6e89c83829e0765a0119d; installed/bin/G4ToolsSG.dll=04880de61f09b31b78b1a74e112bd94c434576b4bbd197bd7dacbbf541ab62f5; installed/bin/G4track.dll=a7f72cd15dadb5f48847e32dd761213188eb8815227d170cfa68949e0f4a57a4; installed/bin/G4tracking.dll=76d190e97aac6e56c3e678ef2f822147a502ecb1acd799f459c967a0314c9fff; installed/bin/G4Tree.dll=cedff90247dba1819c49b2319126db773ebd0644ac7a39259e42c672d9f35ae2; installed/bin/G4vis_management.dll=a8ca7b8364b396ca686167ed64bdab6c1873c33c516bb2c6d061090994476074; installed/bin/G4VRML.dll=8d4494a04a4513ad2115b00de47da6c5cdca4999a092f30ab45b7d2f5358bc20; installed/bin/G4zlib.dll=c0fbfcb6abcd8a8667df221f0fe71a332c444fbf4380744331d8c3ef6d030859"
+source_hashes_note = "Three reviewed source files and all G4 DLLs supplied in selected normative install bin; not a claim every listed DLL was dynamically loaded."
+data_commit = "2264b14ffe024b2f44accb2c53b29ae40ee93d37"
+verdict = "INCONCLUSIVE: no positive-time event for channel 11 orientation +z (0/32)"
+reactions = 79
+censored = 209
+coverage = "{\"1/0\": 11, \"1/1\": 10, \"1/2\": 10, \"2/0\": 10, \"2/1\": 11, \"2/2\": 11, \"11/0\": 10, \"11/1\": 0, \"11/2\": 6}"
+runtime_seconds = 0.5882493999999999
+runtime_version_banner = "geant4-11-04-patch-01 [MT]"
+working_directory = "D:\\DEV\\RUST\\geant4-rs"
+g4emlow_directory = "D:/GEANT4/geant4-data/G4EMLOW8.8"
+geant4_source_revision = "v11.4.1 source tree, no git metadata"

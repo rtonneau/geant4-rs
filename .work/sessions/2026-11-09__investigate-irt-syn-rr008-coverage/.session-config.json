@@ -1,0 +1,110 @@
+{
+  "session_id": "2026-11-09__investigate-irt-syn-rr008-coverage",
+  "feature_name": "investigate-irt-syn-rr008-coverage",
+  "scratch_dir": ".scratch/tests/2026-11-09__investigate-irt-syn-rr008-coverage",
+  "created_at": "2026-11-09T09:11:59.334Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-11-09T09:11:59.334Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T09:14:46.547Z",
+      "event": "handoff_saved",
+      "phase": "grill",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T09:25:13.006Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T09:26:21.933Z",
+      "event": "handoff_saved",
+      "phase": "plan-not-started",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T11:16:18.230Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T11:18:32.500Z",
+      "event": "handoff_saved",
+      "phase": "plan",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T11:20:44.788Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "test/rr008-scheduler-followup",
+        "base": "feat/irt-syn-parallel-checkpoints"
+      }
+    },
+    {
+      "at": "2026-11-09T11:20:44.799Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-scheduler-diagnostic.md"
+      ],
+      "detail": {
+        "tickets": 1
+      }
+    },
+    {
+      "at": "2026-11-09T11:21:19.895Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-scheduler-diagnostic.md",
+        "03-implement/01-scheduler-diagnostic/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-scheduler-diagnostic"
+      }
+    },
+    {
+      "at": "2026-11-09T11:57:34.346Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-scheduler-diagnostic/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-scheduler-diagnostic",
+        "reason": "Independent re-review found unresolved evidence validation and reconstruction gaps after the permitted correction pass; request is not ready."
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "test/rr008-scheduler-followup",
+    "base_branch": "feat/irt-syn-parallel-checkpoints",
+    "branch_created_at": "2026-11-09T11:20:44.788Z",
+    "pr_url": null
+  },
+  "ship_mode": "inline"
+}

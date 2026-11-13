@@ -1,0 +1,29 @@
+geant4_version = "11.4.1"
+geant4_version_number = 1141
+timestep_model = "IRT_syn"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+mode = "syn_pair_matrix"
+schema = "syn_pair_v1"
+g4emlow_version = "8.8"
+seed = 20261108062
+samples_per_setting = 1000000
+completion_rows = 232
+csv_sha256 = "b868febac56d47c6ca86b3281e16418b8d8a958b9911b65e9f130379e631a6a4"
+generator_commit = "2df15d1d652d9dfb2ff582e389c2ea1a02825746"
+generator_dirty = true
+compiler = "MSVC 19.50.35729 x64"
+platform = "Windows NT 10.0.26100.0 x64"
+date = "2026-11-08"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+g4emlow_md5_note = "Archive checksum declared by installed Geant4Config.cmake; unpacked directory was selected and exists; archive not locally available for rehash."
+geant4_source_revision = "v11.4.1 release source; local source directory has no git metadata"
+source_sha256 = "source/processes/electromagnetic/dna/models/src/G4DNAIndependentReactionTimeModel.cc=250f2fb7d3fe458fecd7d48aa7b8ef6405a94a89f8c2cb1c5e8a89bd21f96d16; source/processes/electromagnetic/dna/models/src/G4DNAIndependentReactionTimeStepper.cc=abb9670a93d21ac656d489f63a29c000e8d44e9c6516cfc1e0b1e56e9ee5dbcc; source/processes/electromagnetic/dna/models/src/G4DiffusionControlledReactionModel.cc=a05e2d3ebd98a792f10f064a9eceb4a2af2fe3bbe40d76efc5bcb6984d759e3e; source/processes/electromagnetic/dna/models/src/G4DNAMakeReaction.cc=8ae87604437c1f7d57f410961c01d51adf9215e5a35f6702247ad6592a1f0559; source/processes/electromagnetic/dna/utils/src/G4DNAMolecularReactionTable.cc=6d0b42c0add6298f072469c14038c136d50170b9c35c413cfd32dcfe9d710e6b; source/processes/electromagnetic/dna/utils/src/G4IRTUtils.cc=bcb3fc7fea2f0c8386986f14b604a923598d341988549243ea683552d9acb340; source/processes/electromagnetic/dna/processes/src/G4DNABrownianTransportation.cc=4039fc87550686d4b14ca592bb8a38990024cd78434bf259ff0375ea49735123; source/processes/electromagnetic/dna/management/src/G4Scheduler.cc=4279b4129817870efd92818f3448bb0a1bd870fd90f13b48cf80a85fc4112c05; source/processes/electromagnetic/dna/management/src/G4ITModelProcessor.cc=a5ce7ca23be8966db0bdec3d68ced96162d0c7e97d4950f56c6d3f557d2c0701; source/physics_lists/constructors/electromagnetic/src/G4EmDNAChemistry_option3.cc=b71251a01606632a56647fcaf3d3023e8c95ab8ca38f2aed9a9838c55b912855; source/processes/electromagnetic/dna/processes/src/G4DNASecondOrderReaction.cc=57ba6639146498820b33d97c3918ce472bba58e81b85a636de337e7f32ea6b3b; source/processes/electromagnetic/dna/processes/src/G4DNAScavengerProcess.cc=533da4fc6d4fc8e0431e3ea5e660bbb138c77e26cac1e6bde46ebf8eb72d645d; examples/extended/medical/dna/chem6/src/PhysicsList.cc=392980c3c339b64889877081dbb0899d9a935141d583d0204662ab3b0358af7f; examples/extended/medical/dna/UHDR/src/EmDNAChemistry.cc=9d604ef382514125c46c6094d79b4df75755979a17acd4cf5ae6151e26a161a0"
+generator_source_sha256 = "validation/geant4/g4rs_ref/g4rs_ref.cc=178454b143eda6021efd0eb67c1e9c43d0d60ed065a376fc1fd629bb72bbb298; validation/geant4/g4rs_ref/SynKernels.hh=a4f69c25cb839aa3fbb50e4cfac95272f7acb0188cbe86d309c98ff5b6551e95; validation/geant4/g4rs_ref/CMakeLists.txt=14018ee10205148ce4c904dde8c34646203ad5669e82a0ccd7c2a135894e2ff2"
+command = "g4rs_ref syn_pair_matrix ../../reference/syn_pair_1141_r2_n1000000.csv 20261108062 1000000"
+actual_command = "\"D:\\DEV\\RUST\\geant4-rs\\.scratch\\tests\\2026-11-08__irt-syn-parallel-checkpoint-direction/02-build/g4rs_ref.exe\" syn_pair_matrix \"D:\\DEV\\RUST\\geant4-rs\\.scratch\\tests\\2026-11-08__irt-syn-parallel-checkpoint-direction/02-rr006/syn_pair_1141_r2_n1000000.csv\" 20261108062 1000000"
+working_directory = "D:\\DEV\\RUST\\geant4-rs"
+data_commit = "9607036827be6954fb5423f294275d36c383661c"
+runtime_seconds = 2.5372767
+runtime_version_banner = "geant4-11-04-patch-01 [MT]"
+g4emlow_directory = "D:/GEANT4/geant4-data/G4EMLOW8.8"

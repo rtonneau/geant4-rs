@@ -105,7 +105,7 @@ Physical: examples `range`, `mfp`, `slowing`, `spower`, `wvalue`, `dnaphysics`. 
 ## D.5 Geometry primitives (`g4_core::geometry`)
 Primitive solids (`Volume`: box, tube segment, sphere section) with Geant4's tolerant `Inside(p)` and `DistanceToOut(p, v)`, ported from Geant4 11.4.1 `source/geometry/solids/CSG/src/`. The rustdoc of `crates/g4-core/src/geometry/` holds the source line citations. Electron transport uses them as the boundary of the water (D.6). The tube segment and the sphere share the `G4Tubs` phi-plane exit. Its one deviation for the tube: a start on the z axis moving along it, with a direction rounded just short of unit length, is not stopped by the phi planes. `G4Tubs` returns 0 there unless phi = 0 lies in the segment (`G4Tubs.cc:1437-1450`).
 
-**Module overview.** Lengths are nm and angles rad (docs/units.md); Geant4's tolerances are kept in these units (`kCarTolerance` and `kRadTolerance` 1e-3 nm, `kAngTolerance` 1e-9 rad). A `Volume` is built by `Volume::box_`, `Volume::tubs` or `Volume::sphere`, or deserialised (TOML or JSON, tagged by `shape`) through the same checked constructors, so an invalid value is an error at load time. Each solid has a centre offset and no rotation: tube axis and sphere polar axis are +z. `inside(p)` returns Inside, Surface or Outside, with the Geant4 tolerance bands. `distance_to_out(p, v)` takes a unit `Direction` and returns the distance to the boundary, or `None` for a start that is Outside. Sources: `source/geometry/solids/CSG/src/G4Box.cc`, `G4Tubs.cc`, `G4Sphere.cc` (line citations in the rustdoc). `RunConfig.volume` (TOML `[volume]`; named `geometry` before schema run/v5, now rejected as an unknown key) holds an optional volume (omitted from serialised output when unset), also recorded as `provenance.volume`; `validate()` requires the volume to contain the primary start (the origin); transport is then boundary-limited (D.6). Limitations: no `DistanceToIn`, no safety distances, no navigation; no Geant4 generator run compares these solids yet.
+**Module overview.** Lengths are nm and angles rad (docs/units.md); Geant4's tolerances are kept in these units (`kCarTolerance` and `kRadTolerance` 1e-3 nm, `kAngTolerance` 1e-9 rad). A `Volume` is built by `Volume::box_`, `Volume::tubs` or `Volume::sphere`, or deserialised (TOML or JSON, tagged by `shape`) through the same checked constructors, so an invalid value is an error at load time. Each solid has a centre offset and no rotation: tube axis and sphere polar axis are +z. `inside(p)` returns Inside, Surface or Outside, with the Geant4 tolerance bands. `distance_to_out(p, v)` takes a unit `Direction` and returns the distance to the boundary, or `None` for a start that is Outside. Sources: `source/geometry/solids/CSG/src/G4Box.cc`, `G4Tubs.cc`, `G4Sphere.cc` (line citations in the rustdoc). `RunConfig.volume` (TOML `[volume]`; named `geometry` before schema run/v5, now rejected as an unknown key) holds an optional volume (omitted from serialised output when unset), also recorded as `provenance.volume`; `validate()` requires the volume to contain the primary start (the origin); transport is then boundary-limited (D.6). `safety(p)` is Geant4's isotropic `DistanceToOut(p)` (`G4Box.cc:433-456`, `G4Tubs.cc:1549-1601`, `G4Sphere.cc:2609-2694`), a lower bound of the exit distance in every direction (phi planes and theta cones taken as full planes and cones; 0 on the z axis of a phi cut and at the apex of a theta cut); `None` for an Outside point, where Geant4 returns 0. Limitations: no `DistanceToIn`, no navigation; no Geant4 generator run compares these solids yet.
 
 ### D.5.1 Sphere section (`G4Sphere`)
 `Inside` follows `G4Sphere.cc:255-359` and `DistanceToOut(p, v)` follows `G4Sphere.cc:1714-2603`. The radial tolerance is `max(kRadTolerance, 2e-11 r)`, 0.02 nm for a 1 m sphere (`G4Sphere.cc:104-105`). These Geant4 properties are kept. `Inside` uses angular shells for phi and theta, and `DistanceToOut` uses Cartesian ones. A phi plane's angular shell is `rho * 5e-10` nm a side, at distance `rho` from the z axis. A theta cone's is `r * 5e-10` nm, at distance `r` from the centre. Within about 10 nm of the z axis or the centre, a computed exit point may therefore classify as Outside. A start that is Inside by angle can still get 0. For a phi plane this happens within `kCarTolerance/2`. For a theta cone it happens within `h |cos theta|`, because Geant4's on-cone test uses the horizontal distance; deviation 7 extends this to `h = halfRmaxTolerance` for starts moving out. The z axis of a phi segment is Inside. A ray that touches rmin or passes through the apex stops there. Beyond 1e6 nm from the axis or the centre, a Surface start can lie more than the Cartesian tolerance outside its plane or cone and is then not recognised as leaving through it. For phi planes this comes from the `G4Tubs` block (deviation 1); for theta cones it is `G4Sphere`'s own behaviour, kept whenever the near root lies more than `h` behind the start along the ray (a Surface start beyond `h`, or within `h` but moving out so obliquely that `delta / cos(alpha) > h`; possible only for r > 1e6 |cos theta| nm).
@@ -122,7 +122,7 @@ Intentional deviations: each fixes an edge case where `G4Sphere` returns a dista
 The constructor rejects non-finite values, `start_theta = pi` (an empty solid in Geant4) and `delta_theta > pi` (silently reduced in Geant4). Validation: analytic and fixed regression tests, plus proptest invariants run to 10^7 cases. The exit point lies on the surface, points sampled along the step are never more than kCarTolerance/2 outside, boundary starts and starts within `h` of a cone moving out stop at once, and chords are symmetric in a full sphere. No Geant4 generator run compares the sphere yet.
 
 ## D.6 Boundary-limited electron transport
-The full Geant4 boundary audit (GEO-0, PR #30) sits on branch `test/rr008-scheduler-followup` and is not yet on main. This section records the rules transport implements, read from Geant4 11.4.1.
+The full Geant4 boundary audit (GEO-0, PR #30) is D.7. This section records the rules transport implements, read from Geant4 11.4.1.
 - *World exit kills.* When a step is limited by the boundary and the new point lies outside the world, `G4Transportation::PostStepDoIt` proposes `fStopAndKill` (`processes/transportation/src/G4Transportation.cc:735-741`). The remaining kinetic energy is not deposited: Rust books it as `E_escaped` in the ledger.
 - *Primary outside the world is fatal.* `G4SteppingManager::SetInitialStep` raises `Tracking0010` (FatalException) for a primary outside the world (`tracking/src/G4SteppingManager.cc:346-356`). Rust returns `PhysicsError::PrimaryOutsideVolume`. A primary on the tolerant Surface moving outward has `distance_to_out = 0` and escapes before any random draw.
 - *Step length.* Per step Rust computes `d_out` first. If it is 0, the track escapes with no draw. Otherwise it draws `s = -ln(u)/Sigma` as in D.1, and the track escapes at the surface if `d_out < s` (a tie stays physics-limited). The process draw happens only for an interaction. In a water-only world the boundary always kills, so Geant4's carry-over of the remaining interaction lengths (`G4VEmProcess.cc`, GEO-0) never applies. Without a volume, the code path and the random stream are those of the infinite medium.
@@ -130,4 +130,55 @@ The full Geant4 boundary audit (GEO-0, PR #30) sits on branch `test/rr008-schedu
 - *Run layer.* `RunConfig.volume` passes the volume to transport. The summary reports `terminations.escaped` and `energy.escaped_ev`; both are omitted when no history escapes, so unbounded output is unchanged.
 - *Exit events.* Each escape calls `HistoryObserver::on_escape` with an `ExitEvent`: generation, track id, exit point (pre-step position + `d_out` times the direction, on the tolerant Surface), unit direction and kinetic energy. The hook draws no random number. The energies of a history sum to `E_escaped`.
 - *Escape scoring* (`summary.escape`, present only with a volume, zeros included). `primary_escape_fraction`: histories whose primary escaped / N, binomial SE `sqrt(p(1-p)/N)`. `escaped_tracks_per_history`: all escaped tracks, mean ± SE. `escaped_energy_fraction`: mean of the per-history `E_escaped / E_in`. `spectra`: kinetic energy at exit for `primary`, `secondaries` and `all`, on the secondary-spectrum edges (0.1 eV to 1 MeV, log). Exit positions are not binned. `EscapeSink` / `CsvEscapeWriter` write one row per exit event (`history_id,generation,track_id,x_nm,y_nm,z_nm,ux,uy,uz,energy_eV`) in history order, so the file does not depend on the thread count. Chemistry runs score `summary.escape` but have no exit sink. No Geant4 generator compares these observables yet.
-- *Limitations.* The Geant4 solvation and dissociation clamp (`0.8 x safety`) is not implemented, because it needs a safety distance; a solvated electron or a dissociation product can therefore lie outside the volume. The chemistry stage ignores the boundary (GEO-0 G-B1/G-B2 open). No Geant4 comparison run (GEO-0 RR-009) exists yet.
+- *Physicochemical placement* (`g4_core::placement`, D.7). With a volume, the solvated electron is placed by the thermalisation rule of `G4DNAOneStepThermalizationModel.hpp:224-239`: if `safety <= |d|`, at `origin + unit(d) x 0.8 safety`, else at `origin + d` (bit for bit). Each dissociation product (also after recombination) follows `G4DNAMolecularDissociation.cc:203-222`: length `min(0.8 safety, |d|)` along `d/(|d| + 1e-30)`, so a displacement is also shortened when `0.8 safety < |d| <= safety`. `safety` is `Volume::safety` at the origin (0 if the origin is Outside). The species is clamped, never killed; neither rule draws a random number. `HistoryOutcome.solvations_shortened` / `solvated_not_inside` and `PhysChemStats.placement` (per species, `shortened` and `not_inside` = Geant4's `Inside != kInside` test for `OUTSIDE_OF_MOTHER_VOLUME`) count the placements. In a world-only water geometry Geant4 never issues that warning (the world has no mother logical volume). The run layer bounds the engine with `RunConfig.volume`.
+- *Boundary scoring* (`physchem.boundary`, schema run/v6, chemistry runs with a volume only, zeros included). Per species, summed over histories: `shortened` and `not_inside_after_placement` (e_aq from the physical stage plus dissociation products), and for the alive species at 1 ps `outside_at_1ps` and `not_inside_at_1ps`. Diagnostics for docs/07 S3 and G-B1; the 1 ps snapshot is the only one in the run layer, because the run layer does not run the IRT chemical stage.
+- *Limitations.* The chemistry stage (IRT) ignores the boundary: species outside the volume are kept, pending G-B1/G-B2 (docs/09) and RR-009. No Geant4 comparison run (GEO-0 RR-009) exists yet.
+
+## D.7 Geometry boundaries: Geant4 11.4.3 source audit (2026-11-13)
+
+Audited source: the Geant4 **11.4.3** release (`source/processes/...`, abbreviated below; `dna/` =
+`electromagnetic/dna/`). These are findings read from executable code. The questions the source
+does not settle are in docs/09 (G-B1, G-B2). The finite-volume design is in `docs/adr/` (finite `Volume`
+enum) and its acceptance criteria are in docs/07.
+
+**Physical stage.**
+- *World exit kills.* After each step `G4Transportation` relocates the point. If the touchable has no volume
+  (outside the world) it proposes `fStopAndKill` (`transportation/src/G4Transportation.cc:700-716`). The
+  particle's remaining kinetic energy is **not** deposited and is not part of any in-volume ledger. A finite
+  water world therefore needs an explicit **escaped energy** term in energy accounting.
+- *Remaining interaction length is carried over, not reset.* DNA discrete processes (`G4DNAIonisation`,
+  `G4DNAExcitation`, `G4DNAElastic`, `G4DNAElectronSolvation`, all `: public G4VEmProcess`) sample
+  `n = -ln u` only when `theNumberOfInteractionLengthLeft < 0` (start of track or after this process's own
+  DoIt). After a geometry-limited step they decrement `n -= previousStepSize/currentInteractionLength`
+  (clamped at 0) and convert the remainder with the **new** volume's `1/lambda`
+  (`electromagnetic/utils/src/G4VEmProcess.cc:363-429`, decrement at `:420`, rescale at `:427`). This
+  corrects the assumption that `n` is reset in the next volume. For a water-only world the distinction
+  has no observable effect, since the only boundary is the world surface, where the track is killed.
+  It matters as soon as two materials or a sub-volume exist. Because the exponential is memoryless,
+  carrying `n` is distributionally equivalent to resampling, but the RNG stream differs.
+
+**Physicochemical stage (displacements near a boundary).**
+- *Solvation clamp.* `G4DNAOneStepThermalizationModel` locates the incoming track, calls `ComputeStep` along
+  the displacement direction and, when `safety <= |d|`, places the e_aq at `x + unit(d) * 0.8 * safety`
+  (`dna/models/include/G4DNAOneStepThermalizationModel.hpp:225-239`). The species is **clamped, never
+  killed**. Because safety is isotropic, the clamp can fire even when `x + d` lies inside the volume.
+  Already recorded for 11.4.1 in docs/02 B.7.6 item 4 (the code is identical).
+- *Dissociation clamp.* `G4DNAMolecularDissociation::DecayIt` calls `CheckNextStep` per product along
+  `d = d_mother + d_product` and shortens it to `min(0.8 * safety, |d|)` (`dna/processes/src/
+  G4DNAMolecularDissociation.cc:201-220`). If the product still lies outside the solid, it issues only a
+  `JustWarning` `OUTSIDE_OF_MOTHER_VOLUME` when the mother logical volume is not G4_WATER, and builds the
+  product track anyway (`:232-260`). The source comment states that a product outside the world "will be
+  killed in the next step".
+
+**Chemical stage.**
+- *Step-by-step Brownian transport.* In a material with zero water density, `G4DNABrownianTransportation`
+  either delegates to a user Brownian action or proposes `fStopAndKill` with zero energy
+  (`dna/processes/src/G4DNABrownianTransportation.cc:495-521`). `G4ITTransportation` kills a molecule
+  outside the world (`dna/management/src/G4ITTransportation.cc:914-929`).
+- *IRT.* `G4DNAIRT.cc`, `G4DNAIndependentReactionTimeStepper.cc`, `G4DNAIndependentReactionTimeModel.cc` and
+  `G4DNAMakeReaction.cc` contain **no** navigator, touchable or `Inside` call (grep count 0). Whether an IRT
+  run ever removes or confines out-of-volume species, and where reaction products are placed relative to a
+  boundary, is therefore not visible in these files. It is open question G-B1.
+
+**Rust status.** Electron transport is boundary-limited when a volume is set (D.6). The physicochemical
+clamps and any chemistry boundary rule are not implemented yet (finite-volume milestone, docs/08).

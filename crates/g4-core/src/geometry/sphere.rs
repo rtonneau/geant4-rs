@@ -303,6 +303,46 @@ impl SphereSolid {
         }
         class
     }
+    /// `G4Sphere::DistanceToOut(p)` (`G4Sphere.cc:2609-2694`): the smallest of the distances
+    /// to the radial shells, the nearer phi plane (0 on the z axis, `2655-2662`) and the theta
+    /// cones (`rds * sin(min(dTheta1, dTheta2))`, 0 at the centre, `2671-2690`), clamped at 0.
+    pub(super) fn safety_local(&self, p: Vec3) -> f64 {
+        let rho2 = p.x * p.x + p.y * p.y;
+        let rds = (rho2 + p.z * p.z).sqrt();
+        let rho = rho2.sqrt();
+        let mut safe = self.rmax - rds;
+        if self.rmin != 0.0 {
+            safe = safe.min(rds - self.rmin);
+        }
+        if !self.phi.is_full() {
+            let safe_phi = if rho > 0.0 {
+                self.phi.safety(p.x, p.y)
+            } else {
+                0.0
+            };
+            safe = safe.min(safe_phi);
+        }
+        if !self.theta.full {
+            let safe_theta = if rds > 0.0 {
+                let p_theta = (p.z / rds).acos();
+                let d1 = if self.theta.start > 0.0 {
+                    p_theta - self.theta.start
+                } else {
+                    f64::INFINITY
+                };
+                let d2 = if self.theta.end < PI {
+                    self.theta.end - p_theta
+                } else {
+                    f64::INFINITY
+                };
+                rds * d1.min(d2).sin()
+            } else {
+                0.0
+            };
+            safe = safe.min(safe_theta);
+        }
+        if safe < 0.0 { 0.0 } else { safe }
+    }
 
     /// `G4Sphere::DistanceToOut(p, v)` without normal (`G4Sphere.cc:1714-2603`) for a point
     /// `p` relative to the centre, which is not outside, with the deviations listed in the
@@ -2227,6 +2267,48 @@ mod tests {
             let text = toml::to_string(&volume).unwrap();
             let back: Volume = toml::from_str(&text).unwrap();
             prop_assert_eq!(back, volume);
+        }
+    }
+
+    // --- safety (`G4Sphere::DistanceToOut(p)`) ---
+
+    #[test]
+    fn safety_takes_the_nearest_shell_plane_or_cone() {
+        let full = Volume::sphere(Vec3::ZERO, 0.0, 10.0, 0.0, TAU, 0.0, PI).unwrap();
+        assert_relative_eq!(full.safety(v3(0.0, 0.0, 3.0)).unwrap(), 7.0);
+        assert_relative_eq!(full.safety(Vec3::ZERO).unwrap(), 10.0);
+        let shell = Volume::sphere(Vec3::ZERO, 4.0, 10.0, 0.0, TAU, 0.0, PI).unwrap();
+        assert_relative_eq!(shell.safety(v3(5.0, 0.0, 0.0)).unwrap(), 1.0);
+        // Cone of half-angle pi/4: the distance to the cone line is |x - z| / sqrt 2.
+        let cap = Volume::sphere(Vec3::ZERO, 0.0, 10.0, 0.0, TAU, 0.0, FRAC_PI_4).unwrap();
+        assert_relative_eq!(
+            cap.safety(v3(1.0, 0.0, 5.0)).unwrap(),
+            2.0 * 2f64.sqrt(),
+            epsilon = 1e-12
+        );
+        // At the apex of a theta-cut sphere and on the axis of a phi cut, Geant4 gives 0.
+        assert_eq!(cap.safety(Vec3::ZERO), Some(0.0));
+        let wedge = Volume::sphere(Vec3::ZERO, 0.0, 10.0, 0.0, FRAC_PI_2, 0.0, PI).unwrap();
+        assert_eq!(wedge.safety(v3(0.0, 0.0, 2.0)), Some(0.0));
+        assert_relative_eq!(wedge.safety(v3(3.0, 1.0, 0.0)).unwrap(), 1.0);
+        assert_eq!(full.safety(v3(11.0, 0.0, 0.0)), None);
+    }
+
+    proptest! {
+        #[test]
+        fn safety_never_exceeds_the_exit_distance(
+            volume in sphere_strategy(),
+            fr in 0.05..0.95f64,
+            ft in 0.02..0.98f64,
+            fphi in 0.02..0.98f64,
+            v in unit_direction(),
+        ) {
+            let p = point(&volume, fr, ft, fphi);
+            prop_assume!(volume.inside(p) == Inside::Inside);
+            let safety = volume.safety(p).unwrap();
+            let d = volume.distance_to_out(p, v).unwrap();
+            prop_assert!(safety >= 0.0);
+            prop_assert!(safety <= d + CAR_TOLERANCE, "safety {} > exit {}", safety, d);
         }
     }
 }

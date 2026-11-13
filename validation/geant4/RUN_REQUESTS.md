@@ -197,3 +197,152 @@ New CSV `pair_matrix_irt_g1f_n200000.csv` (data commit `51c22b6`) and
 Producer exit 0, eight channel completion lines, 120 rows. Consumer with
 `G1F_GEANT4_PAIRS=200000` exited 0: all 120 included endpoints PASS;
 24 PDC exact-contact endpoints excluded. No thresholds or seeds changed.
+
+### RR-006: normative IRT-syn isolated pair diagnostics (2026-11-08)
+
+Status: closed, source diagnostics PASS. Both complete 100000 and 200000 looks were precision-INCONCLUSIVE;
+both complete 1000000 replicates passed 448 stochastic comparisons and 16
+deterministic branch identities. The dedicated runner's logs are in
+`.scratch/tests/2026-11-08__irt-syn-parallel-checkpoint-direction/02-rr006/`.
+Six CSVs are committed in 9607036827be6954fb5423f294275d36c383661c; matching provenance in f3c169f. This is source-diagnostic acceptance only.
+
+Original registration: execution is explicitly
+authorized through the dedicated reference-run subagent in this GPS session.
+Build `g4rs_ref` against discovered Geant4 11.4.1, G4EMLOW 8.8. Working
+directory `validation/geant4/g4rs_ref`; executable on PATH. New commands:
+
+```text
+g4rs_ref syn_pair_matrix ../../reference/syn_pair_1141_r1_n100000.csv 20261108061 100000
+g4rs_ref syn_pair_matrix ../../reference/syn_pair_1141_r2_n100000.csv 20261108062 100000
+```
+
+Run to new scratch paths first; require exit 0, eight channel completion
+messages, 232 ordered rows and final complete marker. Preserve existing
+reference files. A smoke run with seed 1 and 100 samples is scratch-only.
+No output is a complete SYN-1 acceptance result: initial rejection/post-start
+overlap are explicitly unresolved branch diagnostics, not full stepper clocks.
+README RR-006 freezes schema, coefficients, all endpoints, seeds, family,
+precision and provenance. Record actual library/data/compiler/source hashes
+and generator revision/dirty status truthfully (uncommitted source requires
+its complete named hashes). New provenance paths:
+`provenance_syn_pair_1141_r1_n100000.toml` and
+`provenance_syn_pair_1141_r2_n100000.toml`.
+
+Exact consumer:
+`cargo test --release -p g4-chemistry --test geant4_syn_pair syn_pair_source_diagnostics_match_geant4 -- --ignored --exact --nocapture`.
+Only a precision-INCONCLUSIVE result permits 200000 then 1000000, with the
+same seeds and new matching filenames; set `SYN_PAIR_SAMPLES` accordingly.
+FAIL requires investigation. No placement, unary, or integrated scheduler
+gate is represented by this request.
+
+### RR-007: common-input IRT-syn placement mapping (2026-11-09)
+
+Status: closed, finite-grid mapping PASS. Dedicated production exited 0 with 1200 rows, 144 expected errors and 8064 coordinates; strict Rust consumer exited 0. CSV committed in 9607036827be6954fb5423f294275d36c383661c and provenance in f3c169f. User prospectively
+approved paired common random inputs while keeping the current cap. This is
+finite-grid mapping evidence only; no independent moment/RNG/physical PASS.
+
+Build opt-in target `g4rs_syn_ref` against 11.4.1 using
+`G4RS_SYN_SOURCE_ROOT` for the verified read-only source root. CMake rejects
+a source-body hash mismatch. The linked reference repository is never changed.
+Exact registered command, from `validation/geant4/g4rs_ref`:
+
+```text
+g4rs_syn_ref paired ../../reference/syn_paired_1141.csv 20261109071 16
+```
+
+First smoke: new scratch output, seed1, one tape; require exit0 and75 rows.
+Production: new scratch output, registered seed/tapes; require exit0,1200
+ordered rows,8064 numeric parent/product coordinates,144 explicitly expected
+coincidence errors, and final complete marker. Every other error aborts.
+Producer and consumer enforce the <1MB fixture cap; original per-invocation
+2-hour/8-GiB and24-hour gate limits remain. No larger precision run is needed
+for this deterministic finite grid and no statistical inference is attached.
+README freezes all inputs, semantic draw labels, schema, numerical tolerance
+and exact provenance requirements. Only raw labelled primitives are common;
+Rust reconstructs physical inputs independently from its embedded table.
+
+New evidence: `syn_paired_1141.csv` and `provenance_syn_paired_1141.toml`.
+Consumer: `cargo test --release -p g4-chemistry --test geant4_syn_paired syn_paired_mapping_matches_geant4 -- --ignored --exact --nocapture`.
+Do not alter RR-006 files, modes or provenance. Ordinary scheduler trace and
+independent analytic marginal/free-diffusion acceptance remain separate work.
+
+RR-007 recovery smoke (2026-11-09): native exit0, seed1/tapes1, 75 ordered rows, 9 expected coincidence errors, 504 finite coordinates, exact completion footer. Original failed smoke and native double-delete stack remain in session scratch. Subsequent independent review found no actionable readiness defect and production passed as recorded above. Use a retained native process handle and require a non-null exit code.
+
+### RR-008: ordinary IRT-syn library scheduler trace (2026-11-09)
+
+Status: registered, awaiting dedicated authorized runner. New target
+`g4rs_syn_scheduler_ref` links ordinary installed Geant4; configure/build with
+the same discovered normative11.4.1 environment. Exact manifest/schema,
+provenance fields and acceptance are in README RR-008.
+
+```text
+g4rs_syn_scheduler_ref trace ../../reference/syn_scheduler_1141_r1.csv 20261109091 32
+g4rs_syn_scheduler_ref trace ../../reference/syn_scheduler_1141_r2.csv 20261109092 32
+```
+Run new scratch outputs first. Smoke seed1/trials1 requires native exit0,
+9complete rows and footer (no minimum stochastic coverage). Production requires
+native exit0 and288ordered rows per replica; censored histories remain rows.
+Retain native process handle before waiting; reject null ExitCode.
+Two-hour/eight-GiB invocation and24-hour gate budgets retained; each CSV<1MB.
+Strict consumer checks unchanged3a parent sites on actual positive-time events,
+product support/count and post-step parent removal; at least one event per
+channel/orientation per replica gives coverage, otherwise INCONCLUSIVE.
+This addresses ordinary-path applicability only, not global scheduler or
+reaction-time distribution acceptance. Source-marginal233 positive-duration
+INCONCLUSIVE endpoints remain open regardless of the trace result.
+New provenance names: `provenance_syn_scheduler_1141_r1.toml` and
+`provenance_syn_scheduler_1141_r2.toml`. Consumer:
+`cargo test --release -p g4-chemistry --test geant4_syn_scheduler syn_ordinary_scheduler_preserves_parent_sites -- --ignored --exact --nocapture`.
+
+RR-008 recovery 3 (2026-11-09): native stacks identified two adapter initialization omissions. G4EmDNAPhysics construction resets the requested timestep model to Unknown; selecting IRT_syn after physics construction restores registration. With no transport BeamOn, Brownian transportation had no water-density table; the supported chemistry UseAsStandalone(true) initialization builds molecular process tables and closes geometry. Guards verify the enum before process construction/after initialization and the actual installed IRT model, stepper and reaction process in StartProcessing. Corrected scratch seed1/trials1 exited native 0 with nine ordered rows, three reactions and six censored histories; schema, footer, parent sites, product support/count and removal checks passed. This is recovery smoke only: independent review, fresh dedicated smoke and registered production/consumer remain pending. No reference-source, random stream, manifest, tolerance or statistical result changed; 233 positive-duration marginal endpoints remain INCONCLUSIVE.
+
+
+### RR-008 recovery and registered result (2026-11-09)
+
+The user-authorized recovery corrected trace-harness initialization order and
+standalone molecular physics-table initialization. Independent review found no
+actionable defect. A subsequent fresh smoke passed before production.
+Both registered production runs exited 0 with 288 ordered rows and complete
+footers. Replicate 1 has 80 reactions/208 censored trials; replicate 2 has
+79 reactions/209 censored trials. All observed parent-site/product/removal
+checks passed, but channel 11, +z had zero positive-time events in both runs.
+Verdict: **INCONCLUSIVE**, not PASS. The exact registered Rust consumer exited
+101 at the coverage gap in replicate 1, before examining replicate 2; a
+separate full-output validator checked both files. No additional samples or
+seed changes were made. The 233 analytic moment endpoints remain INCONCLUSIVE.
+
+Complete data commit: `2264b14ffe024b2f44accb2c53b29ae40ee93d37`.
+Provenance commit: `9b4aaf4`. Final comparison log is
+`.scratch/tests/2026-11-08__irt-syn-parallel-checkpoint-direction/02-rr008/production-consumer-complete.log`.
+RR-006/RR-007 were not rerun or replaced. Ticket 02 remains incomplete pending
+the registered coverage gate; no later production acceptance follows from
+these observed reactions alone.
+### RR-009: finite-volume boundary reference (requested 2026-11-13)
+
+Status: **awaiting run** (generator written 2026-11-13, session
+`2026-11-13__physicochemical-handoff`; compile-checked and linked with MSVC against the 11.4.1 and
+11.4.3 installs; never run by an agent). Program: `g4rs_ref finite_volume`, source
+`validation/geant4/g4rs_ref/g4rs_ref.cc`. The working name and shape above (`finite_volume_boundary
+<out.csv> <seed> <histories>`) are replaced, before any run, by one invocation per geometry, because the
+world solid is fixed at initialisation: `finite_volume <out_prefix> <seed> <sphere|box> <r | hx,hy,hz>
+<E_eV:events,...> [end_time_ps]` (dims in nm, end time default 1e6 ps). Purpose and acceptance: docs/07
+"Finite-volume boundary acceptance criteria"; G-B1/G-B2: docs/09. Geant4 version: 11.4.3 as
+registered (state the install used in the provenance).
+
+Commands (working directory `validation/geant4/g4rs_ref`, executable on PATH), seeds 2026111301..04,
+10,000 histories per energy (1, 10, 100 keV), 12 settings:
+```text
+g4rs_ref finite_volume ../../reference/rr009_sphere_100nm 2026111301 sphere 100 1000:10000,10000:10000,100000:10000
+g4rs_ref finite_volume ../../reference/rr009_sphere_1000nm 2026111302 sphere 1000 1000:10000,10000:10000,100000:10000
+g4rs_ref finite_volume ../../reference/rr009_sphere_10000nm 2026111303 sphere 10000 1000:10000,10000:10000,100000:10000
+g4rs_ref finite_volume ../../reference/rr009_box_1000x1000x100nm 2026111304 box 1000,1000,100 1000:10000,10000:10000,100000:10000
+```
+
+Outputs (new, exclusive creation): `validation/reference/rr009_<label>_histories.csv` and
+`rr009_<label>_species.csv` for the four labels; provenance `validation/reference/provenance_rr009.toml`
+(README fields, all four commands). Schemas: README "RR-009 finite-volume boundary". Consumer:
+`crates/g4-sim/tests/rr009_finite_volume.rs::rr009_escape_observables_match_geant4`;
+`cargo test --release -p g4-sim --test rr009_finite_volume -- --ignored --exact rr009_escape_observables_match_geant4 --nocapture`.
+The species file answers G-B1/G-B2 (outside counts at 1 ps and at the end of chemistry); no Rust
+consumer reads it yet. Known open item: the Rust source is not isotropic, so the box endpoints stay
+`NOT RUN` in the consumer.

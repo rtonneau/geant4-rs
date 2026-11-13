@@ -1,0 +1,227 @@
+{
+  "session_id": "2026-11-08__irt-syn-parallel-checkpoint-direction",
+  "feature_name": "irt-syn-parallel-checkpoint-direction",
+  "scratch_dir": ".scratch/tests/2026-11-08__irt-syn-parallel-checkpoint-direction",
+  "created_at": "2026-11-08T21:20:03.518Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-11-08T21:20:03.518Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-11-08T21:27:30.422Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-11-08T21:27:30.514Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-11-08T21:30:32.832Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/irt-syn-parallel-checkpoints",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-11-08T21:30:32.867Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-reference-contract.md",
+        "02-plan/tickets/02-syn-kernels.md",
+        "02-plan/tickets/03-serial-syn.md",
+        "02-plan/tickets/04-timed-injection.md",
+        "02-plan/tickets/05-scoring.md",
+        "02-plan/tickets/06-checkpoint.md",
+        "02-plan/tickets/07-spatial-ownership.md",
+        "02-plan/tickets/08-parallel-syn.md",
+        "02-plan/tickets/09-cli.md",
+        "02-plan/tickets/10-release-validation.md"
+      ],
+      "detail": {
+        "tickets": 10
+      }
+    },
+    {
+      "at": "2026-11-08T21:32:03.126Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-08T21:32:03.343Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/01-reference-contract.md",
+        "03-implement/01-reference-contract/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-reference-contract"
+      }
+    },
+    {
+      "at": "2026-11-08T21:48:21.425Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/01-reference-contract/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "01-reference-contract",
+        "commit": "7496eae"
+      }
+    },
+    {
+      "at": "2026-11-08T21:48:22.014Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-syn-kernels.md",
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels"
+      }
+    },
+    {
+      "at": "2026-11-08T22:22:21.040Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "SYN-2 prospective variance precision exceeds approved 1% band at 1m cap (expected 1.238% half-width); user budget/estimator amendment pending. RR-006 passed; partial implementation verified and preserved."
+      }
+    },
+    {
+      "at": "2026-11-08T22:22:21.307Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T07:07:51.941Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-09T07:35:53.182Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "RR-007 smoke crashed 0xC0000374 before output. Recovery diagnostic script denied by PowerShell PSSecurityException UnauthorizedAccess (scripts disabled). No bypass; source restored and rebuild passed. Cause unconfirmed; recovery count 1."
+      }
+    },
+    {
+      "at": "2026-11-09T07:35:53.472Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T07:48:54.661Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-09T08:38:34.607Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "RR-008 ordinary scheduler smoke access violation 0xC0000005 before rows despite successful normative build. RR-007 adapter recovered and mapping passed; authorized recovery count2 used. Production trace unvalidated; 233 positive-duration analytic moment endpoints remain inconclusive."
+      }
+    },
+    {
+      "at": "2026-11-09T08:38:34.902Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    },
+    {
+      "at": "2026-11-09T08:41:18.642Z",
+      "event": "auto_started",
+      "phase": "ship",
+      "detail": {
+        "target": "finish",
+        "steps": "ship → finish",
+        "shipMode": "delegate"
+      }
+    },
+    {
+      "at": "2026-11-09T09:07:26.498Z",
+      "event": "ticket_blocked",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-syn-kernels/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-syn-kernels",
+        "reason": "RR008 crash fixed and independently reviewed; fresh smoke and registered production complete, exact Rust consumer INCONCLUSIVE: channel11 +z has zero positive events in both replicas. No extra samples authorized;233 prior inconclusives preserved. Evidence committed2264b14/9b4aaf4."
+      }
+    },
+    {
+      "at": "2026-11-09T09:07:26.791Z",
+      "event": "handoff_saved",
+      "phase": "ship",
+      "files": [
+        "HANDOFF.md"
+      ]
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "feat/irt-syn-parallel-checkpoints",
+    "base_branch": "main",
+    "branch_created_at": "2026-11-08T21:30:32.832Z",
+    "pr_url": null
+  },
+  "ship_mode": "delegate"
+}

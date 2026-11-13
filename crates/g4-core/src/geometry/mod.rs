@@ -4,8 +4,8 @@
 //! A [`Volume`] is one solid placed by a translation of its centre (no rotation). Lengths are
 //! nm and directions are dimensionless unit vectors ([`Direction`]). The algorithms follow the
 //! Geant4 11.4.1 CSG solids (`source/geometry/solids/CSG/src/`), with the line citations given
-//! on each shape. Only `Inside(p)` and `DistanceToOut(p, v)` are ported: there is no
-//! `DistanceToIn`, no safety distance, no surface normal and no navigation.
+//! on each shape. Only `Inside(p)`, `DistanceToOut(p, v)` and the safety `DistanceToOut(p)`
+//! are ported: there is no `DistanceToIn`, no surface normal and no navigation.
 //!
 //! # Tolerant surface
 //!
@@ -296,6 +296,24 @@ impl Volume {
             Self::Box(b) => b.distance_to_out_local(q, v),
             Self::Tubs(t) => t.distance_to_out_local(q, v),
             Self::Sphere(s) => s.distance_to_out_local(q, v),
+        })
+    }
+
+    /// Isotropic safety distance (nm) from `p` to the boundary: no step of this length or
+    /// less, in any direction, leaves the solid. Follows Geant4 `DistanceToOut(p)` of the shape,
+    /// which may underestimate the true distance (the phi planes and theta cones are taken as
+    /// full planes or cones). As in Geant4, a [`Inside::Surface`] point gets 0 or a value
+    /// below the tolerance; this port returns `None` for an [`Inside::Outside`] point, where
+    /// Geant4 returns 0 (it only warns under `G4CSGDEBUG`).
+    pub fn safety(&self, p: Vec3) -> Option<f64> {
+        if self.inside(p) == Inside::Outside {
+            return None;
+        }
+        let q = p - self.centre();
+        Some(match self {
+            Self::Box(b) => b.safety_local(q),
+            Self::Tubs(t) => t.safety_local(q),
+            Self::Sphere(s) => s.safety_local(q),
         })
     }
 }

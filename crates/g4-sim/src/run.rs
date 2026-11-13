@@ -361,7 +361,7 @@ pub fn run_with_sinks(
         table.table(),
         config,
         verified_provenance(table, config),
-        "geant4-rs/dna-sim/run/v5",
+        "geant4-rs/dna-sim/run/v6",
         sinks,
     )
 }
@@ -385,7 +385,7 @@ pub fn run_unverified_with_sink_for_testing(
         table,
         config,
         Provenance::unverified(config.master_seed),
-        "geant4-rs/dna-sim/run-unverified/v2",
+        "geant4-rs/dna-sim/run-unverified/v3",
         RunSinks {
             physchem: sink,
             escape: None,

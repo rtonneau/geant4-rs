@@ -252,3 +252,18 @@ The authorized 200k expansion passed all included endpoints with unchanged
 criteria. The 100k precision shortfall is resolved for G1-F. Analytic and
 contact regressions passed separately; G1-F is PASS. Physical-law limitations,
 24 excluded contact endpoints and history-level validation remain open.
+
+## Finite-volume boundary (2026-11-13)
+
+Source findings are in docs/04 D.7 (Geant4 11.4.3). Only questions the source does not settle are
+listed here. Each one is to be answered by Geant4 output (RR-009), not decided by us.
+- **G-B1 (open) IRT and the boundary.** The IRT files contain no geometry calls. In an IRT run, are
+  species that lie outside the world (for example a dissociation product past the clamp) kept, removed,
+  or never created? And where do reaction products land relative to the surface? RR-009 records
+  per-species counts of molecules outside the volume at the 1 ps snapshot and at the end of chemistry.
+- **G-B2 (open) out-of-volume dissociation products.** `G4DNAMolecularDissociation` warns and still
+  builds the product track (docs/04 D.7). Is that product killed at its first chemistry step, and does it react
+  before then? RR-009 counts `OUTSIDE_OF_MOTHER_VOLUME` warnings and the products' fates.
+- **Risk R-B1 (medium).** The 0.8 x safety clamp uses isotropic safety. It also shortens displacements
+  that would stay inside, which biases near-surface species distributions. It is reproduced as Geant4
+  behaviour and documented, not "fixed".
