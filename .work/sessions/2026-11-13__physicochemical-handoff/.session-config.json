@@ -109,6 +109,30 @@
         "ticket": "02-physchem-clamp",
         "commit": "1835553"
       }
+    },
+    {
+      "at": "2026-11-13T22:30:07.053Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-boundary-summary.md",
+        "03-implement/03-boundary-summary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-boundary-summary"
+      }
+    },
+    {
+      "at": "2026-11-13T22:30:07.558Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/03-boundary-summary/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-boundary-summary",
+        "commit": "0d3cb0e"
+      }
     }
   ],
   "current_phase": "ship",
