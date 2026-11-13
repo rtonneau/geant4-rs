@@ -2,7 +2,7 @@
 
 Root: `rtonneau/geant4` @ `27ea526b420dd72f510af81f6828edef0ff635f5` (squashed; CMake version 11.4.1).
 
-**Reference version: Geant4 v11.4.3** since 2026-11-13. The sections below that name 11.4.1 are dated audits of that release and remain valid: the DNA source tree is byte-identical across the bump (`docs/geant4-11.4.3-migration.md`).
+**Reference version: Geant4 v11.4.3** since 2026-11-13. Sections below that name 11.4.1 are dated audits of that release and remain valid: the DNA source tree is byte-identical across the bump (`docs/geant4-11.4.3-migration.md`).
 `D` = `source/processes/electromagnetic/dna`, `C` = `source/physics_lists/constructors/electromagnetic`.
 Tags: **[V]** read in this session; **[U]** not yet read (audit task).
 A pre-built include graph of the DNA folder exists: `D/geant4_dna_nodes.csv`, `D/geant4_dna_edges.csv`,

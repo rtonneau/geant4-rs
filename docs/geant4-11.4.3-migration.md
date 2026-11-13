@@ -6,11 +6,13 @@ provenance, not stale text.
 
 ## Existing reference data
 
-RR-001 … RR-008 data and their `provenance*.toml` files under `validation/reference/` were produced
-with Geant4 **11.4.1**. They are kept unmodified (AGENTS.md forbids overwriting reference files) and
-remain valid for comparison because the source differences below do not touch the code paths they
-exercise. Re-running them under 11.4.3 is a separate decision for the user. Any re-run writes **new**
-files.
+The committed reference data is **mixed**; each `provenance*.toml` under `validation/reference/` states
+its `geant4_version`. At this date 14 provenance files record 11.4.1 (M3, M6, prechem, spatial, the
+IRT-syn pair, paired and scheduler campaigns) and 2 record 11.4.3 (`provenance_g1f_pair_matrix_n100000`
+and `_n200000`, RR-005). All files are kept unmodified (AGENTS.md forbids overwriting reference
+files). The 11.4.1 data remains valid for comparison because the source differences below do not
+touch the code paths it exercises. Re-running it under 11.4.3 is a separate decision for the user,
+and any re-run writes **new** files.
 
 ## Source differences (release trees, `source/processes`)
 
