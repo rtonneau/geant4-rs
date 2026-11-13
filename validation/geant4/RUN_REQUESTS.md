@@ -197,3 +197,12 @@ New CSV `pair_matrix_irt_g1f_n200000.csv` (data commit `51c22b6`) and
 Producer exit 0, eight channel completion lines, 120 rows. Consumer with
 `G1F_GEANT4_PAIRS=200000` exited 0: all 120 included endpoints PASS;
 24 PDC exact-contact endpoints excluded. No thresholds or seeds changed.
+
+### RR-009: finite-volume boundary reference (requested 2026-11-13)
+
+Status: **awaiting generator**. The `g4rs_ref` mode (working name `finite_volume_boundary`) is written in
+M12 step 4, then compile-checked. Agents never run it. Purpose and acceptance: docs/07
+"Finite-volume boundary acceptance criteria". Questions G-B1/G-B2: docs/09. Planned command shape
+(fixed in M12): `g4rs_ref finite_volume_boundary <out.csv> <seed> <histories>`, with output to a **new**
+file in `validation/reference/` and new `provenance_finite_volume*.toml`. Geant4 version: 11.4.3.
+The consumer is an `#[ignore]`d Rust test written alongside the generator.

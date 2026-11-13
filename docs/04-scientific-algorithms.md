@@ -3,7 +3,7 @@
 ## D.1 Physical stage (track structure)
 Loop per particle (electron, proton/H; secondaries pushed on a LIFO stack owned by the history):
 1. Total macroscopic cross section Sigma(E) = n * sum_i sigma_i(E) over processes whose model range contains E (log-log interpolation of tabulated sigma, data in eV/units given by file; scale factor from `G4DNACrossSectionDataSet`).
-2. Free path s = -ln(u)/Sigma(E) (DNA models are discrete with no continuous loss, so Sigma is evaluated at the pre-step energy [U G8: confirm against `G4VEmProcess` integral-approach settings used by DNA processes]). Infinite medium: no geometry boundary in M2-M8; a finite box is a later extension.
+2. Free path s = -ln(u)/Sigma(E) (DNA models are discrete with no continuous loss, so Sigma is evaluated at the pre-step energy [U G8: confirm against `G4VEmProcess` integral-approach settings used by DNA processes]). Infinite medium: no geometry boundary in M2-M8; a finite volume is a later extension (source audit D.5).
 3. Select process with probability sigma_i/Sigma, then final state by model sampling:
    - elastic (Champion): scattering angle from tabulated cumulative differential table (`sigmadiff_cumulated_elastic_e_champion_hp.dat`), 2-D (energy, probability) interpolation (`QuadInterpolator`, log-log in energy).
    - excitation (Born): level chosen by partial cross sections; energy loss = level energy; no secondary.
@@ -101,3 +101,53 @@ Homogeneous ODE (well-mixed) network: implemented only in tests (`tests/kinetics
 
 ## D.4 Source dependencies for validation tasks
 Physical: examples `range`, `mfp`, `slowing`, `spower`, `wvalue`, `dnaphysics`. Physchem: `chem6` with chemistry disabled after t0 (initial species + positions). Chemical: `chem6` G(t); `chem1-5` single reactions/Fricke; `scavenger`.
+
+## D.5 Geometry boundaries: Geant4 11.4.3 source audit (2026-11-13)
+
+Audited source: the Geant4 **11.4.3** release (`source/processes/...`, abbreviated below; `dna/` =
+`electromagnetic/dna/`). These are findings read from executable code. The questions the source
+does not settle are in docs/09 (G-B1, G-B2). The finite-volume design is in `docs/adr/` (finite `Volume`
+enum) and its acceptance criteria are in docs/07.
+
+**Physical stage.**
+- *World exit kills.* After each step `G4Transportation` relocates the point. If the touchable has no volume
+  (outside the world) it proposes `fStopAndKill` (`transportation/src/G4Transportation.cc:700-716`). The
+  particle's remaining kinetic energy is **not** deposited and is not part of any in-volume ledger. A finite
+  water world therefore needs an explicit **escaped energy** term in energy accounting.
+- *Remaining interaction length is carried over, not reset.* DNA discrete processes (`G4DNAIonisation`,
+  `G4DNAExcitation`, `G4DNAElastic`, `G4DNAElectronSolvation`, all `: public G4VEmProcess`) sample
+  `n = -ln u` only when `theNumberOfInteractionLengthLeft < 0` (start of track or after this process's own
+  DoIt). After a geometry-limited step they decrement `n -= previousStepSize/currentInteractionLength`
+  (clamped at 0) and convert the remainder with the **new** volume's `1/lambda`
+  (`electromagnetic/utils/src/G4VEmProcess.cc:363-429`, decrement at `:420`, rescale at `:427`). This
+  corrects the assumption that `n` is reset in the next volume. For a water-only world the distinction
+  has no observable effect, since the only boundary is the world surface, where the track is killed.
+  It matters as soon as two materials or a sub-volume exist. Because the exponential is memoryless,
+  carrying `n` is distributionally equivalent to resampling, but the RNG stream differs.
+
+**Physicochemical stage (displacements near a boundary).**
+- *Solvation clamp.* `G4DNAOneStepThermalizationModel` locates the incoming track, calls `ComputeStep` along
+  the displacement direction and, when `safety <= |d|`, places the e_aq at `x + unit(d) * 0.8 * safety`
+  (`dna/models/include/G4DNAOneStepThermalizationModel.hpp:225-239`). The species is **clamped, never
+  killed**. Because safety is isotropic, the clamp can fire even when `x + d` lies inside the volume.
+  Already recorded for 11.4.1 in docs/02 B.7.6 item 4 (the code is identical).
+- *Dissociation clamp.* `G4DNAMolecularDissociation::DecayIt` calls `CheckNextStep` per product along
+  `d = d_mother + d_product` and shortens it to `min(0.8 * safety, |d|)` (`dna/processes/src/
+  G4DNAMolecularDissociation.cc:201-220`). If the product still lies outside the solid, it issues only a
+  `JustWarning` `OUTSIDE_OF_MOTHER_VOLUME` when the mother logical volume is not G4_WATER, and builds the
+  product track anyway (`:232-260`). The source comment states that a product outside the world "will be
+  killed in the next step".
+
+**Chemical stage.**
+- *Step-by-step Brownian transport.* In a material with zero water density, `G4DNABrownianTransportation`
+  either delegates to a user Brownian action or proposes `fStopAndKill` with zero energy
+  (`dna/processes/src/G4DNABrownianTransportation.cc:495-521`). `G4ITTransportation` kills a molecule
+  outside the world (`dna/management/src/G4ITTransportation.cc:914-929`).
+- *IRT.* `G4DNAIRT.cc`, `G4DNAIndependentReactionTimeStepper.cc`, `G4DNAIndependentReactionTimeModel.cc` and
+  `G4DNAMakeReaction.cc` contain **no** navigator, touchable or `Inside` call (grep count 0). Whether an IRT
+  run ever removes or confines out-of-volume species, and where reaction products are placed relative to a
+  boundary, is therefore not visible in these files. It is open question G-B1.
+
+**Rust status.** Transport and chemistry are unbounded (D.1, D.3). The solvation clip is unreachable in
+infinite water (docs/08 N1 audit). No boundary rule is implemented until the finite-volume milestone in
+docs/08.

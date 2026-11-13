@@ -153,3 +153,35 @@ limits and fail explicitly rather than truncate chemistry. Exceeding a budget
 requires a prospective amendment, not a hidden relaxation. Tests/consumers and
 exact gate commands enter `validation/gates.json` when introduced; no blanket
 ignored-test run or non-existent test command is prescribed by this document.
+
+## Finite-volume boundary acceptance criteria (fixed 2026-11-13, before any data)
+
+Source basis: docs/04 D.5 (Geant4 11.4.3 audit). Geometry: ADR 0005 (`Volume` enum). Reference: RR-009
+(awaiting generator and run). These criteria are fixed now. Changing them later needs a prospective,
+documented amendment, never a relaxation after seeing data.
+
+**Settings (one family).** Electron primaries at the origin, isotropic, in a liquid-water world with
+the same DNA physics and chemistry constructors as the existing `g4rs_ref` modes. 3 energies (1, 10,
+100 keV) x 4 geometries (`Sphere` r = 0.1, 1, 10 um; `Box` half = (1, 1, 0.1) um) = 12 settings, plus
+`Unbounded` as a control (Rust only). Histories: 10,000 per setting for each code, with independent seeds.
+
+**Deterministic checks (every history, both codes, must hold exactly up to 1e-9 relative).**
+- D1 energy closure: `E0 = E_dep_inside + E_escaped`, where `E_escaped` is the kinetic energy of tracks
+  killed at the world boundary (docs/04 D.5).
+- D2 no deposit, species or interaction point outside the volume, except a dissociation product
+  flagged as `OUTSIDE_OF_MOTHER_VOLUME` (counted, see S3).
+- D3 every boundary-limited step ends on the surface (`distance_to_out` <= 1e-9 x length scale).
+- D4 `Unbounded` output is bit-identical to the current infinite-medium path (regression).
+
+**Statistical endpoints (per setting; family of 12 x 2 = 24 endpoints, S1 and S2).**
+- S1 mean escaped-energy fraction `E_escaped/E0`.
+- S2 escape probability of the primary.
+- S3 fraction of species alive at 1 ps whose clamped placement was shortened (solvation and
+  dissociation 0.8 x safety rule) and count of outside-volume products. Reported for diagnosis; it enters
+  the family only after G-B2 (docs/09) is answered.
+
+Verdict per endpoint: two-sided Bonferroni interval at family alpha 0.001 on the Rust minus Geant4
+difference. **PASS** if the whole interval lies within +-0.01 absolute. **FAIL** if the interval excludes
+0 and lies wholly outside +-0.01. Otherwise **INCONCLUSIVE**, which can be resolved only by a
+precision-only expansion of history counts with the same seeds family. The gate passes only when all
+included endpoints PASS and D1-D4 hold.

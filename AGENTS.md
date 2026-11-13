@@ -19,7 +19,7 @@ The architecture must remain extensible to additional particles, materials, phys
 
 - **Rust implementation (writable):** https://github.com/rtonneau/geant4-rs
 - **Geant4 C++ reference (read-only):** https://github.com/rtonneau/geant4
-- **Reference version:** Geant4 v11.4.1
+- **Reference version:** Geant4 v11.4.3 (bumped from 11.4.1 on 2026-11-13; existing reference data is mixed (each `provenance*.toml` states its version), see `docs/geant4-11.4.3-migration.md`)
 - **Documentation:** https://geant4.web.cern.ch/docs/
 
 Geant4 is the primary reference for algorithms and numerical methods, but agreement with Geant4 alone does not guarantee physical correctness.
@@ -111,7 +111,7 @@ Use:
 
 Validate energy accounting, physical model boundaries, random sampling and chemical kinetics.
 
-Compare results with Geant4 v11.4.1 and, where possible, independent experimental or published data.
+Compare results with Geant4 v11.4.3 and, where possible, independent experimental or published data.
 
 Define tolerances and statistical acceptance criteria before evaluating results.
 
