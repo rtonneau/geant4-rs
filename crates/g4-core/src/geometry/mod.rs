@@ -16,8 +16,10 @@
 //! (`G4GeometryTolerance::SetSurfaceTolerance`, `G4GeometryTolerance.cc:92-107`); this module
 //! uses the default value only.
 //!
-//! Curved surfaces use the radial tolerance [`RAD_TOLERANCE`] instead, and phi boundaries the
-//! angular tolerance [`ANG_TOLERANCE`], both with the Geant4 default values.
+//! Curved surfaces use the radial tolerance [`RAD_TOLERANCE`] instead, and phi and theta
+//! boundaries the angular tolerance [`ANG_TOLERANCE`], both with the Geant4 default values.
+//! The sphere scales its radial tolerance with the radius, as `G4Sphere` does:
+//! `max(kRadTolerance, 2e-11 r)`, so it grows beyond 5e7 nm (see `sphere.rs`).
 //!
 //! # Deviations from Geant4
 //!
@@ -25,14 +27,23 @@
 //!   [`Inside::Outside`]. Geant4 does not check this case and returns an unspecified distance.
 //! - A point with a NaN coordinate classifies as [`Inside::Outside`] (Geant4 behaviour is
 //!   undefined for NaN).
-//! - Constructors reject non-finite parameters, and an opening angle above `2 pi`, which
-//!   Geant4 silently resets to `2 pi`.
+//! - Constructors reject non-finite parameters, a phi opening above `2 pi` (which Geant4
+//!   silently resets to `2 pi`), a theta opening above `pi` (which Geant4 silently reduces to
+//!   `pi - start_theta`) and a theta start of `pi` (which Geant4 accepts as an empty solid).
+//! - `G4Sphere::DistanceToOut` has defects that give distances wrong beyond the tolerance,
+//!   infinite or negative in edge cases; the sphere port fixes them. They are listed in the
+//!   documentation of `sphere.rs` and in `docs/04-scientific-algorithms.md` (D.5).
+//! - The tube's phi exit, shared with the sphere, does not stop a start on the z axis that
+//!   moves along it with a direction rounded just short of unit length; `G4Tubs` can return
+//!   0 there (see `tubs.rs`).
 
 mod box_solid;
 mod phi_segment;
+mod sphere;
 mod tubs;
 
 pub use box_solid::BoxSolid;
+pub use sphere::SphereSolid;
 pub use tubs::TubsSolid;
 
 use crate::vec3::Vec3;
@@ -165,6 +176,19 @@ impl Direction {
 /// start_phi = 0.0          # rad
 /// delta_phi = 6.283185307179586
 /// ```
+///
+/// A spherical shell section (angles in rad, theta measured from +z):
+///
+/// ```toml
+/// shape = "sphere"
+/// centre = [0.0, 0.0, 0.0] # nm
+/// rmin = 0.0               # nm
+/// rmax = 50.0              # nm
+/// start_phi = 0.0          # rad
+/// delta_phi = 6.283185307179586
+/// start_theta = 0.0        # rad
+/// delta_theta = 3.141592653589793
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "RawVolume", into = "RawVolume")]
 pub enum Volume {
@@ -172,6 +196,8 @@ pub enum Volume {
     Box(BoxSolid),
     /// Cylindrical tube segment about the z axis, Geant4 `G4Tubs`.
     Tubs(TubsSolid),
+    /// Spherical shell section, Geant4 `G4Sphere`.
+    Sphere(SphereSolid),
 }
 
 impl Volume {
@@ -201,11 +227,42 @@ impl Volume {
         TubsSolid::new(centre, rmin, rmax, half_z, start_phi, delta_phi).map(Self::Tubs)
     }
 
+    /// Spherical shell section about `centre` (nm): radii `rmin` and `rmax` (nm), the phi
+    /// range from `start_phi` over `delta_phi` about the z axis, and the theta (polar angle
+    /// from +z) range from `start_theta` over `delta_theta` (rad).
+    ///
+    /// Fails unless every value is finite, `0 <= rmin < rmax`, `rmax >= 1.1*kRadTolerance`
+    /// (`G4Sphere.cc:95-102`), `0 < delta_phi <= 2 pi`, `0 <= start_theta < pi` and
+    /// `0 < delta_theta <= pi` (`G4Sphere.icc:155-246`). As in Geant4, the start phi is
+    /// normalised (see [`SphereSolid::start_phi`]) and a theta range ending beyond pi is
+    /// reduced to end at pi (see [`SphereSolid::delta_theta`]).
+    pub fn sphere(
+        centre: Vec3,
+        rmin: f64,
+        rmax: f64,
+        start_phi: f64,
+        delta_phi: f64,
+        start_theta: f64,
+        delta_theta: f64,
+    ) -> Result<Self, GeometryError> {
+        SphereSolid::new(
+            centre,
+            rmin,
+            rmax,
+            start_phi,
+            delta_phi,
+            start_theta,
+            delta_theta,
+        )
+        .map(Self::Sphere)
+    }
+
     /// Centre of the solid, nm.
     pub fn centre(&self) -> Vec3 {
         match self {
             Self::Box(b) => b.centre(),
             Self::Tubs(t) => t.centre(),
+            Self::Sphere(s) => s.centre(),
         }
     }
 
@@ -219,6 +276,7 @@ impl Volume {
         match self {
             Self::Box(b) => b.inside_local(q),
             Self::Tubs(t) => t.inside_local(q),
+            Self::Sphere(s) => s.inside_local(q),
         }
     }
 
@@ -237,6 +295,7 @@ impl Volume {
         Some(match self {
             Self::Box(b) => b.distance_to_out_local(q, v),
             Self::Tubs(t) => t.distance_to_out_local(q, v),
+            Self::Sphere(s) => s.distance_to_out_local(q, v),
         })
     }
 }
@@ -256,6 +315,15 @@ enum RawVolume {
         half_z: f64,
         start_phi: f64,
         delta_phi: f64,
+    },
+    Sphere {
+        centre: [f64; 3],
+        rmin: f64,
+        rmax: f64,
+        start_phi: f64,
+        delta_phi: f64,
+        start_theta: f64,
+        delta_theta: f64,
     },
 }
 
@@ -283,6 +351,23 @@ impl TryFrom<RawVolume> for Volume {
                 start_phi,
                 delta_phi,
             } => Self::tubs(from_array(centre), rmin, rmax, half_z, start_phi, delta_phi),
+            RawVolume::Sphere {
+                centre,
+                rmin,
+                rmax,
+                start_phi,
+                delta_phi,
+                start_theta,
+                delta_theta,
+            } => Self::sphere(
+                from_array(centre),
+                rmin,
+                rmax,
+                start_phi,
+                delta_phi,
+                start_theta,
+                delta_theta,
+            ),
         }
     }
 }
@@ -303,6 +388,15 @@ impl From<Volume> for RawVolume {
                 half_z: t.half_z(),
                 start_phi: t.requested_start_phi(),
                 delta_phi: t.requested_delta_phi(),
+            },
+            Volume::Sphere(s) => Self::Sphere {
+                centre: to_array(s.centre()),
+                rmin: s.rmin(),
+                rmax: s.rmax(),
+                start_phi: s.requested_start_phi(),
+                delta_phi: s.requested_delta_phi(),
+                start_theta: s.requested_start_theta(),
+                delta_theta: s.requested_delta_theta(),
             },
         }
     }

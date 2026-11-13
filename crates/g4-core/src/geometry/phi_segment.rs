@@ -1,13 +1,15 @@
-//! Azimuthal (phi) segment shared by the solids with a phi range: its Geant4 normalisation
-//! and the trigonometry of its bounding half-planes.
+//! Azimuthal (phi) segment shared by the solids with a phi range: its Geant4 normalisation,
+//! the trigonometry of its bounding half-planes and the distance to exit through them.
 //!
 //! `G4Tubs` and `G4Sphere` normalise the phi range the same way (`G4Tubs.icc:111-161`,
 //! `G4Sphere.icc:193-246`) and precompute the same sines and cosines (`G4Tubs.icc:94-109`,
-//! `G4Sphere.icc:121-136`). Their `Inside` and `DistanceToOut` phi branches differ, so those
-//! stay with each shape.
+//! `G4Sphere.icc:121-136`). Their `Inside` phi tests differ, so those stay with each shape.
+//! [`PhiSegment::exit_distance`] is the phi block of `G4Tubs::DistanceToOut(p, v)`; the
+//! sphere uses it too, in place of the older `G4Sphere` phi block (see `sphere.rs`).
 
-use super::{GeometryError, HALF_ANG_TOLERANCE};
-use std::f64::consts::TAU;
+use super::{CAR_TOLERANCE, GeometryError, HALF_ANG_TOLERANCE, HALF_CAR_TOLERANCE};
+use crate::vec3::Vec3;
+use std::f64::consts::{PI, TAU};
 
 /// Phi range `[start, start + delta]` about the z axis, in rad, after Geant4 normalisation.
 ///
@@ -126,6 +128,108 @@ impl PhiSegment {
     /// `(sin, cos)` of the centre angle `start + delta/2` (Geant4 `sinCPhi`, `cosCPhi`).
     pub(super) fn centre_trig(&self) -> (f64, f64) {
         (self.sin_centre, self.cos_centre)
+    }
+
+    /// Distance along `v` from `p` (relative to the solid's centre) to the phi planes, the
+    /// phi block of `G4Tubs::DistanceToOut(p, v)` (`G4Tubs.cc:1320-1452`): `f64::INFINITY`
+    /// if they do not limit the step, 0 for a start on a plane moving out through it.
+    ///
+    /// `pDistS`/`pDistE` are the signed distances to the full start/end planes (negative
+    /// inside), and `compS`/`compE` the direction components along their inward normals
+    /// (negative when heading out). A plane crossing counts only if it lies on the segment's
+    /// half-plane, tested against the centre direction `c` with `yi cos c - xi sin c`. A
+    /// crossing on the z axis counts only if the direction leaves the phi range. A start on
+    /// the z axis leaves at once if its direction is outside the phi range. Moving along the
+    /// axis (`v.x = v.y = 0`) it is not limited, as in `G4Sphere.cc:2439-2455`.
+    ///
+    /// That last guard is a deviation for the tube. `G4Tubs` skips its phi block only for
+    /// `t1 = 1 - v.z^2 = 0` (`G4Tubs.cc:1204`). A direction along z that rounding leaves just
+    /// short of unit length, such as `Direction::new((0, 0, 49))` with `v.z = 1 - 1.1e-16`
+    /// and `t1 = 2.2e-16`, reaches its on-axis test with `atan2(0, 0) = 0`
+    /// (`G4Tubs.cc:1437-1450`). That returns 0 unless phi = 0 lies in the segment, although
+    /// the ray runs along the edge and does not leave through a phi plane.
+    ///
+    /// The on-axis start-plane crossing can return a distance down to `-kCarTolerance/2`;
+    /// `G4Tubs` clamps it to 0 at the end (`G4Tubs.cc:1540`) and the sphere clamps it too.
+    pub(super) fn exit_distance(&self, p: Vec3, v: Vec3) -> f64 {
+        let (start, end, delta) = (self.start, self.end(), self.delta);
+        // Direction angle in the range of the segment, G4Tubs.cc:1325-1328.
+        let mut vphi = v.y.atan2(v.x);
+        if vphi < start - HALF_ANG_TOLERANCE {
+            vphi += TAU;
+        } else if vphi > end + HALF_ANG_TOLERANCE {
+            vphi -= TAU;
+        }
+        let v_in_range = start - HALF_ANG_TOLERANCE <= vphi && vphi <= end + HALF_ANG_TOLERANCE;
+
+        if p.x == 0.0 && p.y == 0.0 {
+            // On the z axis, G4Tubs.cc:1437-1452 and G4Sphere.cc:2434-2456; the v along z
+            // guard is a deviation for the tube (see above).
+            return if (v.x == 0.0 && v.y == 0.0) || v_in_range {
+                f64::INFINITY
+            } else {
+                0.0
+            };
+        }
+
+        let (sin_s, cos_s) = self.start_trig();
+        let (sin_e, cos_e) = self.end_trig();
+        let (sin_c, cos_c) = self.centre_trig();
+        let p_dist_s = p.x * sin_s - p.y * cos_s;
+        let p_dist_e = -p.x * sin_e + p.y * cos_e;
+        let comp_s = -sin_s * v.x + cos_s * v.y;
+        let comp_e = sin_e * v.x - cos_e * v.y;
+
+        // Inside both full planes for a segment up to pi, either one above (G4Tubs.cc:1345-1348).
+        let within_planes = if delta <= PI {
+            p_dist_s <= HALF_CAR_TOLERANCE && p_dist_e <= HALF_CAR_TOLERANCE
+        } else {
+            p_dist_s <= HALF_CAR_TOLERANCE || p_dist_e <= HALF_CAR_TOLERANCE
+        };
+        if !within_planes {
+            return f64::INFINITY; // G4Tubs.cc:1432-1435
+        }
+        let on_axis = |xi: f64, yi: f64| xi.abs() <= CAR_TOLERANCE && yi.abs() <= CAR_TOLERANCE;
+        let on_segment_side = |xi: f64, yi: f64| yi * cos_c - xi * sin_c >= 0.0;
+
+        // Start plane, G4Tubs.cc:1352-1394.
+        let mut sphi = f64::INFINITY;
+        if comp_s < 0.0 {
+            let s = p_dist_s / comp_s;
+            if s >= -HALF_CAR_TOLERANCE {
+                let (xi, yi) = (p.x + s * v.x, p.y + s * v.y);
+                sphi = if on_axis(xi, yi) {
+                    if v_in_range { f64::INFINITY } else { s }
+                } else if on_segment_side(xi, yi) {
+                    f64::INFINITY // crosses the start plane's extension beyond the axis
+                } else if p_dist_s > -HALF_CAR_TOLERANCE {
+                    0.0 // on the start plane, leaving
+                } else {
+                    s
+                };
+            }
+        }
+
+        // End plane, only if before the start-plane crossing, G4Tubs.cc:1396-1430.
+        if comp_e < 0.0 {
+            let s2 = p_dist_e / comp_e;
+            if s2 > -HALF_CAR_TOLERANCE && s2 < sphi {
+                let (xi, yi) = (p.x + s2 * v.x, p.y + s2 * v.y);
+                let leaves_by_end = if on_axis(xi, yi) {
+                    !v_in_range
+                } else {
+                    on_segment_side(xi, yi)
+                };
+                if leaves_by_end {
+                    sphi = if p_dist_e <= -HALF_CAR_TOLERANCE {
+                        s2
+                    } else {
+                        0.0
+                    };
+                }
+            }
+        }
+        sphi
     }
 }
 

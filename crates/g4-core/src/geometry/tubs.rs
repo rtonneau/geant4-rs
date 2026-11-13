@@ -14,14 +14,19 @@
 //! the z axis the rounding of a computed exit point (about 1e-9 nm for coordinates near
 //! 1e6 nm) exceeds the angular shell, so a point that `distance_to_out` puts on a phi plane
 //! there may classify as Outside.
+//!
+//! One deviation from `G4Tubs::DistanceToOut(p, v)`: a start on the z axis of a phi segment
+//! moving along the axis, with a direction rounded just short of unit length (`t1 > 0`), is
+//! not limited by the phi planes. `G4Tubs` gives 0 there unless phi = 0 lies in the segment
+//! (`G4Tubs.cc:1437-1450`). See [`PhiSegment::exit_distance`].
 
 use super::phi_segment::PhiSegment;
 use super::{
-    CAR_TOLERANCE, GeometryError, HALF_ANG_TOLERANCE, HALF_CAR_TOLERANCE, HALF_RAD_TOLERANCE,
-    Inside, RAD_TOLERANCE, check_finite,
+    GeometryError, HALF_ANG_TOLERANCE, HALF_CAR_TOLERANCE, HALF_RAD_TOLERANCE, Inside,
+    RAD_TOLERANCE, check_finite,
 };
 use crate::vec3::Vec3;
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::TAU;
 
 /// Tube segment about the z axis through its centre: radii `rmin < rmax`, half-length
 /// `half_z` along z (nm) and a phi range (rad).
@@ -259,7 +264,7 @@ impl TubsSolid {
             }
 
             if !self.phi.is_full() {
-                let sphi = phi_exit_distance(&self.phi, p, v);
+                let sphi = self.phi.exit_distance(p, v);
                 if sphi < snxt {
                     snxt = sphi;
                 }
@@ -304,91 +309,6 @@ fn phi_class(seg: &PhiSegment, x: f64, y: f64) -> Inside {
     } else {
         Inside::Inside
     }
-}
-
-/// Distance to the phi planes in `G4Tubs::DistanceToOut(p, v)` (`G4Tubs.cc:1325-1452`),
-/// `f64::INFINITY` if they do not limit the step.
-///
-/// `pDistS`/`pDistE` are the signed distances to the full start/end planes (negative
-/// inside), and `compS`/`compE` the direction components along their inward normals
-/// (negative when heading out). A plane crossing counts only if it lies on the segment's
-/// half-plane, tested against the centre direction `c` with `yi cos c - xi sin c`. A
-/// crossing on the z axis counts only if the direction leaves the phi range. A start on the
-/// z axis leaves at once if its direction is outside the phi range.
-fn phi_exit_distance(seg: &PhiSegment, p: Vec3, v: Vec3) -> f64 {
-    let (start, end, delta) = (seg.start(), seg.end(), seg.delta());
-    // Direction angle in the range of the segment, G4Tubs.cc:1325-1328.
-    let mut vphi = v.y.atan2(v.x);
-    if vphi < start - HALF_ANG_TOLERANCE {
-        vphi += TAU;
-    } else if vphi > end + HALF_ANG_TOLERANCE {
-        vphi -= TAU;
-    }
-    let v_in_range = start - HALF_ANG_TOLERANCE <= vphi && vphi <= end + HALF_ANG_TOLERANCE;
-
-    if p.x == 0.0 && p.y == 0.0 {
-        // On the z axis, G4Tubs.cc:1437-1452.
-        return if v_in_range { f64::INFINITY } else { 0.0 };
-    }
-
-    let (sin_s, cos_s) = seg.start_trig();
-    let (sin_e, cos_e) = seg.end_trig();
-    let (sin_c, cos_c) = seg.centre_trig();
-    let p_dist_s = p.x * sin_s - p.y * cos_s;
-    let p_dist_e = -p.x * sin_e + p.y * cos_e;
-    let comp_s = -sin_s * v.x + cos_s * v.y;
-    let comp_e = sin_e * v.x - cos_e * v.y;
-
-    // Inside both full planes for a segment up to pi, either one above (G4Tubs.cc:1345-1348).
-    let within_planes = if delta <= PI {
-        p_dist_s <= HALF_CAR_TOLERANCE && p_dist_e <= HALF_CAR_TOLERANCE
-    } else {
-        p_dist_s <= HALF_CAR_TOLERANCE || p_dist_e <= HALF_CAR_TOLERANCE
-    };
-    if !within_planes {
-        return f64::INFINITY; // G4Tubs.cc:1432-1435
-    }
-    let on_axis = |xi: f64, yi: f64| xi.abs() <= CAR_TOLERANCE && yi.abs() <= CAR_TOLERANCE;
-    let on_segment_side = |xi: f64, yi: f64| yi * cos_c - xi * sin_c >= 0.0;
-
-    // Start plane, G4Tubs.cc:1352-1394.
-    let mut sphi = f64::INFINITY;
-    if comp_s < 0.0 {
-        let s = p_dist_s / comp_s;
-        if s >= -HALF_CAR_TOLERANCE {
-            let (xi, yi) = (p.x + s * v.x, p.y + s * v.y);
-            sphi = if on_axis(xi, yi) {
-                if v_in_range { f64::INFINITY } else { s }
-            } else if on_segment_side(xi, yi) {
-                f64::INFINITY // crosses the start plane's extension beyond the axis
-            } else if p_dist_s > -HALF_CAR_TOLERANCE {
-                0.0 // on the start plane, leaving
-            } else {
-                s
-            };
-        }
-    }
-
-    // End plane, only if before the start-plane crossing, G4Tubs.cc:1396-1430.
-    if comp_e < 0.0 {
-        let s2 = p_dist_e / comp_e;
-        if s2 > -HALF_CAR_TOLERANCE && s2 < sphi {
-            let (xi, yi) = (p.x + s2 * v.x, p.y + s2 * v.y);
-            let leaves_by_end = if on_axis(xi, yi) {
-                !v_in_range
-            } else {
-                on_segment_side(xi, yi)
-            };
-            if leaves_by_end {
-                sphi = if p_dist_e <= -HALF_CAR_TOLERANCE {
-                    s2
-                } else {
-                    0.0
-                };
-            }
-        }
-    }
-    sphi
 }
 
 #[cfg(test)]
@@ -848,6 +768,27 @@ mod tests {
         assert_eq!(d(&t, Vec3::ZERO, dir(-1.0, -1.0, 0.5)), 0.0);
         // Along the axis: the z plane.
         assert_eq!(d(&t, Vec3::ZERO, dir(0.0, 0.0, 1.0)), 20.0);
+    }
+
+    /// The deviation of the shared phi exit for the tube: on the z axis of phi in
+    /// [pi/2, pi], along a z direction that rounds to just below unit length. `t1 = 2.2e-16`
+    /// lets the phi block run (G4Tubs.cc:1204), where `atan2(0, 0) = 0` lies outside the
+    /// segment, so G4Tubs returns 0 (G4Tubs.cc:1437-1450). The ray runs along the edge, so
+    /// the port lets the z plane limit it.
+    #[test]
+    fn start_on_the_z_axis_moving_along_it_with_a_rounded_direction() {
+        let t = tubs(0.0, 10.0, 20.0, FRAC_PI_2, FRAC_PI_2);
+        let v = Direction::new(v3(0.0, 0.0, 49.0)).unwrap();
+        let w = v.as_vec3();
+        assert_eq!((w.x, w.y), (0.0, 0.0));
+        assert!(
+            w.z < 1.0 && 1.0 - w.z * w.z > 0.0,
+            "t1 = {}",
+            1.0 - w.z * w.z
+        );
+        let p = v3(0.0, 0.0, 5.0);
+        assert_eq!(t.inside(p), Inside::Surface);
+        assert_relative_eq!(d(&t, p, v), 15.0, max_relative = 1e-14);
     }
 
     // --- distance_to_out: parallel rays ---
