@@ -1,0 +1,74 @@
+{
+  "session_id": "2026-11-13__run-config-and-output-g4-sim",
+  "feature_name": "run, config and output (g4-sim)",
+  "scratch_dir": ".scratch/tests/2026-11-13__run-config-and-output-g4-sim",
+  "created_at": "2026-11-13T21:15:45.045Z",
+  "template_version": 2,
+  "history": [
+    {
+      "at": "2026-11-13T21:15:45.045Z",
+      "event": "session_started",
+      "phase": "grill",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-11-13T21:21:12.197Z",
+      "event": "auto_started",
+      "phase": "grill",
+      "detail": {
+        "target": "finish",
+        "steps": "write:grill → plan → write:plan → ship → finish"
+      }
+    },
+    {
+      "at": "2026-11-13T21:21:29.996Z",
+      "event": "grill_written",
+      "phase": "plan-not-started",
+      "files": [
+        "01-grill/resume.md"
+      ]
+    },
+    {
+      "at": "2026-11-13T21:21:33.286Z",
+      "event": "plan_started",
+      "phase": "plan",
+      "files": [
+        "02-plan/plan.md"
+      ]
+    },
+    {
+      "at": "2026-11-13T21:21:53.456Z",
+      "event": "branch_created",
+      "phase": "plan",
+      "detail": {
+        "branch": "feat/escape-scoring-and-volume-provenance",
+        "base": "main"
+      }
+    },
+    {
+      "at": "2026-11-13T21:21:53.476Z",
+      "event": "plan_written",
+      "phase": "ship",
+      "files": [
+        "02-plan/plan.md",
+        "02-plan/tickets/01-volume-config-provenance-schema.md",
+        "02-plan/tickets/02-escape-observer-hook.md",
+        "02-plan/tickets/03-escape-summary.md",
+        "02-plan/tickets/04-exit-event-csv.md",
+        "02-plan/tickets/05-docs.md"
+      ],
+      "detail": {
+        "tickets": 5
+      }
+    }
+  ],
+  "current_phase": "ship",
+  "git": {
+    "branch": "feat/escape-scoring-and-volume-provenance",
+    "base_branch": "main",
+    "branch_created_at": "2026-11-13T21:21:53.456Z",
+    "pr_url": null
+  }
+}
