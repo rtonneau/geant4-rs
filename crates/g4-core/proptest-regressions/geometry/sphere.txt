@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1bdf26db40c06cc5a92e5223a85663ec81ed106e7f9bd784ebe2fc79ebd902e5 # shrinks to volume = Sphere(SphereSolid { centre: Vec3 { x: -630240.8172622061, y: -845922.9625205244, z: 0.0 }, rmin: 0.0, rmax: 40.69153587285085, rmin_tol: 0.0, rmax_tol: 0.001, phi: PhiSegment { requested_start: 5.544447637890824, requested_delta: 0.2, start: 5.544447637890824, delta: 0.2, full: false, sin_start: -0.6733551831030659, cos_start: 0.73931914447567, sin_end: -0.5130528702985256, cos_end: 0.8583570074732565, sin_centre: -0.5961824557136824, cos_centre: 0.8028489767691076 }, theta: ThetaSegment { requested_start: 0.0, requested_delta: 0.2, start: 0.0, delta: 0.2, end: 0.2, full: false, tan_start: 0.0, tan_start2: 0.0, tan_end: 0.20271003550867248, tan_end2: 0.04109135849592726 } }), fr = 0.16549048761814206, ft = 0.024506962022441757, end_plane = false, a = 0.1, psi = 0.0

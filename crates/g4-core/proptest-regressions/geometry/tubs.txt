@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 08976b0ce411de1a443071937c27c871535accfc846654ecfa5844e1e48b193a # shrinks to volume = Tubs(TubsSolid { centre: Vec3 { x: -621521.552021449, y: 0.0, z: 0.0 }, rmin: 0.0, rmax: 5030.883888057993, half_z: 1.0, phi: PhiSegment { requested_start: 0.41402592255895654, requested_delta: 4.185937526460339, start: 0.41402592255895654, delta: 4.185937526460339, full: false, sin_start: 0.4022983450841623, cos_start: 0.9155086245047308, sin_end: -0.9936869036848447, cos_end: -0.11218884724082932, sin_centre: 0.5928538016821707, cos_centre: -0.8053101078659062 } }), fr = 0.7803339153237773, fphi = 0.6516024423563239, fz = 0.0, v = Direction(Vec3 { x: 1.0, y: 0.0, z: 0.0 })

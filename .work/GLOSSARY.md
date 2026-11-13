@@ -58,3 +58,7 @@ _Avoid_: calling the source-faithful SBS oracle an independent Brownian pair ora
 **Molecule identity**:
 A stable identifier for one individual mobile molecule within a chemistry history. Two molecules may have the same species but must have different identities; a molecule cannot form a reaction pair with itself.
 _Avoid_: using species equality as molecule identity
+
+**Volume**:
+A finite, translated, axis-aligned Geant4 CSG solid (box, full G4Tubs or full G4Sphere) of liquid water, classified with Geant4's three-state tolerant surface (inside, surface, outside). The absence of a volume means infinite water, which is not a Volume variant.
+_Avoid_: geometry, world, solid (for the Rust type)
