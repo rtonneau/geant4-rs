@@ -105,7 +105,7 @@
     {
       "id": "RR-009-finite-volume",
       "milestone": "M6",
-      "profile": "RR-009 finite-volume escape S1/S2; no FAIL required, 8 endpoints still open (2 INCONCLUSIVE, 6 NOT RUN), not full acceptance",
+      "profile": "RR-009 finite-volume escape S1/S2; no FAIL required, 2 INCONCLUSIVE accepted by user decision 2026-11-14, 6 box endpoints NOT RUN, not full acceptance",
       "target": "g4-sim/rr009_finite_volume",
       "test": "rr009_escape_observables_match_geant4",
       "fixtures": ["rr009_sphere_100nm_histories.csv", "rr009_sphere_100nm_species.csv", "rr009_sphere_1000nm_histories.csv", "rr009_sphere_1000nm_species.csv", "rr009_sphere_10000nm_histories.csv", "rr009_sphere_10000nm_species.csv", "rr009_box_1000x1000x100nm_histories.csv", "rr009_box_1000x1000x100nm_species.csv", "provenance_rr009.toml"]

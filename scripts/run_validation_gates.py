@@ -29,7 +29,7 @@ EXPECTED_GATES = (
     ("M3-xs", "M3", "low-energy cross sections V2", "g4-sim/slowing_down_reference", "m3_v2_low_energy_cross_sections_match_geant4"),
     ("M3-cascade", "M3", "full-cascade slowing-down V5, spectra and radial profile", "g4-sim/slowing_down_reference", "m3_v5_full_slowing_down_matches_geant4"),
     ("M6-prechem", "M6", "RR-001 dissociation-only snapshot at 1 ps before IRT", "g4-sim/physchem_reference", "m6_prechem_counts_and_rms_match_geant4"),
-    ("RR-009-finite-volume", "M6", "RR-009 finite-volume escape S1/S2; no FAIL required, 8 endpoints still open (2 INCONCLUSIVE, 6 NOT RUN), not full acceptance", "g4-sim/rr009_finite_volume", "rr009_escape_observables_match_geant4"),
+    ("RR-009-finite-volume", "M6", "RR-009 finite-volume escape S1/S2; no FAIL required, 2 INCONCLUSIVE accepted by user decision 2026-11-14, 6 box endpoints NOT RUN, not full acceptance", "g4-sim/rr009_finite_volume", "rr009_escape_observables_match_geant4"),
 )
 EXPECTED_FIXTURES = {
     "SYN-2-ordinary-scheduler-trace": ("syn_scheduler_1141_r1.csv", "provenance_syn_scheduler_1141_r1.toml", "syn_scheduler_1141_r2.csv", "provenance_syn_scheduler_1141_r2.toml"),

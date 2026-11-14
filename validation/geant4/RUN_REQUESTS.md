@@ -323,7 +323,10 @@ Status: **closed 2026-11-14** (run 2026-11-13 at the user's request; Geant4 11.4
 `build-1143` with vcpkg Qt6; all four runs exit 0 with three `done (10000 events)` lines each; data
 `aca5947`, provenance `d48318f`). Consumer: 16 PASS, 0 FAIL, 2 INCONCLUSIVE (sphere 1000 nm, 10 keV,
 S1 and S2: se 0.0026, so the interval half-width 0.0107 exceeds +-0.01), 6 NOT RUN (box); the
-gate stays open (8 open endpoints). D1 holds on every Geant4 history (max relative 5.7e-14).
+gate stays open (8 open endpoints).
+Update 2026-11-14: the 2 INCONCLUSIVE endpoints are accepted by user decision without more histories
+(docs/07 amendment); 6 box endpoints (NOT RUN) remain open. A started 40,000-history precision run was
+stopped at the user's request; no data from it were kept. D1 holds on every Geant4 history (max relative 5.7e-14).
 Header label `events 0` is a cosmetic generator bug (see provenance). Earlier status, kept as history:
 awaiting run (generator written 2026-11-13, session
 `2026-11-13__physicochemical-handoff`; compile-checked and linked with MSVC against the 11.4.1 and

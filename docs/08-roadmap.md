@@ -899,7 +899,7 @@ the test reports differences and standard errors, not the separate means):
 | sphere 100 nm | 10 | -0.000240 (0.000324) | 0 (0) | PASS, PASS |
 | sphere 100 nm | 100 | -0.000021 (0.000013) | 0 (0) | PASS, PASS |
 | sphere 1000 nm | 1 | 0 (0) | 0 (0) | PASS, PASS |
-| sphere 1000 nm | 10 | -0.000872 (0.002618) | -0.000500 (0.002583) | INCONCLUSIVE, INCONCLUSIVE |
+| sphere 1000 nm | 10 | -0.000872 (0.002618) | -0.000500 (0.002583) | INCONCLUSIVE, INCONCLUSIVE (accepted 2026-11-14) |
 | sphere 1000 nm | 100 | 0.000100 (0.000073) | 0 (0) | PASS, PASS |
 | sphere 10000 nm | 1, 10 | 0 (0) | 0 (0) | PASS (4) |
 | sphere 10000 nm | 100 | 0.000599 (0.000396) | 0 (0) | PASS, PASS |
@@ -908,3 +908,7 @@ the test reports differences and standard errors, not the separate means):
 The 1000 nm / 10 keV INCONCLUSIVE comes from statistics (half-width 4.098 x 0.0026 = 0.0107 > 0.01),
 not from a disagreement. The gate stays open: those 2 endpoints need more histories (a new RR), and
 the 6 box endpoints need an isotropic Rust source. No outside species in Geant4 (docs/09 G-B1/G-B2).
+
+Update 2026-11-14: the user accepted the two 1000 nm / 10 keV endpoints without more histories
+(docs/07 amendment). They stay INCONCLUSIVE statistically; |diff| < 1 se for both. The gate now waits
+only on the 6 box endpoints.
