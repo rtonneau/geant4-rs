@@ -2,7 +2,7 @@
 
 ## Random numbers (`g4-core::rng`)
 - Generator: `rand_chacha::ChaCha12Rng`. The 64-bit `master_seed` is expanded to a 256-bit key with splitmix64 (tested against Vigna's reference outputs).
-- **One ChaCha stream per `(history_id, stage)`**: stream number `(history_id << 2) | stage`, stages `Physics = 0`, `PhysChem = 1`, `Chemistry = 2`, `3` reserved. `history_id <= 2^62 - 1`, otherwise `HistoryIdOutOfRange`.
+- **One ChaCha stream per `(history_id, stage)`**: stream number `(history_id << 2) | stage`, stages `Physics = 0`, `PhysChem = 1`, `Chemistry = 2`, `Source = 3` (all four slots used; a further stage needs a new layout, ADR 0006). `history_id <= 2^62 - 1`, otherwise `HistoryIdOutOfRange`.
 - A history's numbers depend only on seed, id and stage: not on thread, scheduling, creation order or other histories. There is no shared mutable RNG.
 - Uniform variates in (0,1) use the top 52 bits, `(k + 0.5)/2^52`: neither endpoint is returned, so `ln(u)` is always finite. (53 bits would round to 1.0 at the top.)
 
@@ -59,6 +59,9 @@ The input checks do not resolve existing physical limitations: the K-shell bindi
 ## Statistical test acceptance (fixed before running)
 - KS uniformity: N = 1e5, `D < 1.95/sqrt(N)` (alpha ~ 0.001); fixed seed, so the test is deterministic.
 - Mean of uniforms within 5 sigma of 0.5.
+
+## Draw order of the primary source (stream `(seed, history, Source)`)
+`RunConfig.direction` is a fixed `[x, y, z]` (default `[0, 0, 1]`) or `"isotropic"`. A fixed direction draws nothing and never opens the `Source` stream, so fixed-direction runs are bitwise unchanged by its introduction (existing determinism tests pass unmodified). `"isotropic"` draws exactly two uniforms per history before transport: `cos theta = 2 u1 - 1`, `phi = 2 pi u2` (`g4_core::sampling::isotropic_direction`). Geant4 `G4RandomDirection()` (v11.4.3, `source/global/HEPRandom/include/G4RandomDirection.hh`) samples the same distribution by Marsaglia's rejection method with a variable draw count; only the distribution is reproduced. The `Physics` stream of a history is the same in both modes. Fixed-direction run JSON is unchanged, so the run schema is not bumped; an isotropic run records `"direction": "isotropic"` in its config. Tests: `g4-core` `isotropic_direction_is_uniform_on_the_sphere` (KS on cos theta and phi, `D < 1.95/sqrt(N)`, N = 1e5), `g4-sim/tests/determinism.rs` `isotropic_results_are_bitwise_identical_for_1_2_and_8_threads`.
 
 ## Draw order of the M2 electron physics (stream `(seed, history, Physics)`)
 Per step: 1 uniform for the free path (`-ln u / Sigma_tot`), 1 for the process, then the model draws: Champion 2 (`cos theta`, `phi`); Born excitation 1 (level); Born1 ionisation 1 per shell draw (repeated for shell 2 below 19 eV), 1 for the energy transfer, 1 or 2 or 0 for the Born polar angle (`W < 50 eV`, 50-200 eV, > 200 eV) and 1 for `phi`. Any change of this order or of a model changes every later number of every history (statistically equivalent, not bitwise comparable); `g4-sim` tests pin thread-count independence, not values, so a deliberate change needs no fixture update, but note it here. Geant4 draws one number of interaction lengths per process instead of one total free path; both are the same Poisson process, so only distributions, never individual histories, can be compared with Geant4.

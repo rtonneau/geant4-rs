@@ -244,7 +244,7 @@ pub fn run_history_with_observer(
     observer: &mut (impl HistoryObserver + ?Sized),
 ) -> Result<HistoryResult, SimError> {
     let mut rng = streams.stream(id, Stage::Physics)?;
-    let primary = config.primary(id);
+    let primary = config.primary(id, streams)?;
     let mut obs = HistoryObserverSet::new(
         spectrum_edges,
         radial_edges,
