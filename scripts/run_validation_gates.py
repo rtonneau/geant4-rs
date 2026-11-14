@@ -29,6 +29,7 @@ EXPECTED_GATES = (
     ("M3-xs", "M3", "low-energy cross sections V2", "g4-sim/slowing_down_reference", "m3_v2_low_energy_cross_sections_match_geant4"),
     ("M3-cascade", "M3", "full-cascade slowing-down V5, spectra and radial profile", "g4-sim/slowing_down_reference", "m3_v5_full_slowing_down_matches_geant4"),
     ("M6-prechem", "M6", "RR-001 dissociation-only snapshot at 1 ps before IRT", "g4-sim/physchem_reference", "m6_prechem_counts_and_rms_match_geant4"),
+    ("RR-009-finite-volume", "M6", "RR-009 finite-volume escape S1/S2; no FAIL required, 8 endpoints still open (2 INCONCLUSIVE, 6 NOT RUN), not full acceptance", "g4-sim/rr009_finite_volume", "rr009_escape_observables_match_geant4"),
 )
 EXPECTED_FIXTURES = {
     "SYN-2-ordinary-scheduler-trace": ("syn_scheduler_1141_r1.csv", "provenance_syn_scheduler_1141_r1.toml", "syn_scheduler_1141_r2.csv", "provenance_syn_scheduler_1141_r2.toml"),
@@ -43,6 +44,7 @@ EXPECTED_FIXTURES = {
     "M3-xs": ("xs_lowenergy.csv", "provenance_m3.toml"),
     "M3-cascade": ("slow_sums.csv", "slow_spectra.csv", "slow_radial.csv", "provenance_m3.toml"),
     "M6-prechem": ("physchem_prechem.csv", "provenance_m6_prechem.toml"),
+    "RR-009-finite-volume": ("rr009_sphere_100nm_histories.csv", "rr009_sphere_100nm_species.csv", "rr009_sphere_1000nm_histories.csv", "rr009_sphere_1000nm_species.csv", "rr009_sphere_10000nm_histories.csv", "rr009_sphere_10000nm_species.csv", "rr009_box_1000x1000x100nm_histories.csv", "rr009_box_1000x1000x100nm_species.csv", "provenance_rr009.toml"),
 }
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -152,7 +154,7 @@ def validate_manifest(manifest: object, root: Path = REPO_ROOT) -> None:
 
     gates = manifest["gates"]
     if not isinstance(gates, list) or len(gates) != len(EXPECTED_GATES):
-        raise GateError(f"validation/gates.json: expected exactly the {len(EXPECTED_GATES)} registered IRT-syn/M2/M3/M6 gates")
+        raise GateError(f"validation/gates.json: expected exactly the {len(EXPECTED_GATES)} registered IRT-syn/M2/M3/M6/RR-009 gates")
     fixtures = manifest["fixtures"]
     if not isinstance(fixtures, dict):
         raise GateError("validation/gates.json: fixtures must be an object")
