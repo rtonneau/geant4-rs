@@ -101,6 +101,14 @@
       "target": "g4-sim/physchem_reference",
       "test": "m6_prechem_counts_and_rms_match_geant4",
       "fixtures": ["physchem_prechem.csv", "provenance_m6_prechem.toml"]
+    },
+    {
+      "id": "RR-009-finite-volume",
+      "milestone": "M6",
+      "profile": "RR-009 finite-volume escape S1/S2; no FAIL required, 2 INCONCLUSIVE accepted by user decision 2026-11-14, 6 box endpoints NOT RUN, not full acceptance",
+      "target": "g4-sim/rr009_finite_volume",
+      "test": "rr009_escape_observables_match_geant4",
+      "fixtures": ["rr009_sphere_100nm_histories.csv", "rr009_sphere_100nm_species.csv", "rr009_sphere_1000nm_histories.csv", "rr009_sphere_1000nm_species.csv", "rr009_sphere_10000nm_histories.csv", "rr009_sphere_10000nm_species.csv", "rr009_box_1000x1000x100nm_histories.csv", "rr009_box_1000x1000x100nm_species.csv", "provenance_rr009.toml"]
     }
   ],
   "fixtures": {
@@ -126,7 +134,16 @@
     "syn_pair_1141_r1_n100000.csv": {"path": "validation/reference/syn_pair_1141_r1_n100000.csv", "bytes": 21098, "sha256": "981cdd458c99327dfaa063b0e5802f33b9cbdbe59aec3a651de3e86cd7cf4c9f"},
     "provenance_syn_pair_1141_r1_n100000.toml": {"path": "validation/reference/provenance_syn_pair_1141_r1_n100000.toml", "bytes": 3867, "sha256": "e36372ad21e324c2a5fefbda0301d9890c61e6bce28ccb253d21b6483a9b5e66"},
     "syn_pair_1141_r2_n100000.csv": {"path": "validation/reference/syn_pair_1141_r2_n100000.csv", "bytes": 21097, "sha256": "b7a49a64aa77bff9920d9b850225f3d55842108689d97ef14b9fcf0decb882be"},
-    "provenance_syn_pair_1141_r2_n100000.toml": {"path": "validation/reference/provenance_syn_pair_1141_r2_n100000.toml", "bytes": 3867, "sha256": "b86704b0b9c89aa05f11c95b8f3005f6afa7f451b0b8fe209eb4fa5bda3d177f"}
+    "provenance_syn_pair_1141_r2_n100000.toml": {"path": "validation/reference/provenance_syn_pair_1141_r2_n100000.toml", "bytes": 3867, "sha256": "b86704b0b9c89aa05f11c95b8f3005f6afa7f451b0b8fe209eb4fa5bda3d177f"},
+    "rr009_sphere_100nm_histories.csv": {"path": "validation/reference/rr009_sphere_100nm_histories.csv", "bytes": 1835959, "sha256": "83bda705ca97f631099e67a1959dcb248b0065743c132e29ff1b3bdaa281a8e3"},
+    "rr009_sphere_100nm_species.csv": {"path": "validation/reference/rr009_sphere_100nm_species.csv", "bytes": 13931716, "sha256": "29667a37152233f324b687e5351d6b83edaf9397ac01de4db6f9995ad1a8fdbd"},
+    "rr009_sphere_1000nm_histories.csv": {"path": "validation/reference/rr009_sphere_1000nm_histories.csv", "bytes": 2019624, "sha256": "cac32cdd3914df0528c8e6d3668ff5290ebc62e16a417bfc6d74db4af4a58916"},
+    "rr009_sphere_1000nm_species.csv": {"path": "validation/reference/rr009_sphere_1000nm_species.csv", "bytes": 20741619, "sha256": "42865dc10b86e309174cac6998841b7afd521a3b528bb46e53a794152d6686f3"},
+    "rr009_sphere_10000nm_histories.csv": {"path": "validation/reference/rr009_sphere_10000nm_histories.csv", "bytes": 1887114, "sha256": "bfae714e04a5b5a9202776d72d8b89817fbd410489c1c1705eff5a79871c5690"},
+    "rr009_sphere_10000nm_species.csv": {"path": "validation/reference/rr009_sphere_10000nm_species.csv", "bytes": 26264887, "sha256": "89cc266e8ebb1243283dc257420bf7414b3bff32e9d6867df856c6ea6e12803b"},
+    "rr009_box_1000x1000x100nm_histories.csv": {"path": "validation/reference/rr009_box_1000x1000x100nm_histories.csv", "bytes": 2011107, "sha256": "d3c467643b282d8f482a26468bb8a60f5243ca5b22c6bc6ca0718c035d4692ff"},
+    "rr009_box_1000x1000x100nm_species.csv": {"path": "validation/reference/rr009_box_1000x1000x100nm_species.csv", "bytes": 17459973, "sha256": "f592fe8c0b52003029622ab1fc8047d8101eea35ee82597a615e23397233ff03"},
+    "provenance_rr009.toml": {"path": "validation/reference/provenance_rr009.toml", "bytes": 3127, "sha256": "0d4068e5678e48148dc91007edc6ac88b796c6ebea02cc33153253d806d55713"}
   },
   "historical_exclusions": [
     {"test": "m6_reference_contains_products_requiring_zero_time_chemistry", "reason": "Historical M6 post-zero-time snapshot, not stage-matched RR-001 pre-IRT evidence."},

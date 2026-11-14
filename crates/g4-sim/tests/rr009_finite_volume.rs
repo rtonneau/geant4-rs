@@ -30,6 +30,14 @@ const MARGIN: f64 = 0.01;
 const ENERGIES_EV: [f64; 3] = [1.0e3, 1.0e4, 1.0e5];
 const HISTORIES: u64 = 10_000;
 
+/// Endpoints accepted by user decision on 2026-11-14 after the data were seen (docs/07 amendment):
+/// both INCONCLUSIVE only from precision (|diff| < 1 se, half-width 0.0107 vs margin 0.01). They
+/// are reported with their statistical verdict and counted as accepted, not as PASS.
+const ACCEPTED_INCONCLUSIVE: [(&str, u64, &str); 2] = [
+    ("sphere_1000nm", 10_000, "S1"),
+    ("sphere_1000nm", 10_000, "S2"),
+];
+
 struct Setting {
     label: &'static str,
     sphere_radius_nm: Option<f64>,
@@ -191,6 +199,15 @@ fn rr009_escape_observables_match_geant4() {
                 );
                 match v {
                     "FAIL" => failures.push(format!("{} {energy} {name}", setting.label)),
+                    "INCONCLUSIVE"
+                        if ACCEPTED_INCONCLUSIVE.contains(&(
+                            setting.label,
+                            energy as u64,
+                            name,
+                        )) =>
+                    {
+                        println!("  -> accepted by user decision 2026-11-14 (not a PASS)");
+                    }
                     "INCONCLUSIVE" => open += 1,
                     _ => {}
                 }

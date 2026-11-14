@@ -264,6 +264,13 @@ listed here. Each one is to be answered by Geant4 output (RR-009), not decided b
 - **G-B2 (open) out-of-volume dissociation products.** `G4DNAMolecularDissociation` warns and still
   builds the product track (docs/04 D.7). Is that product killed at its first chemistry step, and does it react
   before then? RR-009 counts `OUTSIDE_OF_MOTHER_VOLUME` warnings and the products' fates.
+- **RR-009 result (2026-11-14), partial answer to G-B1/G-B2.** Over all four settings, 30,000
+  histories each, no molecule is `kOutside` the world solid at either the 1 ps or the end-of-chemistry
+  snapshot (1.0e6 to 2.2e7 molecules per setting and snapshot). Only the 1000 nm sphere has molecules
+  on the surface (`not_inside`: 2 at 1 ps, 1 at end). So in an IRT run the species set holds no
+  outside molecule at those times. The data cannot tell "removed" from "never created", or whether an
+  out-of-volume product reacted before it disappeared; G-B1/G-B2 stay open on those points. A Rust
+  rule that admits no outside species at the snapshots is consistent with Geant4.
 - **Risk R-B1 (medium).** The 0.8 x safety clamp uses isotropic safety. It also shortens displacements
   that would stay inside, which biases near-surface species distributions. It is reproduced as Geant4
   behaviour and documented, not "fixed".

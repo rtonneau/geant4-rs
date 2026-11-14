@@ -234,3 +234,9 @@ difference. **PASS** if the whole interval lies within +-0.01 absolute. **FAIL**
 0 and lies wholly outside +-0.01. Otherwise **INCONCLUSIVE**, which can be resolved only by a
 precision-only expansion of history counts with the same seeds family. The gate passes only when all
 included endpoints PASS and D1-D4 hold.
+
+Amendment 2026-11-14 (user decision, made after the RR-009 data were seen, so it is a documented
+deviation, not a prospective rule): sphere 1000 nm, 10 keV, S1 and S2 are accepted as INCONCLUSIVE
+without a precision expansion. Both differences are below one standard error (-0.00087 +- 0.0026,
+-0.00050 +- 0.0026); the interval half-width 0.0107 exceeds the 0.01 margin by 0.0007. No threshold,
+z value or other endpoint changes. The consumer lists them in `ACCEPTED_INCONCLUSIVE`.

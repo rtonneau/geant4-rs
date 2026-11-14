@@ -1,0 +1,44 @@
+# RR-009 finite-volume boundary reference (validation/geant4/RUN_REQUESTS.md, README "RR-009 finite-volume boundary").
+geant4_version = "11.4.3"
+geant4_version_number = 1143
+geant4_install = "G4_ROOT = geant4-v11.4.3-install (Qt6 from vcpkg)"
+geant4_source_revision = "v11.4.3 release source; local source directory has no git metadata"
+g4emlow_version = "8.8"
+g4emlow_md5 = "328330009df633f7e9b3a9f445745298"
+physics_constructor = "G4EmDNAPhysics_option2"
+chemistry_constructor = "G4EmDNAChemistry_option3"
+timestep_model = "IRT"
+fluo_auger = false
+mode = "finite_volume"
+snapshots = ["1ps (first non-zero chemistry time step)", "end (EndProcessing at end_time_ps)"]
+end_time_ps = 1.0e6
+primary = "e-, origin, isotropic (G4RandomDirection), one per event"
+energies_eV = [1000, 10000, 100000]
+histories_per_energy = 10000
+working_directory = "validation/geant4/g4rs_ref"
+commands = [
+  "g4rs_ref finite_volume ../../reference/rr009_sphere_100nm 2026111301 sphere 100 1000:10000,10000:10000,100000:10000",
+  "g4rs_ref finite_volume ../../reference/rr009_sphere_1000nm 2026111302 sphere 1000 1000:10000,10000:10000,100000:10000",
+  "g4rs_ref finite_volume ../../reference/rr009_sphere_10000nm 2026111303 sphere 10000 1000:10000,10000:10000,100000:10000",
+  "g4rs_ref finite_volume ../../reference/rr009_box_1000x1000x100nm 2026111304 box 1000,1000,100 1000:10000,10000:10000,100000:10000",
+]
+seeds = [2026111301, 2026111302, 2026111303, 2026111304]
+execution_note = "Run in parallel (4 processes, exit 0 each, 97 min wall for the slowest) from the registered working directory with build-1143/g4rs_ref.exe on PATH; output prefixes pointed to a scratch directory, files copied unchanged afterwards. Registered commands differ only in output path."
+validation = "each run: 3 'finite_volume: <E> eV done (10000 events)' lines; 30000 history rows; max |edep+escaped-E0|/E0 <= 5.7e-14"
+known_header_issue = "CSV header line reports 'events 0' although every energy ran its 10000 events (cosmetic generator label; data rows are complete)"
+date = "2026-11-13"
+generator_commit = "789fc469d1d7e22561d0e7c2b994bfacb9ed145c"
+generator_dirty = false
+data_commit = "aca59478d19199875d6c901bd7dce3362f6fb0b5"
+compiler = "MSVC 19.50.35729 x64"
+platform = "Windows NT 10.0.26100.0 x64"
+
+[csv_sha256]
+"rr009_box_1000x1000x100nm_histories.csv" = "7678aa8b025a13d500db2e57759d17e8b71984a9de603204e29f1dc114430162"
+"rr009_box_1000x1000x100nm_species.csv" = "08eb0af9e20b7e77d75170f6f9480939c7fdc1c394fed818d4d3d2137730311a"
+"rr009_sphere_10000nm_histories.csv" = "4bd436936b0cfbca5a70a3e49d82999423768bbaf2e8d19550f4ef0b81e97206"
+"rr009_sphere_10000nm_species.csv" = "d8b673985605374669477c08c1b8c7346fca336d03fdff7d858663be9747e161"
+"rr009_sphere_1000nm_histories.csv" = "f8144ef259553ad996f03d631378b8d6dcaf844972be30da2c02fbf9e0475b8a"
+"rr009_sphere_1000nm_species.csv" = "89015e45a7f3acab42d8c2a143d2196852ec44198651e4e574d9ea25d3d6b468"
+"rr009_sphere_100nm_histories.csv" = "8b1202682a2a34a60eb384532659891173654baa62a0ffc041de4fac07425f3d"
+"rr009_sphere_100nm_species.csv" = "487f2badafe2e1b310d9e31aee772623ec267ed861f0fb0a3ddaf9ad58e4e17d"
