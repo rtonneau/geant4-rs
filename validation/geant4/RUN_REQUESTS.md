@@ -319,7 +319,13 @@ the registered coverage gate; no later production acceptance follows from
 these observed reactions alone.
 ### RR-009: finite-volume boundary reference (requested 2026-11-13)
 
-Status: **awaiting run** (generator written 2026-11-13, session
+Status: **closed 2026-11-14** (run 2026-11-13 at the user's request; Geant4 11.4.3 install, fresh
+`build-1143` with vcpkg Qt6; all four runs exit 0 with three `done (10000 events)` lines each; data
+`aca5947`, provenance `d48318f`). Consumer: 16 PASS, 0 FAIL, 2 INCONCLUSIVE (sphere 1000 nm, 10 keV,
+S1 and S2: se 0.0026, so the interval half-width 0.0107 exceeds +-0.01), 6 NOT RUN (box); the
+gate stays open (8 open endpoints). D1 holds on every Geant4 history (max relative 5.7e-14).
+Header label `events 0` is a cosmetic generator bug (see provenance). Earlier status, kept as history:
+awaiting run (generator written 2026-11-13, session
 `2026-11-13__physicochemical-handoff`; compile-checked and linked with MSVC against the 11.4.1 and
 11.4.3 installs; never run by an agent). Program: `g4rs_ref finite_volume`, source
 `validation/geant4/g4rs_ref/g4rs_ref.cc`. The working name and shape above (`finite_volume_boundary

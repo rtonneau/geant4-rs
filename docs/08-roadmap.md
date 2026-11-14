@@ -888,3 +888,23 @@ thermalisation and dissociation clamps (`g4_core::placement`) and `physchem.boun
 Step (4) done: `g4rs_ref finite_volume` compile-checked, RR-009 logged, consumer
 `g4-sim/tests/rr009_finite_volume.rs` (ignored). Open: run RR-009; an isotropic Rust source for the box
 endpoints; IRT in the run layer for end-of-chemistry counts; step (5) after G-B1/G-B2.
+
+RR-009 run 2026-11-13 (Geant4 11.4.3, data `aca5947`, provenance `d48318f`). Consumer
+`rr009_escape_observables_match_geant4`, Bonferroni z = 4.098, margin +-0.01 (diff = Rust - Geant4;
+the test reports differences and standard errors, not the separate means):
+
+| Setting | E (keV) | S1 diff (se) | S2 diff (se) | Verdict |
+|---|---|---|---|---|
+| sphere 100 nm | 1 | 0.000226 (0.000160) | 0.000300 (0.000387) | PASS, PASS |
+| sphere 100 nm | 10 | -0.000240 (0.000324) | 0 (0) | PASS, PASS |
+| sphere 100 nm | 100 | -0.000021 (0.000013) | 0 (0) | PASS, PASS |
+| sphere 1000 nm | 1 | 0 (0) | 0 (0) | PASS, PASS |
+| sphere 1000 nm | 10 | -0.000872 (0.002618) | -0.000500 (0.002583) | INCONCLUSIVE, INCONCLUSIVE |
+| sphere 1000 nm | 100 | 0.000100 (0.000073) | 0 (0) | PASS, PASS |
+| sphere 10000 nm | 1, 10 | 0 (0) | 0 (0) | PASS (4) |
+| sphere 10000 nm | 100 | 0.000599 (0.000396) | 0 (0) | PASS, PASS |
+| box 1000x1000x100 nm | 1, 10, 100 | - | - | NOT RUN (6) |
+
+The 1000 nm / 10 keV INCONCLUSIVE comes from statistics (half-width 4.098 x 0.0026 = 0.0107 > 0.01),
+not from a disagreement. The gate stays open: those 2 endpoints need more histories (a new RR), and
+the 6 box endpoints need an isotropic Rust source. No outside species in Geant4 (docs/09 G-B1/G-B2).
