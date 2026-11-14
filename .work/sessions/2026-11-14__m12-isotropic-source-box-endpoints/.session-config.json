@@ -108,9 +108,33 @@
         "ticket": "02-runconfig-isotropic-direction",
         "commit": "3ed1e72"
       }
+    },
+    {
+      "at": "2026-11-14T08:53:08.408Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/03-rr009-box-endpoints.md",
+        "03-implement/03-rr009-box-endpoints/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-rr009-box-endpoints"
+      }
+    },
+    {
+      "at": "2026-11-14T08:55:46.321Z",
+      "event": "ticket_done",
+      "phase": "finish-pending",
+      "files": [
+        "03-implement/03-rr009-box-endpoints/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "03-rr009-box-endpoints",
+        "commit": "7d8c69c"
+      }
     }
   ],
-  "current_phase": "ship",
+  "current_phase": "finish-pending",
   "git": {
     "branch": "feat/m12-isotropic-source",
     "base_branch": "main",
