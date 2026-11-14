@@ -84,6 +84,30 @@
         "ticket": "01-source-stream-isotropic-sampler",
         "commit": "8526244"
       }
+    },
+    {
+      "at": "2026-11-14T08:49:12.407Z",
+      "event": "ticket_started",
+      "phase": "ship",
+      "files": [
+        "02-plan/tickets/02-runconfig-isotropic-direction.md",
+        "03-implement/02-runconfig-isotropic-direction/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-runconfig-isotropic-direction"
+      }
+    },
+    {
+      "at": "2026-11-14T08:53:03.146Z",
+      "event": "ticket_done",
+      "phase": "ship",
+      "files": [
+        "03-implement/02-runconfig-isotropic-direction/commit-log.md"
+      ],
+      "detail": {
+        "ticket": "02-runconfig-isotropic-direction",
+        "commit": "3ed1e72"
+      }
     }
   ],
   "current_phase": "ship",
