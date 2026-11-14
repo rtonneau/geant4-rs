@@ -266,13 +266,6 @@ listed here. Each one is to be answered by Geant4 output (RR-009), not decided b
   before then? RR-009 counts `OUTSIDE_OF_MOTHER_VOLUME` warnings and the products' fates.
 - **RR-009 result (2026-11-14), partial answer to G-B1/G-B2.** Over all four settings, 30,000
   histories each, no molecule is `kOutside` the world solid at either the 1 ps or the end-of-chemistry
-  snapshot (counts: 1.0e6 to 2.2e7 molecules per setting and snapshot). Only the 1000 nm sphere has
-  molecules on the surface (`not_inside`: 2 at 1 ps, 1 at end). So in an IRT run the species set never
-  holds an outside molecule at those times. The data cannot tell "removed" from "never created", or
-  whether an out-of-volume product reacted before it disappeared; G-B1/G-B2 stay open on those points.
-  A Rust rule that admits no outside species at the snapshots is consistent with Geant4.
-- **RR-009 result (2026-11-14), partial answer to G-B1/G-B2.** Over all four settings, 30,000
-  histories each, no molecule is `kOutside` the world solid at either the 1 ps or the end-of-chemistry
   snapshot (1.0e6 to 2.2e7 molecules per setting and snapshot). Only the 1000 nm sphere has molecules
   on the surface (`not_inside`: 2 at 1 ps, 1 at end). So in an IRT run the species set holds no
   outside molecule at those times. The data cannot tell "removed" from "never created", or whether an
