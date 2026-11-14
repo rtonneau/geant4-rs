@@ -326,7 +326,7 @@ fn spatial_diagnostic_normal_summaries_and_csv_are_thread_independent() {
             first_csv = Some(csv);
         }
     }
-    config.direction = [1.0, 0.0, 0.0];
+    config.direction = g4_sim::config::PrimaryDirection::Fixed([1.0, 0.0, 0.0]);
     let mut writer = CsvSpatialDiagnosticWriter::new(Vec::new()).unwrap();
     assert!(
         run_physchem_summary_with_diagnostics(&table, &engine, &config, Some(&mut writer)).is_err()

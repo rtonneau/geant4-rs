@@ -1,6 +1,7 @@
 //! Coupled physical and physicochemical orchestration.
 
 use super::*;
+use crate::config::PrimaryDirection;
 use crate::history::run_history_with_observer;
 use crate::physchem_scoring::{PhysChemScorer, PhysChemSummary};
 use crate::spatial_diagnostic::{RustSpatialObserver, SpatialDiagnosticSink};
@@ -34,10 +35,8 @@ pub fn run_physchem_summary_with_diagnostics(
 ) -> Result<(RunSummary, PhysChemSummary), SimError> {
     config.validate()?;
     if sink.is_some()
-        && (config.direction[0] != 0.0
-            || config.direction[1] != 0.0
-            || !config.direction[2].is_finite()
-            || config.direction[2] <= 0.0)
+        && !matches!(config.direction, PrimaryDirection::Fixed([x, y, z])
+            if x == 0.0 && y == 0.0 && z.is_finite() && z > 0.0)
     {
         return Err(SimError::InvalidConfig(
             "spatial diagnostics require the primary direction along +z".into(),

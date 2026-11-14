@@ -2,6 +2,8 @@
 
 use crate::error::SimError;
 use g4_core::geometry::{Inside, Volume};
+use g4_core::rng::{RngStreams, Stage};
+use g4_core::sampling::isotropic_direction;
 use g4_core::units::Energy;
 use g4_core::vec3::Vec3;
 use g4_physics::transport::{Primary, TransportConfig};
@@ -22,8 +24,9 @@ pub struct RunConfig {
     pub first_history_id: u64,
     pub n_histories: u64,
     pub primary_energy_ev: f64,
-    /// Primary direction (normalised by the transport).
-    pub direction: [f64; 3],
+    /// Primary direction: a fixed vector `[x, y, z]` (normalised by the transport) or
+    /// `"isotropic"` (one direction per history from its `Stage::Source` stream, ADR 0006).
+    pub direction: PrimaryDirection,
     /// Stop the primary below this energy (e.g. to compare with a Geant4 run with a tracking cut).
     pub tracking_cut_ev: Option<f64>,
     /// Stop each history after this many interactions (`Some(1)` reproduces the Geant4 `mfp`
@@ -58,7 +61,7 @@ impl RunConfig {
             first_history_id: 0,
             n_histories,
             primary_energy_ev,
-            direction: [0.0, 0.0, 1.0],
+            direction: PrimaryDirection::Fixed([0.0, 0.0, 1.0]),
             tracking_cut_ev: None,
             max_interactions: None,
             transport_secondaries: true,
@@ -91,6 +94,11 @@ impl RunConfig {
         {
             return bad("tracking_cut_ev must be finite and non-negative");
         }
+        if let PrimaryDirection::Fixed(d) = self.direction
+            && !(d.iter().all(|c| c.is_finite()) && d.iter().any(|&c| c != 0.0))
+        {
+            return bad("a fixed direction must be finite and non-zero");
+        }
         if let Some(v) = &self.volume
             && v.inside(Vec3::ZERO) == Inside::Outside
         {
@@ -99,13 +107,26 @@ impl RunConfig {
         Ok(())
     }
 
-    pub(crate) fn primary(&self, history_id: u64) -> Primary {
-        Primary {
+    /// The primary of history `history_id`. A fixed direction draws nothing; an isotropic one
+    /// draws two uniforms from `(master_seed, history_id, Stage::Source)` (docs/reproducibility.md),
+    /// so the `Physics` stream is the same in both modes.
+    pub(crate) fn primary(
+        &self,
+        history_id: u64,
+        streams: &RngStreams,
+    ) -> Result<Primary, SimError> {
+        let direction = match self.direction {
+            PrimaryDirection::Fixed(d) => Vec3::new(d[0], d[1], d[2]),
+            PrimaryDirection::Isotropic => {
+                isotropic_direction(&mut streams.stream(history_id, Stage::Source)?)
+            }
+        };
+        Ok(Primary {
             history_id,
             energy: Energy::from_ev(self.primary_energy_ev),
             position: Vec3::ZERO,
-            direction: Vec3::new(self.direction[0], self.direction[1], self.direction[2]),
-        }
+            direction,
+        })
     }
 
     pub(crate) fn transport(&self) -> TransportConfig {
@@ -114,6 +135,49 @@ impl RunConfig {
             max_interactions: self.max_interactions,
             transport_secondaries: self.transport_secondaries,
             ..TransportConfig::default()
+        }
+    }
+}
+
+/// Direction of the primaries of a run.
+///
+/// Serialised as the bare array `[x, y, z]` (as before this type existed, so existing configs
+/// and run metadata are unchanged) or as the string `"isotropic"`.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "DirectionRepr", into = "DirectionRepr")]
+pub enum PrimaryDirection {
+    /// The same direction for every history.
+    Fixed([f64; 3]),
+    /// Uniform on the unit sphere, independently per history (Geant4 `G4RandomDirection()`
+    /// distribution, `g4_core::sampling::isotropic_direction`).
+    Isotropic,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+enum DirectionRepr {
+    Fixed([f64; 3]),
+    Keyword(String),
+}
+
+impl TryFrom<DirectionRepr> for PrimaryDirection {
+    type Error = String;
+    fn try_from(r: DirectionRepr) -> Result<Self, String> {
+        match r {
+            DirectionRepr::Fixed(d) => Ok(Self::Fixed(d)),
+            DirectionRepr::Keyword(k) if k == "isotropic" => Ok(Self::Isotropic),
+            DirectionRepr::Keyword(k) => Err(format!(
+                "direction must be [x, y, z] or \"isotropic\", got \"{k}\""
+            )),
+        }
+    }
+}
+
+impl From<PrimaryDirection> for DirectionRepr {
+    fn from(d: PrimaryDirection) -> Self {
+        match d {
+            PrimaryDirection::Fixed(v) => Self::Fixed(v),
+            PrimaryDirection::Isotropic => Self::Keyword("isotropic".to_owned()),
         }
     }
 }
@@ -253,5 +317,53 @@ half_lengths = [1.0, 1.0, 1.0]
 "
         );
         assert!(toml::from_str::<RunConfig>(&text).is_err());
+    }
+
+    #[test]
+    fn direction_serialises_as_array_or_isotropic_keyword() {
+        let fixed: RunConfig = toml::from_str(BASE).unwrap();
+        assert_eq!(fixed.direction, PrimaryDirection::Fixed([0.0, 0.0, 1.0]));
+        assert!(
+            serde_json::to_string(&fixed)
+                .unwrap()
+                .contains("\"direction\":[0.0,0.0,1.0]")
+        );
+        let iso_src = BASE.replace("[0.0, 0.0, 1.0]", "\"isotropic\"");
+        let iso: RunConfig = toml::from_str(&iso_src).unwrap();
+        assert_eq!(iso.direction, PrimaryDirection::Isotropic);
+        let json = serde_json::to_string(&iso).unwrap();
+        assert!(json.contains("\"direction\":\"isotropic\""));
+        assert_eq!(serde_json::from_str::<RunConfig>(&json).unwrap(), iso);
+        assert_eq!(
+            toml::from_str::<RunConfig>(&toml::to_string(&iso).unwrap()).unwrap(),
+            iso
+        );
+        assert!(
+            toml::from_str::<RunConfig>(&BASE.replace("[0.0, 0.0, 1.0]", "\"isotrope\"")).is_err()
+        );
+    }
+
+    #[test]
+    fn fixed_direction_must_be_finite_and_non_zero() {
+        let mut c = RunConfig::new(1000.0, 1);
+        c.direction = PrimaryDirection::Fixed([0.0, 0.0, 0.0]);
+        assert!(c.validate().is_err());
+        c.direction = PrimaryDirection::Fixed([f64::NAN, 0.0, 1.0]);
+        assert!(c.validate().is_err());
+        c.direction = PrimaryDirection::Isotropic;
+        assert!(c.validate().is_ok());
+    }
+
+    #[test]
+    fn isotropic_primary_uses_the_source_stream_only() {
+        let streams = RngStreams::new(7);
+        let mut c = RunConfig::new(1000.0, 1);
+        let fixed = c.primary(3, &streams).unwrap();
+        assert_eq!(fixed.direction, Vec3::new(0.0, 0.0, 1.0));
+        c.direction = PrimaryDirection::Isotropic;
+        let a = c.primary(3, &streams).unwrap();
+        let expected = isotropic_direction(&mut streams.stream(3, Stage::Source).unwrap());
+        assert_eq!(a.direction, expected);
+        assert_ne!(a.direction, c.primary(4, &streams).unwrap().direction);
     }
 }

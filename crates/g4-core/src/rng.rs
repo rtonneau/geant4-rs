@@ -19,12 +19,16 @@ use std::convert::Infallible;
 /// Largest history id: `(id << 2) | stage` must fit in the 64-bit ChaCha stream number.
 pub const MAX_HISTORY_ID: u64 = (1 << 62) - 1;
 
-/// Simulation stage owning a sub-stream of a history (stage 3 is reserved).
+/// Simulation stage owning a sub-stream of a history. All four stream slots of the
+/// `(id << 2) | stage` layout are used; a further stage needs a new layout (ADR 0006).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Stage {
     Physics = 0,
     PhysChem = 1,
     Chemistry = 2,
+    /// Primary source sampling (isotropic direction), drawn before and apart from the
+    /// physics stream so that the physics draw order does not depend on the source mode.
+    Source = 3,
 }
 
 /// Vigna's splitmix64, used only to expand the 64-bit master seed to a 256-bit key.
@@ -136,7 +140,12 @@ mod tests {
         let streams = RngStreams::new(12345);
         let mut seen = HashSet::new();
         for id in 0..10_000u64 {
-            for stage in [Stage::Physics, Stage::PhysChem, Stage::Chemistry] {
+            for stage in [
+                Stage::Physics,
+                Stage::PhysChem,
+                Stage::Chemistry,
+                Stage::Source,
+            ] {
                 let w = words(streams.stream(id, stage).unwrap(), 4);
                 assert!(
                     seen.insert(w),
@@ -223,5 +232,18 @@ mod tests {
                 13_949_277_091_178_962_527
             ]
         );
+    }
+
+    /// Pins the `Source` stream number `(id << 2) | 3`: its first word equals the one of a raw
+    /// ChaCha12 stream set to that number (no independent oracle beyond the layout).
+    #[test]
+    fn source_stage_uses_stream_slot_three() {
+        let streams = RngStreams::new(42);
+        let got = words(streams.stream(5, Stage::Source).unwrap(), 2);
+        let mut raw = ChaCha12Rng::from_seed(streams.key);
+        raw.set_stream((5 << 2) | 3);
+        let mut raw = HistoryRng(raw);
+        assert_eq!(got, vec![raw.next_u64(), raw.next_u64()]);
+        assert_ne!(got, words(streams.stream(5, Stage::Chemistry).unwrap(), 2));
     }
 }

@@ -903,7 +903,9 @@ the test reports differences and standard errors, not the separate means):
 | sphere 1000 nm | 100 | 0.000100 (0.000073) | 0 (0) | PASS, PASS |
 | sphere 10000 nm | 1, 10 | 0 (0) | 0 (0) | PASS (4) |
 | sphere 10000 nm | 100 | 0.000599 (0.000396) | 0 (0) | PASS, PASS |
-| box 1000x1000x100 nm | 1, 10, 100 | - | - | NOT RUN (6) |
+| box 1000x1000x100 nm | 1 | -0.000050 (0.000047) | -0.000200 (0.000141) | PASS, PASS (2026-11-14, isotropic) |
+| box 1000x1000x100 nm | 10 | 0.001567 (0.001299) | -0.000400 (0.000424) | PASS, PASS (2026-11-14, isotropic) |
+| box 1000x1000x100 nm | 100 | 0.000040 (0.000033) | 0 (0) | PASS, PASS (2026-11-14, isotropic) |
 
 The 1000 nm / 10 keV INCONCLUSIVE comes from statistics (half-width 4.098 x 0.0026 = 0.0107 > 0.01),
 not from a disagreement. The gate stays open: those 2 endpoints need more histories (a new RR), and
@@ -912,3 +914,8 @@ the 6 box endpoints need an isotropic Rust source. No outside species in Geant4 
 Update 2026-11-14: the user accepted the two 1000 nm / 10 keV endpoints without more histories
 (docs/07 amendment). They stay INCONCLUSIVE statistically; |diff| < 1 se for both. The gate now waits
 only on the 6 box endpoints.
+
+Update 2026-11-14 (box): `RunConfig.direction = "isotropic"` (ADR 0006, `Stage::Source` stream) added;
+the box rows (G4Box half-lengths 1000, 1000, 100 nm) run isotropic, the sphere rows keep +z and
+reproduce their recorded values. Criteria unchanged. All 6 box endpoints PASS: 22 PASS, 2 accepted
+INCONCLUSIVE, 0 FAIL, 0 open. The RR-009 gate is closed.

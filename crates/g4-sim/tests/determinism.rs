@@ -8,7 +8,7 @@ use g4_core::manifest::Manifest;
 use g4_data::datadir::{DataDir, VerifiedDataSet, repo_data_dir};
 use g4_physics::models::{ElasticRotation, ProcessKind};
 use g4_physics::table::{ProcessTable, VerifiedProcessTable};
-use g4_sim::config::RunConfig;
+use g4_sim::config::{PrimaryDirection, RunConfig};
 use g4_sim::history::HistoryResult;
 use g4_sim::run::{CsvPhysChemWriter, run, run_detailed, run_summary, run_summary_with_sink};
 
@@ -118,6 +118,35 @@ fn per_history_results_are_bitwise_identical_for_1_2_and_8_threads() {
         assert_eq!(
             all_bits(&reference),
             all_bits(&run_detailed(&table, &config).unwrap())
+        );
+    }
+}
+
+/// Isotropic source (ADR 0006): the direction comes from the per-history `Source` stream, so
+/// results stay bitwise thread-count independent, and the directions differ between histories.
+#[test]
+fn isotropic_results_are_bitwise_identical_for_1_2_and_8_threads() {
+    let Some((table, _)) = setup() else { return };
+    let mut config = RunConfig::new(1.0e3, 200);
+    config.master_seed = 2026;
+    config.direction = PrimaryDirection::Isotropic;
+    config.threads = Some(1);
+    let reference = run_detailed(&table, &config).unwrap();
+    let fixed = run_detailed(
+        &table,
+        &RunConfig {
+            direction: PrimaryDirection::Fixed([0.0, 0.0, 1.0]),
+            ..config.clone()
+        },
+    )
+    .unwrap();
+    assert_ne!(all_bits(&reference), all_bits(&fixed));
+    for threads in [2, 8] {
+        config.threads = Some(threads);
+        assert_eq!(
+            all_bits(&reference),
+            all_bits(&run_detailed(&table, &config).unwrap()),
+            "isotropic, {threads} threads"
         );
     }
 }

@@ -10,17 +10,17 @@
 //!   `z = Phi^-1(1 - 0.001/48) = 4.098038123646298`. PASS if the interval lies within +-0.01,
 //!   FAIL if it excludes 0 and lies wholly outside +-0.01, otherwise INCONCLUSIVE.
 //!
-//! Limitation (documented, not a relaxation): Geant4 draws isotropic primaries; the Rust run layer
-//! has a fixed primary direction (+z). For the spheres, centred on the source, the observables are
-//! rotation invariant, so +z is used. The box is not, and its six endpoints are reported as
-//! `NOT RUN` until the Rust source can be isotropic; the gate cannot pass before that.
+//! Source direction: Geant4 draws isotropic primaries. The spheres, centred on the source, are
+//! rotation invariant, so their Rust runs keep +z (verdicts recorded 2026-11-14). The box
+//! (`G4Box` half-lengths 1000, 1000, 100 nm) is not, so its Rust runs use the isotropic source
+//! (`PrimaryDirection::Isotropic`, ADR 0006), added 2026-11-14 without changing any criterion.
 
 use g4_core::geometry::Volume;
 use g4_core::vec3::Vec3;
 use g4_data::datadir::{DataDir, repo_data_dir};
 use g4_physics::models::ElasticRotation;
 use g4_physics::table::ProcessTable;
-use g4_sim::config::RunConfig;
+use g4_sim::config::{PrimaryDirection, RunConfig};
 use g4_sim::run::run_summary;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -29,6 +29,8 @@ const Z_FAMILY: f64 = 4.098038123646298;
 const MARGIN: f64 = 0.01;
 const ENERGIES_EV: [f64; 3] = [1.0e3, 1.0e4, 1.0e5];
 const HISTORIES: u64 = 10_000;
+/// `g4rs_ref finite_volume ... box 1000,1000,100` (G4Box half-lengths, provenance_rr009.toml).
+const BOX_HALF_NM: [f64; 3] = [1000.0, 1000.0, 100.0];
 
 /// Endpoints accepted by user decision on 2026-11-14 after the data were seen (docs/07 amendment):
 /// both INCONCLUSIVE only from precision (|diff| < 1 se, half-width 0.0107 vs margin 0.01). They
@@ -40,6 +42,7 @@ const ACCEPTED_INCONCLUSIVE: [(&str, u64, &str); 2] = [
 
 struct Setting {
     label: &'static str,
+    /// Sphere radius, or `None` for the box of half-lengths [`BOX_HALF_NM`].
     sphere_radius_nm: Option<f64>,
     rust_seed: u64,
 }
@@ -155,18 +158,10 @@ fn rr009_escape_observables_match_geant4() {
                 "{} {energy} eV history count",
                 setting.label
             );
-            let Some(radius) = setting.sphere_radius_nm else {
-                println!(
-                    "{} {energy} eV: S1, S2 NOT RUN (no isotropic Rust source)",
-                    setting.label
-                );
-                open += 2;
-                continue;
-            };
             let mut config = RunConfig::new(energy, HISTORIES);
             config.master_seed = setting.rust_seed + energy.log10() as u64 * 100;
-            config.volume = Some(
-                Volume::sphere(
+            config.volume = Some(match setting.sphere_radius_nm {
+                Some(radius) => Volume::sphere(
                     Vec3::ZERO,
                     0.0,
                     radius,
@@ -176,7 +171,12 @@ fn rr009_escape_observables_match_geant4() {
                     std::f64::consts::PI,
                 )
                 .unwrap(),
-            );
+                None => {
+                    config.direction = PrimaryDirection::Isotropic;
+                    let [x, y, z] = BOX_HALF_NM;
+                    Volume::box_(Vec3::ZERO, Vec3::new(x, y, z)).unwrap()
+                }
+            });
             let summary = run_summary(&table, &config).unwrap();
             let escape = summary.escape.expect("escape block with a volume");
             let endpoints = [
@@ -215,5 +215,5 @@ fn rr009_escape_observables_match_geant4() {
         }
     }
     assert!(failures.is_empty(), "FAIL endpoints: {failures:?}");
-    println!("open (INCONCLUSIVE or NOT RUN) endpoints: {open}; the gate needs 0");
+    println!("open (INCONCLUSIVE, not accepted) endpoints: {open}; the gate needs 0");
 }
