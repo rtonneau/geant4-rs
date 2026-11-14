@@ -240,3 +240,7 @@ deviation, not a prospective rule): sphere 1000 nm, 10 keV, S1 and S2 are accept
 without a precision expansion. Both differences are below one standard error (-0.00087 +- 0.0026,
 -0.00050 +- 0.0026); the interval half-width 0.0107 exceeds the 0.01 margin by 0.0007. No threshold,
 z value or other endpoint changes. The consumer lists them in `ACCEPTED_INCONCLUSIVE`.
+
+Result 2026-11-14 (box endpoints): with the isotropic Rust source (ADR 0006; criteria unchanged, the
+spheres keep +z by rotation invariance) the six box endpoints all PASS (docs/08 table). RR-009 verdict:
+22 PASS, 2 accepted INCONCLUSIVE, 0 FAIL; gate closed.
